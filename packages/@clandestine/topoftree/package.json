@@ -1,0 +1,16 @@
+{
+  "name": "@clandestine/topoftree",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "topoftree": "./dist/topoftree"
+  },
+  "scripts": {
+    "build": "go build -o dist/topoftree ./cmd/topoftree",
+    "format": "biome format --write ."
+  },
+  "files": [
+    "dist"
+  ]
+}

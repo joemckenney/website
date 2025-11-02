@@ -1,2 +1,65 @@
-node_modules
-.turbo
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+*.lcov
+.nyc_output
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+
+# Turbo
+.turbo/
+
+# Rust
+target/
+Cargo.lock
+.rustc_info.json
+
+# Environment variables
+.env
+.env*.local
+.env.production
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Optional: Remove if you want to commit lock files for root
+# pnpm-lock.yaml

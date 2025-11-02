@@ -1,0 +1,26 @@
+{
+  "name": "@www/sdk",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "main": "./dist/generated/index.js",
+  "types": "./dist/generated/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/generated/index.d.ts",
+      "default": "./dist/generated/index.js"
+    }
+  },
+  "scripts": {
+    "generate": "openapi-ts --input ../server/dist/openapi.json --output ./src/generated --client @hey-api/client-fetch",
+    "build": "npm run generate && tsc",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@clandestine/tsconfig": "workspace:*",
+    "@hey-api/client-fetch": "^0.13.1",
+    "@hey-api/openapi-ts": "^0.62.0",
+    "@www/server": "workspace:*",
+    "typescript": "^5.5.3"
+  }
+}
