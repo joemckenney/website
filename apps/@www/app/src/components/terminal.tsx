@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, KeyboardEvent } from 'react';
 import * as styles from './terminal.css';
 
 export interface TerminalLine {
@@ -10,30 +10,45 @@ export interface TerminalLine {
 interface TerminalProps {
   lines: TerminalLine[];
   isActive?: boolean;
+  onCommand?: (command: string) => void;
 }
 
-export function Terminal({ lines, isActive = false }: TerminalProps) {
+export function Terminal({ lines, isActive = false, onCommand }: TerminalProps) {
+  const [input, setInput] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Auto-scroll to bottom when new lines are added
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [lines]);
 
+  useEffect(() => {
+    // Auto-focus input when terminal becomes active
+    if (isActive && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isActive]);
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && input.trim()) {
+      onCommand?.(input.trim());
+      setInput('');
+    }
+  };
+
+  const handleTerminalClick = () => {
+    inputRef.current?.focus();
+  };
+
   return (
-    <div className={styles.terminal}>
+    <div className={styles.terminal} onClick={handleTerminalClick}>
       <div className={styles.body}>
-        {lines.length === 0 && (
-          <div className={styles.line}>
-            <span className={styles.prompt}>$</span>
-            <span className={styles.cursor}>{isActive ? '▊' : ''}</span>
-          </div>
-        )}
         {lines.map((line, index) => (
           <div key={index} className={styles.line}>
             {line.type === 'prompt' ? (
               <>
-                <span className={styles.prompt}>$</span>{' '}
+                <span className={styles.prompt}>&gt;</span>{' '}
                 <span className={styles.promptText}>{line.text}</span>
               </>
             ) : (
@@ -55,12 +70,21 @@ export function Terminal({ lines, isActive = false }: TerminalProps) {
             )}
           </div>
         ))}
-        {isActive && lines.length > 0 && (
-          <div className={styles.line}>
-            <span className={styles.prompt}>$</span>
-            <span className={styles.cursor}>▊</span>
-          </div>
-        )}
+        <div className={styles.line}>
+          <span className={styles.prompt}>&gt;</span>{' '}
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className={styles.input}
+            disabled={!isActive}
+            spellCheck={false}
+            autoComplete="off"
+            autoCapitalize="off"
+          />
+        </div>
         <div ref={endRef} />
       </div>
     </div>

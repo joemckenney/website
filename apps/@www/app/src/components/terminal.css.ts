@@ -63,14 +63,26 @@ export const prompt = style({
   marginRight: vars.spacing['2'],
 });
 
-const blink = keyframes({
-  '0%, 50%': { opacity: 1 },
-  '51%, 100%': { opacity: 0 },
-});
-
-export const cursor = style({
+export const input = style({
+  backgroundColor: 'transparent',
+  border: 'none',
+  outline: 'none',
   color: gruvbox.fg1,
-  animation: `${blink} 1s infinite`,
+  fontFamily: vars.font.mono,
+  fontSize: 'inherit',
+  flex: 1,
+  caretColor: gruvbox.fg1,
+  caretShape: 'block',
+
+  ':disabled': {
+    opacity: 0.5,
+  },
+
+  selectors: {
+    '&::selection': {
+      backgroundColor: gruvbox.bg3,
+    },
+  },
 });
 
 // Type-based styling

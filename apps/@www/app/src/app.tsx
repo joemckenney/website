@@ -48,15 +48,44 @@ function App() {
       setAiStatus(status);
     });
 
-    addLog('Ready. Type "start" to begin.', 'prompt');
+    addLog('Ready. Type "help" for available commands.', 'output');
 
     return () => {
       synth.destroy();
     };
   }, [addLog]);
 
+  const handleCommand = (command: string) => {
+    addLog(command, 'prompt');
+
+    const cmd = command.toLowerCase().trim();
+
+    if (cmd === 'help') {
+      addLog('Available commands:', 'info');
+      addLog('  start - Begin weather sonification experience', 'output');
+      addLog('  stop  - Stop audio playback', 'output');
+      addLog('  help  - Show this help message', 'output');
+    } else if (cmd === 'start') {
+      if (isPlaying) {
+        addLog('Already playing. Use "stop" first.', 'warning');
+      } else {
+        handleStart();
+      }
+    } else if (cmd === 'stop') {
+      if (!isPlaying) {
+        addLog('Nothing is playing.', 'warning');
+      } else {
+        addLog('Stopping audio...', 'info');
+        handleStop();
+        addLog('Audio stopped.', 'success');
+      }
+    } else {
+      addLog(`Unknown command: ${command}`, 'error');
+      addLog('Type "help" for available commands.', 'output');
+    }
+  };
+
   const handleStart = async () => {
-    addLog('start', 'prompt');
     addLog('Getting your location...', 'info');
 
     try {
@@ -91,7 +120,7 @@ function App() {
       if (synthRef.current) {
         await synthRef.current.start(audioParams);
         setIsPlaying(true);
-        addLog('Audio playing. Type "stop" to end.', 'success');
+        addLog('Audio playing. Use "stop" command to end.', 'success');
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'An error occurred';
@@ -111,13 +140,7 @@ function App() {
       <LoginButton />
       <div className={styles.page}>
         <section className={styles.section}>
-          <Terminal lines={terminalLines} isActive={!isPlaying} />
-
-          <div className={styles.controls}>
-            <button className={styles.primaryButton} onClick={handleStart}>
-              Start
-            </button>
-          </div>
+          <Terminal lines={terminalLines} isActive={true} onCommand={handleCommand} />
         </section>
       </div>
     </>
