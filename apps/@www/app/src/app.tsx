@@ -23,7 +23,13 @@ function App() {
     setTerminalLines((prev) => [...prev, { text, type, timestamp: Date.now() }]);
   }, []);
 
+  const hasInitialized = useRef(false);
+
   useEffect(() => {
+    // Prevent double initialization in StrictMode
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
     addLog('weather-sonification v1.0.0', 'info');
     addLog('Initializing audio synthesizer...', 'info');
 
