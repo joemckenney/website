@@ -1,5 +1,5 @@
 {
-  "name": "@clandestine/utils",
+  "name": "@website/utils",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -10,8 +10,8 @@
     "format": "biome format --write ."
   },
   "devDependencies": {
-    "@clandestine/topoftree": "workspace:*",
-    "@clandestine/tsconfig": "workspace:*",
+    "@website/topoftree": "workspace:*",
+    "@website/tsconfig": "workspace:*",
     "@typescript/native-preview": "7.0.0-dev.20251017.1"
   }
 }

@@ -30,9 +30,6 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
     devDependencies:
-      '@clandestine/tsconfig':
-        specifier: workspace:*
-        version: link:../../../packages/@clandestine/tsconfig
       '@types/react':
         specifier: ^18.3.12
         version: 18.3.26
@@ -51,6 +48,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.4
         version: 4.7.0(vite@6.4.0(@types/node@24.8.1)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.8.1))
+      '@website/tsconfig':
+        specifier: workspace:*
+        version: link:../../../packages/@website/tsconfig
       vite:
         specifier: ^6.0.7
         version: 6.4.0(@types/node@24.8.1)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.8.1)
@@ -60,24 +60,21 @@ importers:
       '@app/server':
         specifier: workspace:*
         version: link:../server
-      '@clandestine/tsconfig':
-        specifier: workspace:*
-        version: link:../../../packages/@clandestine/tsconfig
       '@hey-api/client-fetch':
         specifier: ^0.13.1
         version: 0.13.1(@hey-api/openapi-ts@0.62.3(typescript@5.9.3))
       '@hey-api/openapi-ts':
         specifier: ^0.62.0
         version: 0.62.3(typescript@5.9.3)
+      '@website/tsconfig':
+        specifier: workspace:*
+        version: link:../../../packages/@website/tsconfig
       typescript:
         specifier: ^5.5.3
         version: 5.9.3
 
   apps/@app/server:
     dependencies:
-      '@clandestine/squared':
-        specifier: workspace:*
-        version: link:../../../packages/@clandestine/squared
       '@fastify/cors':
         specifier: ^9.0.1
         version: 9.0.1
@@ -93,16 +90,19 @@ importers:
       '@sinclair/typebox':
         specifier: ^0.33.15
         version: 0.33.22
+      '@website/squared':
+        specifier: workspace:*
+        version: link:../../../packages/@website/squared
       fastify:
         specifier: ^4.28.1
         version: 4.29.1
     devDependencies:
-      '@clandestine/tsconfig':
-        specifier: workspace:*
-        version: link:../../../packages/@clandestine/tsconfig
       '@types/node':
         specifier: ^20.14.0
         version: 20.19.22
+      '@website/tsconfig':
+        specifier: workspace:*
+        version: link:../../../packages/@website/tsconfig
       tsx:
         specifier: ^4.16.2
         version: 4.20.6
@@ -110,23 +110,57 @@ importers:
         specifier: ^5.5.3
         version: 5.9.3
 
-  packages/@clandestine/squared: {}
-
-  packages/@clandestine/topoftree: {}
-
-  packages/@clandestine/tsconfig: {}
-
-  packages/@clandestine/utils:
+  apps/@www/app:
+    dependencies:
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
     devDependencies:
-      '@clandestine/topoftree':
-        specifier: workspace:*
-        version: link:../topoftree
-      '@clandestine/tsconfig':
-        specifier: workspace:*
-        version: link:../tsconfig
+      '@types/react':
+        specifier: ^18.3.12
+        version: 18.3.26
+      '@types/react-dom':
+        specifier: ^18.3.1
+        version: 18.3.7(@types/react@18.3.26)
       '@typescript/native-preview':
         specifier: 7.0.0-dev.20251017.1
         version: 7.0.0-dev.20251017.1
+      '@vanilla-extract/css':
+        specifier: ^1.16.2
+        version: 1.17.4
+      '@vanilla-extract/vite-plugin':
+        specifier: ^4.0.18
+        version: 4.0.20(@types/node@24.8.1)(jiti@2.6.1)(tsx@4.20.6)(vite@6.4.0(@types/node@24.8.1)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.8.1))(yaml@2.8.1)
+      '@vitejs/plugin-react':
+        specifier: ^4.3.4
+        version: 4.7.0(vite@6.4.0(@types/node@24.8.1)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.8.1))
+      '@website/tsconfig':
+        specifier: workspace:*
+        version: link:../../../packages/@website/tsconfig
+      vite:
+        specifier: ^6.0.7
+        version: 6.4.0(@types/node@24.8.1)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.8.1)
+
+  packages/@website/squared: {}
+
+  packages/@website/topoftree: {}
+
+  packages/@website/tsconfig: {}
+
+  packages/@website/utils:
+    devDependencies:
+      '@typescript/native-preview':
+        specifier: 7.0.0-dev.20251017.1
+        version: 7.0.0-dev.20251017.1
+      '@website/topoftree':
+        specifier: workspace:*
+        version: link:../topoftree
+      '@website/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
 
 packages:
 

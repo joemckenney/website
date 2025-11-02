@@ -17,7 +17,7 @@
     "format": "biome format --write ."
   },
   "devDependencies": {
-    "@clandestine/tsconfig": "workspace:*",
+    "@website/tsconfig": "workspace:*",
     "@hey-api/client-fetch": "^0.13.1",
     "@hey-api/openapi-ts": "^0.62.0",
     "@app/server": "workspace:*",

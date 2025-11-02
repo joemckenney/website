@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { client, postSquared } from "@app/sdk";
-import * as styles from "./App.css";
+import * as styles from "./app.css";
 
 // Configure SDK client base URL
 client.setConfig({

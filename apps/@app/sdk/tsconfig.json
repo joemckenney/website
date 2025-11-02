@@ -1,5 +1,5 @@
 {
-  "extends": "@clandestine/tsconfig/base.json",
+  "extends": "@website/tsconfig/base.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",

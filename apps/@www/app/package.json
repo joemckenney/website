@@ -1,5 +1,5 @@
 {
-  "name": "@app/client",
+  "name": "@www/app",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -10,7 +10,6 @@
     "format": "biome format --write ."
   },
   "dependencies": {
-    "@app/sdk": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

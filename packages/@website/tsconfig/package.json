@@ -1,5 +1,5 @@
 {
-  "name": "@clandestine/tsconfig",
+  "name": "@website/tsconfig",
   "version": "0.0.0",
   "private": true,
   "exports": {

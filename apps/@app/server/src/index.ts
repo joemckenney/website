@@ -4,7 +4,7 @@ import cors from '@fastify/cors';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import {writeFile, mkdir} from 'node:fs/promises';
-//import {squared} from '@clandestine/squared';
+//import {squared} from '@website/squared';
 import {PingResponse, SquaredRequest, SquaredResponse} from './schemas.js';
 
 const fastify = Fastify({
