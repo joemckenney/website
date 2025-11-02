@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, useCallback, KeyboardEvent } from 'react';
 import * as styles from './terminal.css';
 
 export interface TerminalLine {
@@ -35,19 +35,38 @@ export function Terminal({ lines, isActive = false, onCommand }: TerminalProps) 
   useEffect(() => {
     // Update cursor position when input changes
     if (measureRef.current && inputRef.current) {
+      const cursorPos = inputRef.current.selectionStart || 0;
+      const text = input.substring(0, cursorPos);
+      measureRef.current.textContent = text;
+      setCursorPosition(measureRef.current.offsetWidth);
+    }
+  }, [input]);
+
+  const updateCursorPosition = useCallback(() => {
+    if (measureRef.current && inputRef.current) {
       const text = input.substring(0, inputRef.current.selectionStart || 0);
       measureRef.current.textContent = text;
       setCursorPosition(measureRef.current.offsetWidth);
     }
   }, [input]);
 
-  const updateCursorPosition = () => {
-    if (measureRef.current && inputRef.current) {
-      const text = input.substring(0, inputRef.current.selectionStart || 0);
-      measureRef.current.textContent = text;
-      setCursorPosition(measureRef.current.offsetWidth);
+  // Also update cursor position when selection changes (arrow keys, clicks, etc.)
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      updateCursorPosition();
+    };
+
+    const inputElement = inputRef.current;
+    if (inputElement) {
+      inputElement.addEventListener('keyup', handleSelectionChange);
+      inputElement.addEventListener('mouseup', handleSelectionChange);
+
+      return () => {
+        inputElement.removeEventListener('keyup', handleSelectionChange);
+        inputElement.removeEventListener('mouseup', handleSelectionChange);
+      };
     }
-  };
+  }, [updateCursorPosition]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && input.trim()) {

@@ -23,43 +23,45 @@ function App() {
     setTerminalLines((prev) => [...prev, { text, type, timestamp: Date.now() }]);
   }, []);
 
-  const hasInitialized = useRef(false);
-
   useEffect(() => {
-    // Prevent double initialization in StrictMode
-    if (hasInitialized.current) return;
-    hasInitialized.current = true;
-
-    addLog('weather-sonification v1.0.0', 'info');
-    addLog('Initializing audio synthesizer...', 'info');
+    // Only log initial messages once
+    if (terminalLines.length === 0) {
+      addLog('weather-sonification v1.0.0', 'info');
+      addLog('Initializing audio synthesizer...', 'info');
+    }
 
     // Initialize synthesizer
     const synth = new AudioSynthesizer();
     synth
       .initialize()
       .then(() => {
-        addLog('Audio synthesizer ready', 'success');
+        if (terminalLines.length === 0) {
+          addLog('Audio synthesizer ready', 'success');
+        }
       })
       .catch((err) => {
         addLog(`Failed to initialize audio: ${err.message}`, 'error');
       });
     synthRef.current = synth;
 
-    // Check if Chrome AI is available
-    addLog('Checking Chrome AI availability...', 'info');
-    checkGeminiAvailability((text, type) => {
-      if (type) addLog(text, type);
-      else addLog(text);
-    }).then((status) => {
-      setAiStatus(status);
-    });
+    // Check if Chrome AI is available (only on first mount)
+    if (terminalLines.length === 0) {
+      addLog('Checking Chrome AI availability...', 'info');
+      checkGeminiAvailability((text, type) => {
+        if (type) addLog(text, type);
+        else addLog(text);
+      }).then((status) => {
+        setAiStatus(status);
+      });
 
-    addLog('Ready. Type "help" for available commands.', 'output');
+      addLog('Ready. Type "help" for available commands.', 'output');
+    }
 
     return () => {
       synth.destroy();
     };
-  }, [addLog]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCommand = (command: string) => {
     addLog(command, 'prompt');
@@ -70,6 +72,8 @@ function App() {
       addLog('Available commands:', 'info');
       addLog('  start - Begin weather sonification experience', 'output');
       addLog('  stop  - Stop audio playback', 'output');
+      addLog('  clear - Clear terminal output', 'output');
+      addLog('  debug - Show system status and debug information', 'output');
       addLog('  help  - Show this help message', 'output');
     } else if (cmd === 'start') {
       if (isPlaying) {
@@ -85,10 +89,79 @@ function App() {
         handleStop();
         addLog('Audio stopped.', 'success');
       }
+    } else if (cmd === 'clear') {
+      setTerminalLines([]);
+    } else if (cmd === 'debug') {
+      handleDebug();
     } else {
       addLog(`Unknown command: ${command}`, 'error');
       addLog('Type "help" for available commands.', 'output');
     }
+  };
+
+  const handleDebug = async () => {
+    addLog('=== System Debug Information ===', 'info');
+
+    // Browser info
+    addLog(`Browser: ${navigator.userAgent}`, 'output');
+    addLog(`Platform: ${navigator.platform}`, 'output');
+
+    // Audio synthesizer status
+    const synthInitialized = synthRef.current?.getIsPlaying !== undefined;
+    addLog(`Audio Synthesizer: ${synthInitialized ? 'Initialized' : 'Not initialized'}`, synthInitialized ? 'success' : 'error');
+    addLog(`Audio Playing: ${isPlaying ? 'Yes' : 'No'}`, 'output');
+
+    // Check AudioContext state
+    if (synthRef.current && (synthRef.current as any).audioContext) {
+      const ctx = (synthRef.current as any).audioContext;
+      addLog(`AudioContext State: ${ctx.state}`, ctx.state === 'running' ? 'success' : 'warning');
+      addLog(`AudioContext Sample Rate: ${ctx.sampleRate}Hz`, 'output');
+    }
+
+    // Web Audio API support
+    const audioApiSupported = typeof AudioContext !== 'undefined' || typeof (window as any).webkitAudioContext !== 'undefined';
+    addLog(`Web Audio API: ${audioApiSupported ? 'Supported' : 'Not supported'}`, audioApiSupported ? 'success' : 'error');
+
+    // Chrome AI status
+    const hasLanguageModel = typeof (window as any).LanguageModel !== 'undefined' || typeof (window as any).ai?.languageModel !== 'undefined';
+    addLog(`Chrome AI API: ${hasLanguageModel ? 'Available' : 'Not available'}`, hasLanguageModel ? 'success' : 'warning');
+
+    if (hasLanguageModel) {
+      if (aiStatus) {
+        addLog(`Chrome AI Available: ${aiStatus.available ? 'Yes' : 'No'}`, aiStatus.available ? 'success' : 'warning');
+        addLog(`Chrome AI Status: ${aiStatus.status}`, aiStatus.status === 'available' ? 'success' : 'warning');
+        addLog(`Chrome AI Downloading: ${aiStatus.downloading ? 'Yes' : 'No'}`, 'output');
+      } else {
+        addLog(`Chrome AI Status: Checking...`, 'warning');
+      }
+
+      // Check current availability
+      try {
+        const languageModel = (window as any).LanguageModel || (window as any).ai?.languageModel;
+        if (languageModel) {
+          const availability = await languageModel.availability();
+          addLog(`Current AI Availability: ${availability}`, availability === 'available' ? 'success' : 'warning');
+        }
+      } catch (err) {
+        addLog(`AI Availability Check Error: ${err instanceof Error ? err.message : 'Unknown'}`, 'error');
+      }
+    }
+
+    // Geolocation support
+    const geoSupported = 'geolocation' in navigator;
+    addLog(`Geolocation API: ${geoSupported ? 'Supported' : 'Not supported'}`, geoSupported ? 'success' : 'error');
+
+    // Check permissions
+    if (navigator.permissions) {
+      try {
+        const geoPermission = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+        addLog(`Geolocation Permission: ${geoPermission.state}`, geoPermission.state === 'granted' ? 'success' : 'warning');
+      } catch (err) {
+        addLog(`Permission Check Error: ${err instanceof Error ? err.message : 'Unknown'}`, 'warning');
+      }
+    }
+
+    addLog('=== End Debug Information ===', 'info');
   };
 
   const handleStart = async () => {

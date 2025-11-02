@@ -25,74 +25,19 @@ export class AudioSynthesizer {
       throw new Error('AudioSynthesizer not initialized');
     }
 
+    // Resume audio context if suspended (required for user interaction)
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+    }
+
     // Stop any existing audio
     this.stop();
 
     const ctx = this.audioContext;
     this.isPlaying = true;
 
-    // Create effects chain
-    let effectsInput: AudioNode = this.masterGain;
-
-    // Create delay effect if specified
-    if (params.effects.delay) {
-      this.delayNode = ctx.createDelay(2);
-      this.delayNode.delayTime.value = params.effects.delay.time;
-
-      this.delayFeedback = ctx.createGain();
-      this.delayFeedback.gain.value = params.effects.delay.feedback;
-
-      this.delayMix = ctx.createGain();
-      this.delayMix.gain.value = params.effects.delay.mix;
-
-      // Delay feedback loop
-      this.delayNode.connect(this.delayFeedback);
-      this.delayFeedback.connect(this.delayNode);
-      this.delayNode.connect(this.delayMix);
-      this.delayMix.connect(this.masterGain);
-
-      effectsInput = this.delayNode;
-    }
-
-    // Create reverb effect if specified
-    if (params.effects.reverb) {
-      const impulse = this.createReverbImpulse(params.effects.reverb.decay);
-      this.reverbNode = ctx.createConvolver();
-      this.reverbNode.buffer = impulse;
-
-      this.reverbMix = ctx.createGain();
-      this.reverbMix.gain.value = params.effects.reverb.mix;
-
-      this.reverbNode.connect(this.reverbMix);
-      this.reverbMix.connect(effectsInput);
-    }
-
-    // Create dry signal path
-    const dryGain = ctx.createGain();
-    dryGain.gain.value = 1 - (params.effects.reverb?.mix || 0);
-    dryGain.connect(effectsInput);
-
-    // Create filter chain
-    let filterChain: AudioNode = dryGain;
-    for (const filterParam of params.filters) {
-      const filter = ctx.createBiquadFilter();
-      filter.type = filterParam.type;
-      filter.frequency.value = filterParam.frequency;
-      filter.Q.value = filterParam.q;
-      if (filterParam.gain !== undefined) {
-        filter.gain.value = filterParam.gain;
-      }
-
-      this.filterNodes.push(filter);
-      filterChain.connect(filter);
-      filterChain = filter;
-    }
-
-    // Connect filters to effects
-    if (this.reverbNode) {
-      filterChain.connect(this.reverbNode);
-    }
-    filterChain.connect(dryGain);
+    // Simple, clean audio graph:
+    // oscillators -> oscillator gains -> master gain -> destination
 
     // Create oscillators
     for (const oscParam of params.oscillators) {
@@ -104,10 +49,10 @@ export class AudioSynthesizer {
       }
 
       const gain = ctx.createGain();
-      gain.gain.value = oscParam.gain;
+      gain.gain.value = oscParam.gain * 0.3; // Reduce volume per oscillator
 
       osc.connect(gain);
-      gain.connect(dryGain);
+      gain.connect(this.masterGain);
 
       // Add subtle LFO for movement
       const lfo = ctx.createOscillator();
@@ -123,23 +68,28 @@ export class AudioSynthesizer {
       this.oscillators.push(osc);
       this.oscillators.push(lfo);
       this.gainNodes.push(gain);
+      this.gainNodes.push(lfoGain);
     }
 
     // Fade in
-    if (this.masterGain) {
-      this.masterGain.gain.setValueAtTime(0, ctx.currentTime);
-      this.masterGain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 2);
-    }
+    this.masterGain.gain.setValueAtTime(0, ctx.currentTime);
+    this.masterGain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 2);
   }
 
   stop(): void {
-    if (!this.audioContext) return;
+    if (!this.audioContext || !this.isPlaying) return;
 
     const ctx = this.audioContext;
 
     // Fade out
     if (this.masterGain) {
-      this.masterGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1);
+      try {
+        this.masterGain.gain.cancelScheduledValues(ctx.currentTime);
+        this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, ctx.currentTime);
+        this.masterGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1);
+      } catch (e) {
+        // Ignore if already stopped
+      }
     }
 
     // Stop all oscillators after fade out
@@ -154,22 +104,65 @@ export class AudioSynthesizer {
       }
 
       for (const gain of this.gainNodes) {
-        gain.disconnect();
+        try {
+          gain.disconnect();
+        } catch (e) {
+          // Ignore if already disconnected
+        }
       }
 
       for (const filter of this.filterNodes) {
-        filter.disconnect();
+        try {
+          filter.disconnect();
+        } catch (e) {
+          // Ignore if already disconnected
+        }
       }
 
-      if (this.delayNode) this.delayNode.disconnect();
-      if (this.delayFeedback) this.delayFeedback.disconnect();
-      if (this.delayMix) this.delayMix.disconnect();
-      if (this.reverbNode) this.reverbNode.disconnect();
-      if (this.reverbMix) this.reverbMix.disconnect();
+      if (this.delayNode) {
+        try {
+          this.delayNode.disconnect();
+        } catch (e) {
+          // Ignore
+        }
+      }
+      if (this.delayFeedback) {
+        try {
+          this.delayFeedback.disconnect();
+        } catch (e) {
+          // Ignore
+        }
+      }
+      if (this.delayMix) {
+        try {
+          this.delayMix.disconnect();
+        } catch (e) {
+          // Ignore
+        }
+      }
+      if (this.reverbNode) {
+        try {
+          this.reverbNode.disconnect();
+        } catch (e) {
+          // Ignore
+        }
+      }
+      if (this.reverbMix) {
+        try {
+          this.reverbMix.disconnect();
+        } catch (e) {
+          // Ignore
+        }
+      }
 
       this.oscillators = [];
       this.gainNodes = [];
       this.filterNodes = [];
+      this.delayNode = null;
+      this.delayFeedback = null;
+      this.delayMix = null;
+      this.reverbNode = null;
+      this.reverbMix = null;
       this.isPlaying = false;
     }, 1100);
   }
