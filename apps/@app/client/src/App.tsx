@@ -1,14 +1,14 @@
-import { useState } from 'react';
-import { client, postSquared } from '@www/sdk';
-import * as styles from './App.css';
+import { useState } from "react";
+import { client, postSquared } from "@app/sdk";
+import * as styles from "./App.css";
 
 // Configure SDK client base URL
 client.setConfig({
-  baseUrl: 'http://localhost:3000',
+  baseUrl: "http://localhost:3000",
 });
 
 function App() {
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [result, setResult] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -27,14 +27,14 @@ function App() {
         setResult(response.data.result);
       }
     } catch (error) {
-      console.error('API error:', error);
+      console.error("API error:", error);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ padding: "2rem", fontFamily: "system-ui, sans-serif" }}>
       <h1 className={styles.title}>Squared Calculator</h1>
       <form onSubmit={handleSubmit}>
         <input
@@ -44,25 +44,25 @@ function App() {
           placeholder="Enter a number"
           disabled={loading}
           style={{
-            padding: '0.5rem',
-            fontSize: '1rem',
-            marginRight: '0.5rem'
+            padding: "0.5rem",
+            fontSize: "1rem",
+            marginRight: "0.5rem",
           }}
         />
         <button
           type="submit"
           disabled={loading}
           style={{
-            padding: '0.5rem 1rem',
-            fontSize: '1rem',
-            cursor: loading ? 'not-allowed' : 'pointer'
+            padding: "0.5rem 1rem",
+            fontSize: "1rem",
+            cursor: loading ? "not-allowed" : "pointer",
           }}
         >
-          {loading ? 'Calculating...' : 'Calculate'}
+          {loading ? "Calculating..." : "Calculate"}
         </button>
       </form>
       {result !== null && (
-        <p style={{ marginTop: '1rem', fontSize: '1.25rem' }}>
+        <p style={{ marginTop: "1rem", fontSize: "1.25rem" }}>
           {input}² = <span className={styles.result}>{result}</span>
         </p>
       )}

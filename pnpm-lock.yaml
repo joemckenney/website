@@ -18,9 +18,9 @@ importers:
         specifier: ^2.5.8
         version: 2.5.8
 
-  apps/@www/client:
+  apps/@app/client:
     dependencies:
-      '@www/sdk':
+      '@app/sdk':
         specifier: workspace:*
         version: link:../sdk
       react:
@@ -55,8 +55,11 @@ importers:
         specifier: ^6.0.7
         version: 6.4.0(@types/node@24.8.1)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.8.1)
 
-  apps/@www/sdk:
+  apps/@app/sdk:
     devDependencies:
+      '@app/server':
+        specifier: workspace:*
+        version: link:../server
       '@clandestine/tsconfig':
         specifier: workspace:*
         version: link:../../../packages/@clandestine/tsconfig
@@ -66,14 +69,11 @@ importers:
       '@hey-api/openapi-ts':
         specifier: ^0.62.0
         version: 0.62.3(typescript@5.9.3)
-      '@www/server':
-        specifier: workspace:*
-        version: link:../server
       typescript:
         specifier: ^5.5.3
         version: 5.9.3
 
-  apps/@www/server:
+  apps/@app/server:
     dependencies:
       '@clandestine/squared':
         specifier: workspace:*
