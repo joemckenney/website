@@ -13,6 +13,7 @@ export class AudioSynthesizer {
   private reverbMix: GainNode | null = null;
   private analyserNode: AnalyserNode | null = null;
   private isPlaying = false;
+  private currentParams: AudioParameters | null = null;
 
   async initialize(): Promise<void> {
     this.audioContext = new AudioContext();
@@ -44,6 +45,7 @@ export class AudioSynthesizer {
 
     const ctx = this.audioContext;
     this.isPlaying = true;
+    this.currentParams = params;
 
     // Simple, clean audio graph:
     // oscillators -> oscillator gains -> master gain -> destination
@@ -83,6 +85,98 @@ export class AudioSynthesizer {
     // Fade in
     this.masterGain.gain.setValueAtTime(0, ctx.currentTime);
     this.masterGain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 2);
+  }
+
+  /**
+   * Crossfade to new audio parameters over a specified duration
+   */
+  async crossfade(newParams: AudioParameters, duration: number = 8): Promise<void> {
+    if (!this.audioContext || !this.masterGain || !this.isPlaying) {
+      // If not playing, just start normally
+      return this.start(newParams);
+    }
+
+    const ctx = this.audioContext;
+
+    // Store old nodes
+    const oldOscillators = this.oscillators;
+    const oldGainNodes = this.gainNodes;
+
+    // Create new oscillators/nodes
+    const newOscillators: OscillatorNode[] = [];
+    const newGainNodes: GainNode[] = [];
+
+    for (const oscParam of newParams.oscillators) {
+      const osc = ctx.createOscillator();
+      osc.type = oscParam.type;
+      osc.frequency.value = oscParam.frequency;
+      if (oscParam.detune) {
+        osc.detune.value = oscParam.detune;
+      }
+
+      const gain = ctx.createGain();
+      gain.gain.value = 0; // Start at 0 for crossfade
+      const targetGain = oscParam.gain * 0.3;
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      // Add subtle LFO for movement
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = 0.1 + Math.random() * 0.3;
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.value = 5;
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.detune);
+
+      osc.start();
+      lfo.start();
+
+      newOscillators.push(osc);
+      newOscillators.push(lfo);
+      newGainNodes.push(gain);
+      newGainNodes.push(lfoGain);
+
+      // Fade in new oscillator
+      gain.gain.linearRampToValueAtTime(targetGain, ctx.currentTime + duration);
+    }
+
+    // Fade out old oscillators
+    for (let i = 0; i < oldGainNodes.length; i += 2) {
+      // Every other gain node is an oscillator gain (not LFO)
+      const gain = oldGainNodes[i];
+      try {
+        gain.gain.cancelScheduledValues(ctx.currentTime);
+        gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
+      } catch (e) {
+        // Ignore
+      }
+    }
+
+    // Update state immediately
+    this.oscillators = newOscillators;
+    this.gainNodes = newGainNodes;
+    this.currentParams = newParams;
+
+    // Clean up old nodes after crossfade completes
+    setTimeout(() => {
+      for (const osc of oldOscillators) {
+        try {
+          osc.stop();
+          osc.disconnect();
+        } catch (e) {
+          // Ignore
+        }
+      }
+      for (const gain of oldGainNodes) {
+        try {
+          gain.disconnect();
+        } catch (e) {
+          // Ignore
+        }
+      }
+    }, duration * 1000 + 100);
   }
 
   stop(): void {

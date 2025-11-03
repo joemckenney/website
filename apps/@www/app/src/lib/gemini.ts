@@ -109,6 +109,55 @@ export async function checkGeminiAvailability(
   }
 }
 
+/**
+ * Create a persistent AI session for evolution
+ */
+export async function createAISession(
+  log?: (text: string, type?: "info" | "success" | "warning" | "error") => void,
+  onProgress?: (progress: number) => void,
+): Promise<AILanguageModel | null> {
+  const languageModel = window.LanguageModel || window.ai?.languageModel;
+
+  if (!languageModel) {
+    log?.("Chrome Prompt API not available", "warning");
+    return null;
+  }
+
+  const availability = await languageModel.availability();
+  if (availability !== "available") {
+    log?.(`AI model status: ${availability}`, "warning");
+    return null;
+  }
+
+  const systemPrompt = `You are a creative sound designer. You respond ONLY with valid JSON matching the requested format. Never add markdown formatting, explanations, or any text outside the JSON structure.`;
+
+  try {
+    const session = await languageModel.create({
+      temperature: 0.8,
+      topK: 40,
+      initialPrompts: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+      ],
+      monitor: (m) => {
+        m.addEventListener("downloadprogress", (e) => {
+          const progress = (e.loaded / e.total) * 100;
+          log?.(`AI model download: ${progress.toFixed(1)}%`, "info");
+          onProgress?.(progress);
+        });
+      },
+    });
+
+    return session;
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : "Unknown error";
+    log?.(`Failed to create AI session: ${errorMsg}`, "error");
+    return null;
+  }
+}
+
 export async function generateAudioParameters(
   weather: WeatherData,
   onProgress?: (progress: number) => void,

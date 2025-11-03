@@ -1,27 +1,32 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import {useState, useEffect, useRef, useCallback} from 'react';
 import './styles/global.css';
 import * as styles from './app.css';
-import { LoginButton } from './components/login-button';
-import { Terminal, type TerminalLine } from './components/terminal';
-import { FrequencyVisualizer } from './components/frequency-visualizer';
-import { getUserLocation } from './lib/geolocation';
-import { fetchWeatherData } from './lib/weather';
+import {LoginButton} from './components/login-button';
+import {Terminal, type TerminalLine} from './components/terminal';
+import {FrequencyVisualizer} from './components/frequency-visualizer';
+import {getUserLocation} from './lib/geolocation';
+import {fetchWeatherData} from './lib/weather';
 import {
   checkGeminiAvailability,
   generateAudioParameters,
+  createAISession,
   type AvailabilityStatus,
 } from './lib/gemini';
-import { AudioSynthesizer } from './lib/audio-synthesizer';
-import type { WeatherData } from './types/weather';
+import {AudioSynthesizer} from './lib/audio-synthesizer';
+import {AudioEvolutionEngine} from './lib/audio-evolution-engine';
+import type {WeatherData} from './types/weather';
 
 function App() {
   const [terminalLines, setTerminalLines] = useState<TerminalLine[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isEvolving, setIsEvolving] = useState(false);
   const [aiStatus, setAiStatus] = useState<AvailabilityStatus | null>(null);
   const synthRef = useRef<AudioSynthesizer | null>(null);
+  const evolutionEngineRef = useRef<AudioEvolutionEngine | null>(null);
+  const weatherDataRef = useRef<WeatherData | null>(null);
 
   const addLog = useCallback((text: string, type: TerminalLine['type'] = 'output') => {
-    setTerminalLines((prev) => [...prev, { text, type, timestamp: Date.now() }]);
+    setTerminalLines((prev) => [...prev, {text, type, timestamp: Date.now()}]);
   }, []);
 
   const hasLoggedInitial = useRef(false);
@@ -76,7 +81,8 @@ function App() {
     if (cmd === 'help') {
       addLog('Available commands:', 'info');
       addLog('  start - Begin weather sonification experience', 'output');
-      addLog('  stop  - Stop audio playback', 'output');
+      addLog('  evolve - Enable continuous soundscape evolution (use after start)', 'output');
+      addLog('  stop  - Stop audio playback and evolution', 'output');
       addLog('  clear - Clear terminal output', 'output');
       addLog('  debug - Show system status and debug information', 'output');
       addLog('  help  - Show this help message', 'output');
@@ -85,6 +91,14 @@ function App() {
         addLog('Already playing. Use "stop" first.', 'warning');
       } else {
         handleStart();
+      }
+    } else if (cmd === 'evolve') {
+      if (!isPlaying) {
+        addLog('Start audio first with "start" command.', 'warning');
+      } else if (isEvolving) {
+        addLog('Evolution already enabled.', 'warning');
+      } else {
+        handleEvolve();
       }
     } else if (cmd === 'stop') {
       if (!isPlaying) {
@@ -159,7 +173,7 @@ function App() {
     // Check permissions
     if (navigator.permissions) {
       try {
-        const geoPermission = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+        const geoPermission = await navigator.permissions.query({name: 'geolocation' as PermissionName});
         addLog(`Geolocation Permission: ${geoPermission.state}`, geoPermission.state === 'granted' ? 'success' : 'warning');
       } catch (err) {
         addLog(`Permission Check Error: ${err instanceof Error ? err.message : 'Unknown'}`, 'warning');
@@ -180,6 +194,7 @@ function App() {
 
       // Fetch weather
       const weatherData = await fetchWeatherData(coords);
+      weatherDataRef.current = weatherData;
       addLog(`Weather: ${weatherData.temperature}°F, ${weatherData.conditions}`, 'success');
       addLog(`Wind: ${weatherData.windSpeed}mph, Humidity: ${weatherData.humidity}%`, 'output');
       addLog('Generating soundscape...', 'info');
@@ -205,6 +220,7 @@ function App() {
         await synthRef.current.start(audioParams);
         setIsPlaying(true);
         addLog('Audio playing. Use "stop" command to end.', 'success');
+        addLog('Tip: Use "evolve" command to enable continuous evolution.', 'info');
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'An error occurred';
@@ -212,10 +228,81 @@ function App() {
     }
   };
 
+  const handleEvolve = async () => {
+    if (!weatherDataRef.current || !synthRef.current) {
+      addLog('Missing weather or synth data', 'error');
+      return;
+    }
+
+    addLog('Starting evolution engine...', 'info');
+    addLog('Creating persistent AI session...', 'info');
+
+    try {
+      // Create AI session
+      const aiSession = await createAISession(
+        (text, type) => {
+          if (type) addLog(text, type);
+          else addLog(text);
+        }
+      );
+
+      if (!aiSession) {
+        addLog('Could not create AI session, evolution unavailable', 'error');
+        return;
+      }
+
+      addLog('AI session created successfully', 'success');
+
+      // Get current audio params from synthesizer
+      const currentParams = (synthRef.current as any).currentParams;
+      if (!currentParams) {
+        addLog('No current audio parameters found', 'error');
+        aiSession.destroy();
+        return;
+      }
+
+      // Initialize evolution engine
+      if (!evolutionEngineRef.current) {
+        evolutionEngineRef.current = new AudioEvolutionEngine({
+          intervalSeconds: 10, // Evolve every 45 seconds
+          crossfadeDuration: 8, // 8 second crossfade
+          enableEvolution: true,
+        });
+      }
+
+      // Start evolution loop
+      await evolutionEngineRef.current.start(
+        aiSession,
+        weatherDataRef.current,
+        currentParams,
+        async (newParams) => {
+          // Crossfade callback
+          if (synthRef.current) {
+            await synthRef.current.crossfade(newParams, 8);
+          }
+        },
+        (text, type) => {
+          if (type) addLog(text, type);
+          else addLog(text);
+        }
+      );
+
+      setIsEvolving(true);
+      addLog('Evolution enabled. Soundscape will organically evolve every 10s.', 'success');
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'An error occurred';
+      addLog(`Evolution failed: ${errorMsg}`, 'error');
+    }
+  };
+
   const handleStop = () => {
     if (synthRef.current) {
       synthRef.current.stop();
       setIsPlaying(false);
+    }
+    if (evolutionEngineRef.current) {
+      evolutionEngineRef.current.stop();
+      setIsEvolving(false);
     }
   };
 
