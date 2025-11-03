@@ -14,6 +14,7 @@ import {
 } from './lib/gemini';
 import {AudioSynthesizer} from './lib/audio-synthesizer';
 import {AudioEvolutionEngine} from './lib/audio-evolution-engine';
+import {performSystemCheck, getSetupInstructions} from './lib/system-check';
 import type {WeatherData} from './types/weather';
 
 function App() {
@@ -35,40 +36,65 @@ function App() {
     // Only log initial messages once (prevents double logging in StrictMode)
     if (!hasLoggedInitial.current) {
       hasLoggedInitial.current = true;
-      addLog('weather-sonification v1.0.0', 'info');
-      addLog('Initializing audio synthesizer...', 'info');
-    }
 
-    // Always initialize synthesizer (needed for StrictMode cleanup/re-init)
-    const synth = new AudioSynthesizer();
-    synth
-      .initialize()
-      .then(() => {
-        // Only log success message once
-        if (terminalLines.length <= 2) {
-          addLog('Audio synthesizer ready', 'success');
+      // Sequential initialization to ensure proper order
+      const initializeApp = async () => {
+        addLog('weather-sonification v1.0.0', 'info');
+        addLog('', 'output');
+        addLog('Running system check...', 'info');
+
+        // Run system check
+        const checkResult = await performSystemCheck();
+        const instructions = getSetupInstructions(checkResult);
+
+        // Log all instructions
+        for (const instruction of instructions) {
+          if (instruction.startsWith('⚠️') || instruction.startsWith('✓') || instruction.startsWith('ℹ️')) {
+            const type = instruction.startsWith('✓') ? 'success' : instruction.startsWith('ℹ️') ? 'info' : 'warning';
+            addLog(instruction, type);
+          } else if (instruction === '') {
+            addLog('', 'output');
+          } else {
+            addLog(instruction, 'output');
+          }
         }
-      })
-      .catch((err) => {
-        addLog(`Failed to initialize audio: ${err.message}`, 'error');
-      });
-    synthRef.current = synth;
 
-    // Check if Chrome AI is available (only on first mount)
-    if (terminalLines.length <= 2) {
-      addLog('Checking Chrome AI availability...', 'info');
-      checkGeminiAvailability((text, type) => {
-        if (type) addLog(text, type);
-        else addLog(text);
-      }).then((status) => {
+        addLog('', 'output');
+        addLog('Initializing audio synthesizer...', 'info');
+
+        // Initialize synthesizer
+        const synth = new AudioSynthesizer();
+        try {
+          await synth.initialize();
+          addLog('✓ Audio synthesizer ready', 'success');
+        } catch (err) {
+          addLog(`✗ Failed to initialize audio: ${(err as Error).message}`, 'error');
+        }
+        synthRef.current = synth;
+
+        // Check Chrome AI availability
+        addLog('Checking Chrome AI availability...', 'info');
+        const status = await checkGeminiAvailability((text, type) => {
+          if (type) addLog(text, type);
+          else addLog(text);
+        });
         setAiStatus(status);
-      });
 
-      addLog('Ready. Type "help" for available commands.', 'output');
+        // Final message
+        addLog('', 'output');
+        addLog('Type "help" for available commands', 'output');
+      };
+
+      initializeApp();
+    } else {
+      // Still need to initialize synth for StrictMode re-mount
+      const synth = new AudioSynthesizer();
+      synth.initialize().catch(() => {});
+      synthRef.current = synth;
     }
 
     return () => {
-      synth.destroy();
+      synthRef.current?.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -83,9 +109,12 @@ function App() {
       addLog('  start - Begin weather sonification experience', 'output');
       addLog('  evolve - Enable continuous soundscape evolution (use after start)', 'output');
       addLog('  stop  - Stop audio playback and evolution', 'output');
+      addLog('  setup - Show Chrome AI setup instructions', 'output');
       addLog('  clear - Clear terminal output', 'output');
       addLog('  debug - Show system status and debug information', 'output');
       addLog('  help  - Show this help message', 'output');
+    } else if (cmd === 'setup') {
+      handleSetup();
     } else if (cmd === 'start') {
       if (isPlaying) {
         addLog('Already playing. Use "stop" first.', 'warning');
@@ -118,68 +147,91 @@ function App() {
     }
   };
 
+  const handleSetup = async () => {
+    addLog('Running system check...', 'info');
+    const checkResult = await performSystemCheck();
+    const instructions = getSetupInstructions(checkResult);
+
+    addLog('', 'output');
+    for (const instruction of instructions) {
+      if (instruction.startsWith('⚠️') || instruction.startsWith('✓') || instruction.startsWith('ℹ️')) {
+        const type = instruction.startsWith('✓') ? 'success' : instruction.startsWith('ℹ️') ? 'info' : 'warning';
+        addLog(instruction, type);
+      } else if (instruction === '') {
+        addLog('', 'output');
+      } else {
+        addLog(instruction, 'output');
+      }
+    }
+    addLog('', 'output');
+  };
+
   const handleDebug = async () => {
     addLog('=== System Debug Information ===', 'info');
+    addLog('', 'output');
 
-    // Browser info
-    addLog(`Browser: ${navigator.userAgent}`, 'output');
-    addLog(`Platform: ${navigator.platform}`, 'output');
+    // Browser Section
+    addLog('BROWSER', 'info');
+    addLog(`  User Agent: ${navigator.userAgent}`, 'output');
+    addLog(`  Platform: ${navigator.platform}`, 'output');
+    addLog('', 'output');
 
-    // Audio synthesizer status
+    // Audio Section
+    addLog('AUDIO SYSTEM', 'info');
     const synthInitialized = synthRef.current?.getIsPlaying !== undefined;
-    addLog(`Audio Synthesizer: ${synthInitialized ? 'Initialized' : 'Not initialized'}`, synthInitialized ? 'success' : 'error');
-    addLog(`Audio Playing: ${isPlaying ? 'Yes' : 'No'}`, 'output');
+    addLog(`  Synthesizer: ${synthInitialized ? '✓ Initialized' : '✗ Not initialized'}`, synthInitialized ? 'success' : 'error');
+    addLog(`  Playing: ${isPlaying ? 'Yes' : 'No'}`, 'output');
 
-    // Check AudioContext state
     if (synthRef.current && (synthRef.current as any).audioContext) {
       const ctx = (synthRef.current as any).audioContext;
-      addLog(`AudioContext State: ${ctx.state}`, ctx.state === 'running' ? 'success' : 'warning');
-      addLog(`AudioContext Sample Rate: ${ctx.sampleRate}Hz`, 'output');
+      addLog(`  AudioContext State: ${ctx.state}`, 'output');
+      addLog(`  Sample Rate: ${ctx.sampleRate}Hz`, 'output');
     }
 
-    // Web Audio API support
     const audioApiSupported = typeof AudioContext !== 'undefined' || typeof (window as any).webkitAudioContext !== 'undefined';
-    addLog(`Web Audio API: ${audioApiSupported ? 'Supported' : 'Not supported'}`, audioApiSupported ? 'success' : 'error');
+    addLog(`  Web Audio API: ${audioApiSupported ? '✓ Supported' : '✗ Not supported'}`, audioApiSupported ? 'success' : 'error');
+    addLog('', 'output');
 
-    // Chrome AI status
+    // Chrome AI Section
+    addLog('CHROME AI (GEMINI NANO)', 'info');
     const hasLanguageModel = typeof (window as any).LanguageModel !== 'undefined' || typeof (window as any).ai?.languageModel !== 'undefined';
-    addLog(`Chrome AI API: ${hasLanguageModel ? 'Available' : 'Not available'}`, hasLanguageModel ? 'success' : 'warning');
+    addLog(`  API Available: ${hasLanguageModel ? '✓ Yes' : '✗ No'}`, hasLanguageModel ? 'success' : 'error');
 
     if (hasLanguageModel) {
-      if (aiStatus) {
-        addLog(`Chrome AI Available: ${aiStatus.available ? 'Yes' : 'No'}`, aiStatus.available ? 'success' : 'warning');
-        addLog(`Chrome AI Status: ${aiStatus.status}`, aiStatus.status === 'available' ? 'success' : 'warning');
-        addLog(`Chrome AI Downloading: ${aiStatus.downloading ? 'Yes' : 'No'}`, 'output');
-      } else {
-        addLog(`Chrome AI Status: Checking...`, 'warning');
-      }
-
-      // Check current availability
       try {
         const languageModel = (window as any).LanguageModel || (window as any).ai?.languageModel;
         if (languageModel) {
           const availability = await languageModel.availability();
-          addLog(`Current AI Availability: ${availability}`, availability === 'available' ? 'success' : 'warning');
+          const statusIcon = availability === 'available' ? '✓' : availability === 'downloading' ? 'ℹ️' : '⚠️';
+          const statusType = availability === 'available' ? 'success' : 'warning';
+          addLog(`  Status: ${statusIcon} ${availability}`, statusType);
         }
       } catch (err) {
-        addLog(`AI Availability Check Error: ${err instanceof Error ? err.message : 'Unknown'}`, 'error');
+        addLog(`  Status: ✗ Error - ${err instanceof Error ? err.message : 'Unknown'}`, 'error');
       }
+    } else {
+      addLog('  Status: Not available (flags not enabled)', 'output');
+      addLog('  Run "setup" command for instructions', 'output');
     }
+    addLog('', 'output');
 
-    // Geolocation support
+    // Geolocation Section
+    addLog('GEOLOCATION', 'info');
     const geoSupported = 'geolocation' in navigator;
-    addLog(`Geolocation API: ${geoSupported ? 'Supported' : 'Not supported'}`, geoSupported ? 'success' : 'error');
+    addLog(`  API Available: ${geoSupported ? '✓ Yes' : '✗ No'}`, geoSupported ? 'success' : 'error');
 
-    // Check permissions
-    if (navigator.permissions) {
+    if (navigator.permissions && geoSupported) {
       try {
         const geoPermission = await navigator.permissions.query({name: 'geolocation' as PermissionName});
-        addLog(`Geolocation Permission: ${geoPermission.state}`, geoPermission.state === 'granted' ? 'success' : 'warning');
+        const permIcon = geoPermission.state === 'granted' ? '✓' : geoPermission.state === 'denied' ? '✗' : '⚠️';
+        const permType = geoPermission.state === 'granted' ? 'success' : geoPermission.state === 'denied' ? 'error' : 'warning';
+        addLog(`  Permission: ${permIcon} ${geoPermission.state}`, permType);
       } catch (err) {
-        addLog(`Permission Check Error: ${err instanceof Error ? err.message : 'Unknown'}`, 'warning');
+        addLog(`  Permission: Error checking`, 'warning');
       }
     }
 
+    addLog('', 'output');
     addLog('=== End Debug Information ===', 'info');
   };
 

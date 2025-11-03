@@ -82,15 +82,15 @@ export async function checkGeminiAvailability(
     const status = await languageModel.availability();
 
     if (status === "available") {
-      log?.("Chrome AI is ready", "success");
+      log?.("✓ Chrome AI is ready", "success");
     } else if (status === "downloading") {
       log?.(
-        "Chrome AI model is downloading (this may take a few minutes)",
+        "ℹ️  Chrome AI model downloading (this may take a few minutes)",
         "warning",
       );
-      log?.("The first request will use rule-based generation", "info");
+      log?.("   First request will use rule-based generation", "info");
     } else {
-      log?.(`Chrome AI status: ${status}`, "warning");
+      log?.(`⚠️  Chrome AI status: ${status}`, "warning");
     }
 
     return {
