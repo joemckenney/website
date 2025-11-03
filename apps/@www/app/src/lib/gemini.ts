@@ -1,9 +1,9 @@
-import type { WeatherData, AudioParameters } from '../types/weather';
+import type { WeatherData, AudioParameters } from "../types/weather";
 
 // Chrome Prompt API types based on official documentation
 // https://developer.chrome.com/docs/ai/prompt-api
 
-type AIAvailability = 'unavailable' | 'downloading' | 'available';
+type AIAvailability = "unavailable" | "downloading" | "available";
 
 interface AIDownloadProgressEvent {
   loaded: number;
@@ -12,8 +12,8 @@ interface AIDownloadProgressEvent {
 
 interface AIDownloadMonitor {
   addEventListener(
-    type: 'downloadprogress',
-    listener: (event: AIDownloadProgressEvent) => void
+    type: "downloadprogress",
+    listener: (event: AIDownloadProgressEvent) => void,
   ): void;
 }
 
@@ -21,7 +21,10 @@ interface AILanguageModelCreateOptions {
   temperature?: number;
   topK?: number;
   signal?: AbortSignal;
-  initialPrompts?: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
+  initialPrompts?: Array<{
+    role: "system" | "user" | "assistant";
+    content: string;
+  }>;
   monitor?: (monitor: AIDownloadMonitor) => void;
   // Output language code (required for proper output quality and safety)
   language?: string;
@@ -31,7 +34,7 @@ interface AILanguageModel {
   prompt(input: string, options?: { signal?: AbortSignal }): Promise<string>;
   promptStreaming(
     input: string,
-    options?: { signal?: AbortSignal }
+    options?: { signal?: AbortSignal },
   ): AsyncIterable<string>;
   destroy(): void;
   inputUsage: number;
@@ -61,16 +64,16 @@ export type AvailabilityStatus = {
 };
 
 export async function checkGeminiAvailability(
-  log?: (text: string, type?: 'info' | 'success' | 'warning' | 'error') => void
+  log?: (text: string, type?: "info" | "success" | "warning" | "error") => void,
 ): Promise<AvailabilityStatus> {
   // Check new API first, then fall back to legacy window.ai
   const languageModel = window.LanguageModel || window.ai?.languageModel;
 
   if (!languageModel) {
-    log?.('Chrome AI not available in this browser', 'warning');
+    log?.("Chrome AI not available in this browser", "warning");
     return {
       available: false,
-      status: 'unavailable',
+      status: "unavailable",
       downloading: false,
     };
   }
@@ -78,26 +81,29 @@ export async function checkGeminiAvailability(
   try {
     const status = await languageModel.availability();
 
-    if (status === 'available') {
-      log?.('Chrome AI is ready', 'success');
-    } else if (status === 'downloading') {
-      log?.('Chrome AI model is downloading (this may take a few minutes)', 'warning');
-      log?.('The first request will use rule-based generation', 'info');
+    if (status === "available") {
+      log?.("Chrome AI is ready", "success");
+    } else if (status === "downloading") {
+      log?.(
+        "Chrome AI model is downloading (this may take a few minutes)",
+        "warning",
+      );
+      log?.("The first request will use rule-based generation", "info");
     } else {
-      log?.(`Chrome AI status: ${status}`, 'warning');
+      log?.(`Chrome AI status: ${status}`, "warning");
     }
 
     return {
-      available: status === 'available',
+      available: status === "available",
       status,
-      downloading: status === 'downloading',
+      downloading: status === "downloading",
     };
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    log?.(`Failed to check AI availability: ${errorMsg}`, 'error');
+    const errorMsg = error instanceof Error ? error.message : "Unknown error";
+    log?.(`Failed to check AI availability: ${errorMsg}`, "error");
     return {
       available: false,
-      status: 'unavailable',
+      status: "unavailable",
       downloading: false,
     };
   }
@@ -106,37 +112,46 @@ export async function checkGeminiAvailability(
 export async function generateAudioParameters(
   weather: WeatherData,
   onProgress?: (progress: number) => void,
-  log?: (text: string, type?: 'info' | 'success' | 'warning' | 'error') => void
+  log?: (text: string, type?: "info" | "success" | "warning" | "error") => void,
 ): Promise<AudioParameters> {
   // Check new API first, then fall back to legacy window.ai
   const languageModel = window.LanguageModel || window.ai?.languageModel;
 
   if (!languageModel) {
-    log?.('Chrome Prompt API not available, using rule-based generation', 'warning');
+    log?.(
+      "Chrome Prompt API not available, using rule-based generation",
+      "warning",
+    );
     return getFallbackParameters(weather);
   }
 
   // Check availability before creating session
-  log?.('Checking AI model availability...', 'info');
+  log?.("Checking AI model availability...", "info");
   const availability = await languageModel.availability();
 
-  if (availability === 'unavailable') {
-    log?.('AI model unavailable, using rule-based generation', 'warning');
+  if (availability === "unavailable") {
+    log?.("AI model unavailable, using rule-based generation", "warning");
     return getFallbackParameters(weather);
   }
 
-  if (availability === 'downloading') {
-    log?.('AI model is still downloading, cannot create session yet', 'warning');
-    log?.('Using rule-based generation instead', 'info');
+  if (availability === "downloading") {
+    log?.(
+      "AI model is still downloading, cannot create session yet",
+      "warning",
+    );
+    log?.("Using rule-based generation instead", "info");
     return getFallbackParameters(weather);
   }
 
-  if (availability !== 'available') {
-    log?.(`AI model status: ${availability}, using rule-based generation`, 'warning');
+  if (availability !== "available") {
+    log?.(
+      `AI model status: ${availability}, using rule-based generation`,
+      "warning",
+    );
     return getFallbackParameters(weather);
   }
 
-  log?.('AI model is ready, creating session...', 'success');
+  log?.("AI model is ready, creating session...", "success");
 
   const systemPrompt = `You are a creative sound designer. You respond ONLY with valid JSON matching the requested format. Never add markdown formatting, explanations, or any text outside the JSON structure.`;
 
@@ -167,31 +182,33 @@ Q range: 0.0001-1000`;
   try {
     // Create session with system prompt and download monitor
     // Note: Must specify BOTH temperature and topK, or NEITHER
+
     const session = await languageModel.create({
+      /*
       temperature: 0.8, // Higher temperature for more creative variations
       topK: 40, // Limit token selection pool for more focused output
-      language: 'en', // Required: output language for quality and safety
       initialPrompts: [
         {
-          role: 'system',
+          role: "system",
           content: systemPrompt,
         },
       ],
       monitor: (m) => {
-        m.addEventListener('downloadprogress', (e) => {
+        m.addEventListener("downloadprogress", (e) => {
           const progress = (e.loaded / e.total) * 100;
-          log?.(`AI model download: ${progress.toFixed(1)}%`, 'info');
+          log?.(`AI model download: ${progress.toFixed(1)}%`, "info");
           onProgress?.(progress);
         });
       },
+      */
     });
 
-    log?.('Sending weather data to AI for interpretation...', 'info');
+    log?.("Sending weather data to AI for interpretation...", "info");
 
     // Send prompt
     const response = await session.prompt(userPrompt);
 
-    log?.('AI response received, generating soundscape...', 'success');
+    log?.("AI response received, generating soundscape...", "success");
 
     // Clean up session
     session.destroy();
@@ -205,29 +222,42 @@ Q range: 0.0001-1000`;
     // Validate and sanitize the response
     return sanitizeAudioParameters(params);
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    log?.(`AI generation failed: ${errorMsg}`, 'error');
+    debugger;
+    const errorMsg = error instanceof Error ? error.message : "Unknown error";
+    log?.(`AI generation failed: ${errorMsg}`, "error");
 
     // Provide helpful error messages
     if (error instanceof DOMException) {
-      if (error.name === 'NotSupportedError') {
-        log?.('Unsupported AI input/output combination', 'error');
+      if (error.name === "NotSupportedError") {
+        log?.("Unsupported AI input/output combination", "error");
       }
     }
 
-    log?.('Falling back to rule-based generation', 'warning');
+    log?.("Falling back to rule-based generation", "warning");
     // Return fallback parameters on any error
     return getFallbackParameters(weather);
   }
 }
 
 function sanitizeAudioParameters(params: AudioParameters): AudioParameters {
-  const validOscTypes: OscillatorType[] = ['sine', 'square', 'sawtooth', 'triangle'];
-  const validFilterTypes: BiquadFilterType[] = ['lowpass', 'highpass', 'bandpass', 'notch'];
+  const validOscTypes: OscillatorType[] = [
+    "sine",
+    "square",
+    "sawtooth",
+    "triangle",
+  ];
+  const validFilterTypes: BiquadFilterType[] = [
+    "lowpass",
+    "highpass",
+    "bandpass",
+    "notch",
+  ];
 
   return {
     oscillators: (params.oscillators || []).map((osc) => ({
-      type: validOscTypes.includes(osc.type as OscillatorType) ? osc.type : 'sine',
+      type: validOscTypes.includes(osc.type as OscillatorType)
+        ? osc.type
+        : "sine",
       frequency: Math.max(20, Math.min(20000, osc.frequency || 220)),
       gain: Math.max(0, Math.min(1, osc.gain || 0.3)),
       detune: osc.detune || 0,
@@ -235,7 +265,7 @@ function sanitizeAudioParameters(params: AudioParameters): AudioParameters {
     filters: (params.filters || []).map((filt) => ({
       type: validFilterTypes.includes(filt.type as BiquadFilterType)
         ? filt.type
-        : 'lowpass',
+        : "lowpass",
       frequency: Math.max(20, Math.min(20000, filt.frequency || 1000)),
       q: Math.max(0.0001, Math.min(1000, filt.q || 1)),
       gain: filt.gain,
@@ -250,7 +280,10 @@ function sanitizeAudioParameters(params: AudioParameters): AudioParameters {
       delay: params.effects?.delay
         ? {
             time: Math.max(0, Math.min(2, params.effects.delay.time)),
-            feedback: Math.max(0, Math.min(0.95, params.effects.delay.feedback)),
+            feedback: Math.max(
+              0,
+              Math.min(0.95, params.effects.delay.feedback),
+            ),
             mix: Math.max(0, Math.min(1, params.effects.delay.mix)),
           }
         : undefined,
@@ -266,13 +299,13 @@ function getFallbackParameters(weather: WeatherData): AudioParameters {
   return {
     oscillators: [
       {
-        type: 'sine',
+        type: "sine",
         frequency: 220 + tempNorm * 440,
         gain: 0.3,
         detune: 0,
       },
       {
-        type: 'triangle',
+        type: "triangle",
         frequency: 110,
         gain: 0.2,
         detune: windNorm * 50,
@@ -280,7 +313,7 @@ function getFallbackParameters(weather: WeatherData): AudioParameters {
     ],
     filters: [
       {
-        type: 'lowpass',
+        type: "lowpass",
         frequency: 1000 + tempNorm * 2000,
         q: 1,
       },

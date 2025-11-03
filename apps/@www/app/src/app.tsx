@@ -23,19 +23,23 @@ function App() {
     setTerminalLines((prev) => [...prev, { text, type, timestamp: Date.now() }]);
   }, []);
 
+  const hasLoggedInitial = useRef(false);
+
   useEffect(() => {
-    // Only log initial messages once
-    if (terminalLines.length === 0) {
+    // Only log initial messages once (prevents double logging in StrictMode)
+    if (!hasLoggedInitial.current) {
+      hasLoggedInitial.current = true;
       addLog('weather-sonification v1.0.0', 'info');
       addLog('Initializing audio synthesizer...', 'info');
     }
 
-    // Initialize synthesizer
+    // Always initialize synthesizer (needed for StrictMode cleanup/re-init)
     const synth = new AudioSynthesizer();
     synth
       .initialize()
       .then(() => {
-        if (terminalLines.length === 0) {
+        // Only log success message once
+        if (terminalLines.length <= 2) {
           addLog('Audio synthesizer ready', 'success');
         }
       })
@@ -45,7 +49,7 @@ function App() {
     synthRef.current = synth;
 
     // Check if Chrome AI is available (only on first mount)
-    if (terminalLines.length === 0) {
+    if (terminalLines.length <= 2) {
       addLog('Checking Chrome AI availability...', 'info');
       checkGeminiAvailability((text, type) => {
         if (type) addLog(text, type);

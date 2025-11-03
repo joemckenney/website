@@ -16,6 +16,8 @@ interface TerminalProps {
 export function Terminal({ lines, isActive = false, onCommand }: TerminalProps) {
   const [input, setInput] = useState('');
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [commandHistory, setCommandHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const measureRef = useRef<HTMLSpanElement>(null);
@@ -70,8 +72,51 @@ export function Terminal({ lines, isActive = false, onCommand }: TerminalProps) 
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && input.trim()) {
+      // Add to history
+      setCommandHistory((prev) => [...prev, input.trim()]);
+      setHistoryIndex(-1);
+
       onCommand?.(input.trim());
       setInput('');
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (commandHistory.length > 0) {
+        const newIndex = historyIndex === -1
+          ? commandHistory.length - 1
+          : Math.max(0, historyIndex - 1);
+        setHistoryIndex(newIndex);
+        setInput(commandHistory[newIndex]);
+
+        // Move cursor to end of input
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.selectionStart = commandHistory[newIndex].length;
+            inputRef.current.selectionEnd = commandHistory[newIndex].length;
+            updateCursorPosition();
+          }
+        }, 0);
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (historyIndex !== -1) {
+        const newIndex = historyIndex + 1;
+        if (newIndex >= commandHistory.length) {
+          setHistoryIndex(-1);
+          setInput('');
+        } else {
+          setHistoryIndex(newIndex);
+          setInput(commandHistory[newIndex]);
+
+          // Move cursor to end of input
+          setTimeout(() => {
+            if (inputRef.current) {
+              inputRef.current.selectionStart = commandHistory[newIndex].length;
+              inputRef.current.selectionEnd = commandHistory[newIndex].length;
+              updateCursorPosition();
+            }
+          }, 0);
+        }
+      }
     } else {
       // Update cursor position on key press
       setTimeout(updateCursorPosition, 0);
