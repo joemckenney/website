@@ -55,6 +55,41 @@ export const section = style({
   maxWidth: '900px',
 });
 
+export const splitContainer = style({
+  width: '100%',
+  maxWidth: '900px',
+  height: '600px',
+  display: 'flex',
+  flexDirection: 'column',
+  border: `${vars.borderWidth.base} solid #504945`,
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+
+  '@media': {
+    '(max-width: 768px)': {
+      height: '500px',
+    },
+  },
+});
+
+export const terminalPane = style({
+  flex: '1 1 0',
+  minHeight: '0',
+  overflow: 'hidden',
+});
+
+export const visualizerPane = style({
+  flex: '0 0 200px',
+  minHeight: '200px',
+  overflow: 'hidden',
+
+  '@media': {
+    '(max-width: 768px)': {
+      flex: '0 0 150px',
+      minHeight: '150px',
+    },
+  },
+});
+
 export const controls = style({
   display: 'flex',
   gap: vars.spacing['4'],

@@ -11,13 +11,22 @@ export class AudioSynthesizer {
   private delayMix: GainNode | null = null;
   private reverbNode: ConvolverNode | null = null;
   private reverbMix: GainNode | null = null;
+  private analyserNode: AnalyserNode | null = null;
   private isPlaying = false;
 
   async initialize(): Promise<void> {
     this.audioContext = new AudioContext();
     this.masterGain = this.audioContext.createGain();
     this.masterGain.gain.value = 0.5;
-    this.masterGain.connect(this.audioContext.destination);
+
+    // Create analyser node for frequency visualization
+    this.analyserNode = this.audioContext.createAnalyser();
+    this.analyserNode.fftSize = 256; // 128 frequency bins
+    this.analyserNode.smoothingTimeConstant = 0.8;
+
+    // Connect: masterGain -> analyser -> destination
+    this.masterGain.connect(this.analyserNode);
+    this.analyserNode.connect(this.audioContext.destination);
   }
 
   async start(params: AudioParameters): Promise<void> {
@@ -177,6 +186,19 @@ export class AudioSynthesizer {
 
   getIsPlaying(): boolean {
     return this.isPlaying;
+  }
+
+  getAnalyserNode(): AnalyserNode | null {
+    return this.analyserNode;
+  }
+
+  getFrequencyData(): Uint8Array | null {
+    if (!this.analyserNode || !this.isPlaying) {
+      return null;
+    }
+    const dataArray = new Uint8Array(this.analyserNode.frequencyBinCount);
+    this.analyserNode.getByteFrequencyData(dataArray);
+    return dataArray;
   }
 
   private createReverbImpulse(decay: number): AudioBuffer {

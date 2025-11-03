@@ -3,6 +3,7 @@ import './styles/global.css';
 import * as styles from './app.css';
 import { LoginButton } from './components/login-button';
 import { Terminal, type TerminalLine } from './components/terminal';
+import { FrequencyVisualizer } from './components/frequency-visualizer';
 import { getUserLocation } from './lib/geolocation';
 import { fetchWeatherData } from './lib/weather';
 import {
@@ -223,7 +224,22 @@ function App() {
       <LoginButton />
       <div className={styles.page}>
         <section className={styles.section}>
-          <Terminal lines={terminalLines} isActive={true} onCommand={handleCommand} />
+          {isPlaying ? (
+            <div className={styles.splitContainer}>
+              <div className={styles.terminalPane}>
+                <Terminal lines={terminalLines} isActive={true} onCommand={handleCommand} />
+              </div>
+              <div className={styles.visualizerPane}>
+                <FrequencyVisualizer synthesizer={synthRef.current} />
+              </div>
+            </div>
+          ) : (
+            <div className={styles.splitContainer}>
+              <div className={styles.terminalPane}>
+                <Terminal lines={terminalLines} isActive={true} onCommand={handleCommand} />
+              </div>
+            </div>
+          )}
         </section>
       </div>
     </>

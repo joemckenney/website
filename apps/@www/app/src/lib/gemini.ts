@@ -157,26 +157,40 @@ export async function generateAudioParameters(
 
   const userPrompt = `Current weather: ${weather.temperature}°F, ${weather.conditions}, wind ${weather.windSpeed}mph, humidity ${weather.humidity}%, pressure ${weather.pressure}hPa
 
-Design an ambient Web Audio soundscape representing this weather. Create a mood and atmosphere that matches the conditions.
+Design a rich, layered ambient Web Audio soundscape representing this weather. Create 5-8 oscillators at different frequencies to build a complex, evolving drone with distinct tonal layers. Think Brian Eno, Stars of the Lid, or Alva Noto - sparse but harmonically rich.
+
+Guidelines:
+- Use 5-8 oscillators for depth and complexity
+- Spread frequencies across the spectrum (both low drones and high shimmer)
+- Vary oscillator types (sine for purity, triangle for warmth, sawtooth for texture)
+- Keep individual gains low (0.1-0.3) since we're layering many sounds
+- Use subtle detune values (-10 to +10) for organic movement
+- Choose frequencies that create interesting harmonic relationships
 
 Return ONLY valid JSON in this exact format:
 {
   "oscillators": [
-    {"type": "sine", "frequency": 220, "gain": 0.3, "detune": 0}
+    {"type": "sine", "frequency": 110, "gain": 0.2, "detune": 0},
+    {"type": "sine", "frequency": 220, "gain": 0.25, "detune": 5},
+    {"type": "triangle", "frequency": 165, "gain": 0.15, "detune": -3},
+    {"type": "sine", "frequency": 440, "gain": 0.2, "detune": 7},
+    {"type": "sawtooth", "frequency": 55, "gain": 0.1, "detune": 0},
+    {"type": "sine", "frequency": 880, "gain": 0.15, "detune": -5}
   ],
   "filters": [
-    {"type": "lowpass", "frequency": 1000, "q": 1}
+    {"type": "lowpass", "frequency": 2000, "q": 1}
   ],
   "effects": {
-    "reverb": {"decay": 2, "mix": 0.3},
+    "reverb": {"decay": 3, "mix": 0.4},
     "delay": {"time": 0.5, "feedback": 0.3, "mix": 0.2}
   }
 }
 
 Valid oscillator types: sine, square, sawtooth, triangle
 Valid filter types: lowpass, highpass, bandpass, notch
-Frequency range: 20-20000 Hz
-Gain range: 0-1
+Frequency range: 20-20000 Hz (try 55Hz, 110Hz, 220Hz, 440Hz, 880Hz, 1760Hz for harmonic relationships)
+Gain range: 0-1 (use 0.1-0.3 for layered sounds)
+Detune range: -100 to +100 cents (use -10 to +10 for subtle movement)
 Q range: 0.0001-1000`;
 
   try {
@@ -184,7 +198,6 @@ Q range: 0.0001-1000`;
     // Note: Must specify BOTH temperature and topK, or NEITHER
 
     const session = await languageModel.create({
-      /*
       temperature: 0.8, // Higher temperature for more creative variations
       topK: 40, // Limit token selection pool for more focused output
       initialPrompts: [
@@ -200,7 +213,6 @@ Q range: 0.0001-1000`;
           onProgress?.(progress);
         });
       },
-      */
     });
 
     log?.("Sending weather data to AI for interpretation...", "info");
@@ -292,36 +304,77 @@ function sanitizeAudioParameters(params: AudioParameters): AudioParameters {
 }
 
 function getFallbackParameters(weather: WeatherData): AudioParameters {
-  // Simple rule-based fallback based on weather
+  // Rich rule-based fallback with multiple oscillators
   const tempNorm = (weather.temperature - 32) / 68; // normalize 32-100°F to 0-1
   const windNorm = weather.windSpeed / 30; // normalize 0-30mph to 0-1
+  const humidityNorm = weather.humidity / 100;
+
+  // Base frequency depends on temperature (warmer = higher)
+  const baseFreq = 110 + tempNorm * 110; // 110-220 Hz
 
   return {
     oscillators: [
+      // Deep bass drone
       {
         type: "sine",
-        frequency: 220 + tempNorm * 440,
-        gain: 0.3,
+        frequency: baseFreq * 0.5, // Sub-bass
+        gain: 0.15,
         detune: 0,
       },
+      // Fundamental
+      {
+        type: "sine",
+        frequency: baseFreq,
+        gain: 0.2,
+        detune: windNorm * 8,
+      },
+      // Fifth harmonic
       {
         type: "triangle",
-        frequency: 110,
-        gain: 0.2,
-        detune: windNorm * 50,
+        frequency: baseFreq * 1.5,
+        gain: 0.18,
+        detune: -windNorm * 6,
+      },
+      // Octave
+      {
+        type: "sine",
+        frequency: baseFreq * 2,
+        gain: 0.15,
+        detune: humidityNorm * 10,
+      },
+      // High shimmer (depends on conditions)
+      {
+        type: "sine",
+        frequency: 880 + tempNorm * 440,
+        gain: 0.12,
+        detune: -humidityNorm * 7,
+      },
+      // Textural layer (more prominent in windy conditions)
+      {
+        type: "sawtooth",
+        frequency: baseFreq * 0.75,
+        gain: 0.08 + windNorm * 0.1,
+        detune: windNorm * 12,
+      },
+      // Atmospheric high
+      {
+        type: "sine",
+        frequency: 1320 + humidityNorm * 440,
+        gain: 0.1,
+        detune: -5,
       },
     ],
     filters: [
       {
         type: "lowpass",
-        frequency: 1000 + tempNorm * 2000,
-        q: 1,
+        frequency: 1500 + tempNorm * 1500,
+        q: 1 + windNorm * 0.5,
       },
     ],
     effects: {
       reverb: {
-        decay: 2 + weather.humidity / 50,
-        mix: 0.3,
+        decay: 2 + humidityNorm * 2,
+        mix: 0.3 + humidityNorm * 0.2,
       },
       delay: {
         time: 0.3 + windNorm * 0.4,

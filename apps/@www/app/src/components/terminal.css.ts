@@ -4,21 +4,17 @@ import { vars } from '../styles/tokens.css';
 
 export const terminal = style({
   width: '100%',
-  maxWidth: '900px',
-  height: '600px',
+  height: '100%',
   backgroundColor: gruvbox.bg0,
-  border: `${vars.borderWidth.base} solid ${gruvbox.bg4}`,
   fontFamily: vars.font.mono,
   fontSize: vars.fontSize.sm,
   color: gruvbox.fg1,
-  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
   display: 'flex',
   flexDirection: 'column',
 
   '@media': {
     '(max-width: 768px)': {
       fontSize: vars.fontSize.xs,
-      height: '500px',
     },
   },
 });
