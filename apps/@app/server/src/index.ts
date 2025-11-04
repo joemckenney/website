@@ -1,3 +1,4 @@
+import "dotenv/config";
 import Fastify from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import cors from "@fastify/cors";
@@ -5,6 +6,7 @@ import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { writeFile, mkdir } from "node:fs/promises";
 import { registerRoutes } from "./routes.js";
+import { registerAuthRoutes } from "./routes/auth.js";
 
 const fastify = Fastify({
   logger: {
@@ -45,6 +47,8 @@ await fastify.register(swaggerUi, {
   routePrefix: "/docs",
 });
 
+// Register routes
+await registerAuthRoutes(fastify);
 await registerRoutes(fastify);
 
 // Start server

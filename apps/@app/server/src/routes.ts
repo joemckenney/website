@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import { squared } from "@website/squared";
 import { PingResponse, SquaredRequest, SquaredResponse } from "./schemas.js";
+import { authenticateRequest } from "./middleware/auth.js";
 
 export async function registerRoutes(
   fastify: FastifyInstance & { withTypeProvider: <T>() => FastifyInstance },
@@ -25,10 +26,11 @@ export async function registerRoutes(
     },
   );
 
-  // Squared endpoint
+  // Squared endpoint (protected - requires authentication)
   app.post(
     "/squared",
     {
+      preHandler: authenticateRequest,
       schema: {
         description: "Calculate the square of a number using WASM",
         tags: ["math"],
