@@ -1,39 +1,39 @@
-import { style } from '@vanilla-extract/css';
-import { vars } from './styles/tokens.css';
+import { style } from "@vanilla-extract/css";
+import { vars } from "./styles/tokens.css";
 
 export const page = style({
-  minHeight: '100vh',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'flex-start',
-  padding: `${vars.spacing['16']} ${vars.spacing['6']}`,
+  minHeight: "100vh",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "flex-start",
+  padding: `${vars.spacing["16"]} ${vars.spacing["6"]}`,
 
-  '@media': {
-    '(max-width: 768px)': {
-      padding: `${vars.spacing['8']} ${vars.spacing['4']}`,
+  "@media": {
+    "(max-width: 768px)": {
+      padding: `${vars.spacing["8"]} ${vars.spacing["4"]}`,
     },
   },
 });
 
 export const masthead = style({
   borderBottom: `${vars.borderWidth.thick} solid ${vars.color.black}`,
-  paddingBottom: vars.spacing['6'],
-  display: 'flex',
-  flexDirection: 'column',
-  gap: vars.spacing['3'],
+  paddingBottom: vars.spacing["6"],
+  display: "flex",
+  flexDirection: "column",
+  gap: vars.spacing["3"],
 });
 
 export const title = style({
   fontFamily: vars.font.heading,
-  fontSize: vars.fontSize['5xl'],
-  letterSpacing: '-0.03em',
-  textTransform: 'uppercase',
+  fontSize: vars.fontSize["5xl"],
+  letterSpacing: "-0.03em",
+  textTransform: "uppercase",
   color: vars.color.black,
 
-  '@media': {
-    '(max-width: 768px)': {
-      fontSize: vars.fontSize['4xl'],
+  "@media": {
+    "(max-width: 768px)": {
+      fontSize: vars.fontSize["4xl"],
     },
   },
 });
@@ -47,76 +47,76 @@ export const subtitle = style({
 });
 
 export const section = style({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: vars.spacing['8'],
-  width: '100%',
-  maxWidth: '900px',
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: vars.spacing["8"],
+  width: "100%",
+  maxWidth: "900px",
 });
 
 export const splitContainer = style({
-  width: '100%',
-  maxWidth: '900px',
-  height: '600px',
-  display: 'flex',
-  flexDirection: 'column',
+  width: "100%",
+  maxWidth: "900px",
+  height: "600px",
+  display: "flex",
+  flexDirection: "column",
   border: `${vars.borderWidth.base} solid #504945`,
-  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
 
-  '@media': {
-    '(max-width: 768px)': {
-      height: '500px',
+  "@media": {
+    "(max-width: 768px)": {
+      height: "500px",
     },
   },
 });
 
 export const terminalPane = style({
-  flex: '1 1 0',
-  minHeight: '0',
-  overflow: 'hidden',
+  flex: "1 1 0",
+  minHeight: "0",
+  overflow: "hidden",
 });
 
 export const visualizerPane = style({
-  flex: '0 0 200px',
-  minHeight: '200px',
-  overflow: 'hidden',
+  flex: "0 0 200px",
+  minHeight: "200px",
+  overflow: "hidden",
 
-  '@media': {
-    '(max-width: 768px)': {
-      flex: '0 0 150px',
-      minHeight: '150px',
+  "@media": {
+    "(max-width: 768px)": {
+      flex: "0 0 150px",
+      minHeight: "150px",
     },
   },
 });
 
 export const controls = style({
-  display: 'flex',
-  gap: vars.spacing['4'],
-  flexWrap: 'wrap',
-  alignItems: 'center',
+  display: "flex",
+  gap: vars.spacing["4"],
+  flexWrap: "wrap",
+  alignItems: "center",
 });
 
 export const button = style({
   fontFamily: vars.font.body,
   fontSize: vars.fontSize.base,
-  padding: `${vars.spacing['3']} ${vars.spacing['6']}`,
+  padding: `${vars.spacing["3"]} ${vars.spacing["6"]}`,
   border: `${vars.borderWidth.base} solid ${vars.color.black}`,
   backgroundColor: vars.color.white,
   color: vars.color.black,
-  cursor: 'pointer',
-  transition: 'all 0.15s ease',
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em',
+  cursor: "pointer",
+  transition: "all 0.15s ease",
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
 
-  ':hover': {
+  ":hover": {
     backgroundColor: vars.color.black,
     color: vars.color.white,
   },
 
-  ':disabled': {
+  ":disabled": {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: "not-allowed",
   },
 });
 
@@ -126,7 +126,7 @@ export const primaryButton = style([
     backgroundColor: vars.color.black,
     color: vars.color.white,
 
-    ':hover': {
+    ":hover": {
       backgroundColor: vars.color.gray800,
     },
   },
@@ -135,7 +135,7 @@ export const primaryButton = style([
 export const secondaryButton = style([
   button,
   {
-    ':hover': {
+    ":hover": {
       backgroundColor: vars.color.gray100,
       color: vars.color.black,
     },
@@ -145,21 +145,21 @@ export const secondaryButton = style([
 export const status = style({
   fontFamily: vars.font.body,
   fontSize: vars.fontSize.sm,
-  padding: vars.spacing['4'],
+  padding: vars.spacing["4"],
   backgroundColor: vars.color.backgroundSubtle,
   border: `${vars.borderWidth.thin} solid ${vars.color.border}`,
   color: vars.color.textSecondary,
-  textAlign: 'center',
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em',
+  textAlign: "center",
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
 });
 
 export const error = style({
   fontFamily: vars.font.body,
   fontSize: vars.fontSize.sm,
-  padding: vars.spacing['4'],
+  padding: vars.spacing["4"],
   backgroundColor: vars.color.white,
   border: `${vars.borderWidth.base} solid ${vars.color.black}`,
   color: vars.color.black,
-  textAlign: 'center',
+  textAlign: "center",
 });

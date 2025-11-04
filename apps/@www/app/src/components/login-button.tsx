@@ -1,8 +1,8 @@
-import * as styles from './login-button.css';
+import * as styles from "./login-button.css";
 
 export function LoginButton() {
   const handleLogin = () => {
-    window.location.href = 'https://app.joemckenney.com';
+    window.location.href = "https://app.joemckenney.com";
   };
 
   return (

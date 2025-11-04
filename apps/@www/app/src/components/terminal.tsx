@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, useCallback, KeyboardEvent } from 'react';
-import * as styles from './terminal.css';
+import { useEffect, useRef, useState, useCallback, KeyboardEvent } from "react";
+import * as styles from "./terminal.css";
 
 export interface TerminalLine {
   text: string;
-  type?: 'info' | 'success' | 'warning' | 'error' | 'prompt' | 'output';
+  type?: "info" | "success" | "warning" | "error" | "prompt" | "output";
   timestamp?: number;
 }
 
@@ -13,8 +13,12 @@ interface TerminalProps {
   onCommand?: (command: string) => void;
 }
 
-export function Terminal({ lines, isActive = false, onCommand }: TerminalProps) {
-  const [input, setInput] = useState('');
+export function Terminal({
+  lines,
+  isActive = false,
+  onCommand,
+}: TerminalProps) {
+  const [input, setInput] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -24,7 +28,7 @@ export function Terminal({ lines, isActive = false, onCommand }: TerminalProps) 
 
   useEffect(() => {
     // Auto-scroll to bottom when new lines are added
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [lines]);
 
   useEffect(() => {
@@ -60,30 +64,31 @@ export function Terminal({ lines, isActive = false, onCommand }: TerminalProps) 
 
     const inputElement = inputRef.current;
     if (inputElement) {
-      inputElement.addEventListener('keyup', handleSelectionChange);
-      inputElement.addEventListener('mouseup', handleSelectionChange);
+      inputElement.addEventListener("keyup", handleSelectionChange);
+      inputElement.addEventListener("mouseup", handleSelectionChange);
 
       return () => {
-        inputElement.removeEventListener('keyup', handleSelectionChange);
-        inputElement.removeEventListener('mouseup', handleSelectionChange);
+        inputElement.removeEventListener("keyup", handleSelectionChange);
+        inputElement.removeEventListener("mouseup", handleSelectionChange);
       };
     }
   }, [updateCursorPosition]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && input.trim()) {
+    if (e.key === "Enter" && input.trim()) {
       // Add to history
       setCommandHistory((prev) => [...prev, input.trim()]);
       setHistoryIndex(-1);
 
       onCommand?.(input.trim());
-      setInput('');
-    } else if (e.key === 'ArrowUp') {
+      setInput("");
+    } else if (e.key === "ArrowUp") {
       e.preventDefault();
       if (commandHistory.length > 0) {
-        const newIndex = historyIndex === -1
-          ? commandHistory.length - 1
-          : Math.max(0, historyIndex - 1);
+        const newIndex =
+          historyIndex === -1
+            ? commandHistory.length - 1
+            : Math.max(0, historyIndex - 1);
         setHistoryIndex(newIndex);
         setInput(commandHistory[newIndex]);
 
@@ -96,13 +101,13 @@ export function Terminal({ lines, isActive = false, onCommand }: TerminalProps) 
           }
         }, 0);
       }
-    } else if (e.key === 'ArrowDown') {
+    } else if (e.key === "ArrowDown") {
       e.preventDefault();
       if (historyIndex !== -1) {
         const newIndex = historyIndex + 1;
         if (newIndex >= commandHistory.length) {
           setHistoryIndex(-1);
-          setInput('');
+          setInput("");
         } else {
           setHistoryIndex(newIndex);
           setInput(commandHistory[newIndex]);
@@ -136,21 +141,21 @@ export function Terminal({ lines, isActive = false, onCommand }: TerminalProps) 
       <div className={styles.body}>
         {lines.map((line, index) => (
           <div key={index} className={styles.line}>
-            {line.type === 'prompt' ? (
+            {line.type === "prompt" ? (
               <>
-                <span className={styles.prompt}>&gt;</span>{' '}
+                <span className={styles.prompt}>&gt;</span>{" "}
                 <span className={styles.promptText}>{line.text}</span>
               </>
             ) : (
               <span
                 className={
-                  line.type === 'info'
+                  line.type === "info"
                     ? styles.info
-                    : line.type === 'success'
+                    : line.type === "success"
                       ? styles.success
-                      : line.type === 'warning'
+                      : line.type === "warning"
                         ? styles.warning
-                        : line.type === 'error'
+                        : line.type === "error"
                           ? styles.error
                           : styles.output
                 }
@@ -161,7 +166,7 @@ export function Terminal({ lines, isActive = false, onCommand }: TerminalProps) 
           </div>
         ))}
         <div className={styles.line}>
-          <span className={styles.prompt}>&gt;</span>{' '}
+          <span className={styles.prompt}>&gt;</span>{" "}
           <div className={styles.inputWrapper}>
             <input
               ref={inputRef}
@@ -179,14 +184,17 @@ export function Terminal({ lines, isActive = false, onCommand }: TerminalProps) 
             <span
               ref={measureRef}
               style={{
-                position: 'absolute',
-                visibility: 'hidden',
-                whiteSpace: 'pre',
-                fontFamily: 'inherit',
-                fontSize: 'inherit',
+                position: "absolute",
+                visibility: "hidden",
+                whiteSpace: "pre",
+                fontFamily: "inherit",
+                fontSize: "inherit",
               }}
             />
-            <div className={styles.cursor} style={{ left: `${cursorPosition}px` }} />
+            <div
+              className={styles.cursor}
+              style={{ left: `${cursorPosition}px` }}
+            />
           </div>
         </div>
         <div ref={endRef} />

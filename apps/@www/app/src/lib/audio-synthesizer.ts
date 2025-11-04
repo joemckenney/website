@@ -1,4 +1,4 @@
-import type { AudioParameters } from '../types/weather';
+import type { AudioParameters } from "../types/weather";
 
 export class AudioSynthesizer {
   private audioContext: AudioContext | null = null;
@@ -32,11 +32,11 @@ export class AudioSynthesizer {
 
   async start(params: AudioParameters): Promise<void> {
     if (!this.audioContext || !this.masterGain) {
-      throw new Error('AudioSynthesizer not initialized');
+      throw new Error("AudioSynthesizer not initialized");
     }
 
     // Resume audio context if suspended (required for user interaction)
-    if (this.audioContext.state === 'suspended') {
+    if (this.audioContext.state === "suspended") {
       await this.audioContext.resume();
     }
 
@@ -90,7 +90,10 @@ export class AudioSynthesizer {
   /**
    * Crossfade to new audio parameters over a specified duration
    */
-  async crossfade(newParams: AudioParameters, duration: number = 8): Promise<void> {
+  async crossfade(
+    newParams: AudioParameters,
+    duration: number = 8,
+  ): Promise<void> {
     if (!this.audioContext || !this.masterGain || !this.isPlaying) {
       // If not playing, just start normally
       return this.start(newParams);
@@ -160,23 +163,26 @@ export class AudioSynthesizer {
     this.currentParams = newParams;
 
     // Clean up old nodes after crossfade completes
-    setTimeout(() => {
-      for (const osc of oldOscillators) {
-        try {
-          osc.stop();
-          osc.disconnect();
-        } catch (e) {
-          // Ignore
+    setTimeout(
+      () => {
+        for (const osc of oldOscillators) {
+          try {
+            osc.stop();
+            osc.disconnect();
+          } catch (e) {
+            // Ignore
+          }
         }
-      }
-      for (const gain of oldGainNodes) {
-        try {
-          gain.disconnect();
-        } catch (e) {
-          // Ignore
+        for (const gain of oldGainNodes) {
+          try {
+            gain.disconnect();
+          } catch (e) {
+            // Ignore
+          }
         }
-      }
-    }, duration * 1000 + 100);
+      },
+      duration * 1000 + 100,
+    );
   }
 
   stop(): void {
@@ -188,7 +194,10 @@ export class AudioSynthesizer {
     if (this.masterGain) {
       try {
         this.masterGain.gain.cancelScheduledValues(ctx.currentTime);
-        this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, ctx.currentTime);
+        this.masterGain.gain.setValueAtTime(
+          this.masterGain.gain.value,
+          ctx.currentTime,
+        );
         this.masterGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1);
       } catch (e) {
         // Ignore if already stopped
@@ -297,7 +306,7 @@ export class AudioSynthesizer {
 
   private createReverbImpulse(decay: number): AudioBuffer {
     if (!this.audioContext) {
-      throw new Error('AudioContext not initialized');
+      throw new Error("AudioContext not initialized");
     }
 
     const ctx = this.audioContext;

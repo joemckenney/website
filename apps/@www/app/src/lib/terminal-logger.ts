@@ -1,4 +1,4 @@
-import type { TerminalLine } from '../components/terminal';
+import type { TerminalLine } from "../components/terminal";
 
 type LogCallback = (line: TerminalLine) => void;
 
@@ -13,7 +13,7 @@ class TerminalLogger {
     this.listeners.delete(callback);
   }
 
-  private log(text: string, type: TerminalLine['type'] = 'output') {
+  private log(text: string, type: TerminalLine["type"] = "output") {
     const line: TerminalLine = {
       text,
       type,
@@ -24,34 +24,34 @@ class TerminalLogger {
   }
 
   info(text: string) {
-    this.log(text, 'info');
+    this.log(text, "info");
   }
 
   success(text: string) {
-    this.log(text, 'success');
+    this.log(text, "success");
   }
 
   warning(text: string) {
-    this.log(text, 'warning');
+    this.log(text, "warning");
   }
 
   error(text: string) {
-    this.log(text, 'error');
+    this.log(text, "error");
   }
 
   prompt(text: string) {
-    this.log(text, 'prompt');
+    this.log(text, "prompt");
   }
 
   output(text: string) {
-    this.log(text, 'output');
+    this.log(text, "output");
   }
 
   clear() {
     // Signal to clear terminal (listeners can handle this)
     const line: TerminalLine = {
-      text: '',
-      type: 'output',
+      text: "",
+      type: "output",
       timestamp: Date.now(),
     };
     this.listeners.forEach((callback) => callback(line));

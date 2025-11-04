@@ -1,9 +1,13 @@
 // Re-export everything from the generated client
-export * from './generated/index.js';
+export * from "./generated/index.js";
 
 // Import generated functions
-import { client as baseClient, postSquared, getPing } from './generated/index.js';
-import type { PostSquaredData, GetPingData } from './generated/types.gen.js';
+import {
+  client as baseClient,
+  postSquared,
+  getPing,
+} from "./generated/index.js";
+import type { PostSquaredData, GetPingData } from "./generated/types.gen.js";
 
 // Create a wrapper with nested API structure
 export const api = {

@@ -1,4 +1,4 @@
-import type { AudioParameters, WeatherData } from '../types/weather';
+import type { AudioParameters, WeatherData } from "../types/weather";
 
 interface AILanguageModel {
   prompt(input: string, options?: { signal?: AbortSignal }): Promise<string>;
@@ -32,10 +32,13 @@ export class AudioEvolutionEngine {
     weather: WeatherData,
     initialParams: AudioParameters,
     onEvolution: (params: AudioParameters) => Promise<void>,
-    log?: (text: string, type?: 'info' | 'success' | 'warning' | 'error') => void,
+    log?: (
+      text: string,
+      type?: "info" | "success" | "warning" | "error",
+    ) => void,
   ): Promise<void> {
     if (this.isRunning) {
-      log?.('Evolution already running', 'warning');
+      log?.("Evolution already running", "warning");
       return;
     }
 
@@ -45,7 +48,10 @@ export class AudioEvolutionEngine {
     this.isRunning = true;
     this.generationCount = 0;
 
-    log?.(`Evolution engine started (interval: ${this.config.intervalSeconds}s)`, 'info');
+    log?.(
+      `Evolution engine started (interval: ${this.config.intervalSeconds}s)`,
+      "info",
+    );
 
     // Schedule first evolution
     this.scheduleNextEvolution(onEvolution, log);
@@ -68,10 +74,18 @@ export class AudioEvolutionEngine {
    */
   async evolveNow(
     onEvolution: (params: AudioParameters) => Promise<void>,
-    log?: (text: string, type?: 'info' | 'success' | 'warning' | 'error') => void,
+    log?: (
+      text: string,
+      type?: "info" | "success" | "warning" | "error",
+    ) => void,
   ): Promise<void> {
-    if (!this.isRunning || !this.aiSession || !this.weather || !this.currentParams) {
-      log?.('Evolution engine not ready', 'error');
+    if (
+      !this.isRunning ||
+      !this.aiSession ||
+      !this.weather ||
+      !this.currentParams
+    ) {
+      log?.("Evolution engine not ready", "error");
       return;
     }
 
@@ -80,7 +94,10 @@ export class AudioEvolutionEngine {
 
   private scheduleNextEvolution(
     onEvolution: (params: AudioParameters) => Promise<void>,
-    log?: (text: string, type?: 'info' | 'success' | 'warning' | 'error') => void,
+    log?: (
+      text: string,
+      type?: "info" | "success" | "warning" | "error",
+    ) => void,
   ): void {
     if (!this.config.enableEvolution || !this.isRunning) return;
 
@@ -92,15 +109,24 @@ export class AudioEvolutionEngine {
 
   private async generateEvolution(
     onEvolution: (params: AudioParameters) => Promise<void>,
-    log?: (text: string, type?: 'info' | 'success' | 'warning' | 'error') => void,
+    log?: (
+      text: string,
+      type?: "info" | "success" | "warning" | "error",
+    ) => void,
   ): Promise<void> {
     if (!this.aiSession || !this.weather || !this.currentParams) return;
 
     this.generationCount++;
-    log?.(`Evolving soundscape (generation ${this.generationCount})...`, 'info');
+    log?.(
+      `Evolving soundscape (generation ${this.generationCount})...`,
+      "info",
+    );
 
     try {
-      const evolutionPrompt = this.buildEvolutionPrompt(this.weather, this.currentParams);
+      const evolutionPrompt = this.buildEvolutionPrompt(
+        this.weather,
+        this.currentParams,
+      );
       const response = await this.aiSession.prompt(evolutionPrompt);
 
       // Extract JSON from response
@@ -117,18 +143,21 @@ export class AudioEvolutionEngine {
       // Trigger crossfade
       await onEvolution(sanitized);
 
-      log?.(`Evolution ${this.generationCount} complete`, 'success');
+      log?.(`Evolution ${this.generationCount} complete`, "success");
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      log?.(`Evolution failed: ${errorMsg}`, 'error');
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      log?.(`Evolution failed: ${errorMsg}`, "error");
     }
   }
 
-  private buildEvolutionPrompt(weather: WeatherData, current: AudioParameters): string {
+  private buildEvolutionPrompt(
+    weather: WeatherData,
+    current: AudioParameters,
+  ): string {
     const currentCount = current.oscillators.length;
     const currentOscs = current.oscillators
       .map((o) => `${o.type} @ ${o.frequency.toFixed(0)}Hz`)
-      .join(', ');
+      .join(", ");
 
     return `Current weather: ${weather.temperature}°F, ${weather.conditions}, wind ${weather.windSpeed}mph
 
@@ -172,18 +201,32 @@ Return ONLY valid JSON in this exact format:
   }
 
   private sanitizeParameters(params: AudioParameters): AudioParameters {
-    const validOscTypes: OscillatorType[] = ['sine', 'square', 'sawtooth', 'triangle'];
-    const validFilterTypes: BiquadFilterType[] = ['lowpass', 'highpass', 'bandpass', 'notch'];
+    const validOscTypes: OscillatorType[] = [
+      "sine",
+      "square",
+      "sawtooth",
+      "triangle",
+    ];
+    const validFilterTypes: BiquadFilterType[] = [
+      "lowpass",
+      "highpass",
+      "bandpass",
+      "notch",
+    ];
 
     return {
       oscillators: (params.oscillators || []).map((osc) => ({
-        type: validOscTypes.includes(osc.type as OscillatorType) ? osc.type : 'sine',
+        type: validOscTypes.includes(osc.type as OscillatorType)
+          ? osc.type
+          : "sine",
         frequency: Math.max(20, Math.min(20000, osc.frequency || 220)),
         gain: Math.max(0, Math.min(1, osc.gain || 0.3)),
         detune: osc.detune || 0,
       })),
       filters: (params.filters || []).map((filt) => ({
-        type: validFilterTypes.includes(filt.type as BiquadFilterType) ? filt.type : 'lowpass',
+        type: validFilterTypes.includes(filt.type as BiquadFilterType)
+          ? filt.type
+          : "lowpass",
         frequency: Math.max(20, Math.min(20000, filt.frequency || 1000)),
         q: Math.max(0.0001, Math.min(1000, filt.q || 1)),
         gain: filt.gain,
@@ -198,7 +241,10 @@ Return ONLY valid JSON in this exact format:
         delay: params.effects?.delay
           ? {
               time: Math.max(0, Math.min(2, params.effects.delay.time)),
-              feedback: Math.max(0, Math.min(0.95, params.effects.delay.feedback)),
+              feedback: Math.max(
+                0,
+                Math.min(0.95, params.effects.delay.feedback),
+              ),
               mix: Math.max(0, Math.min(1, params.effects.delay.mix)),
             }
           : undefined,

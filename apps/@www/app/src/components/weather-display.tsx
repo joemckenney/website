@@ -1,5 +1,5 @@
-import type { WeatherData } from '../types/weather';
-import * as styles from './weather-display.css';
+import type { WeatherData } from "../types/weather";
+import * as styles from "./weather-display.css";
 
 interface WeatherDisplayProps {
   weather: WeatherData | null;
@@ -25,7 +25,9 @@ export function WeatherDisplay({ weather, isLoading }: WeatherDisplayProps) {
         <h2 className={styles.title}>Current Weather</h2>
 
         <div className={styles.mainInfo}>
-          <div className={styles.temperature}>{Math.round(weather.temperature)}°F</div>
+          <div className={styles.temperature}>
+            {Math.round(weather.temperature)}°F
+          </div>
           <div className={styles.conditions}>{weather.conditions}</div>
         </div>
 
@@ -46,7 +48,8 @@ export function WeatherDisplay({ weather, isLoading }: WeatherDisplayProps) {
 
         <div className={styles.location}>
           <span className={styles.locationIcon}>📍</span>
-          {weather.location.city || `${weather.location.latitude.toFixed(2)}, ${weather.location.longitude.toFixed(2)}`}
+          {weather.location.city ||
+            `${weather.location.latitude.toFixed(2)}, ${weather.location.longitude.toFixed(2)}`}
         </div>
       </div>
     </div>

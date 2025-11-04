@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
-import * as styles from './frequency-visualizer.css';
-import type { AudioSynthesizer } from '../lib/audio-synthesizer';
+import { useEffect, useRef } from "react";
+import * as styles from "./frequency-visualizer.css";
+import type { AudioSynthesizer } from "../lib/audio-synthesizer";
 
 interface FrequencyVisualizerProps {
   synthesizer: AudioSynthesizer | null;
@@ -14,7 +14,7 @@ export function FrequencyVisualizer({ synthesizer }: FrequencyVisualizerProps) {
     const canvas = canvasRef.current;
     if (!canvas || !synthesizer) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     // Set canvas size
@@ -27,7 +27,7 @@ export function FrequencyVisualizer({ synthesizer }: FrequencyVisualizerProps) {
     };
 
     updateCanvasSize();
-    window.addEventListener('resize', updateCanvasSize);
+    window.addEventListener("resize", updateCanvasSize);
 
     const draw = () => {
       const frequencyData = synthesizer.getFrequencyData();
@@ -40,7 +40,7 @@ export function FrequencyVisualizer({ synthesizer }: FrequencyVisualizerProps) {
       const height = canvas.height / (window.devicePixelRatio || 1);
 
       // Clear canvas
-      ctx.fillStyle = '#1d2021'; // Gruvbox dark background
+      ctx.fillStyle = "#1d2021"; // Gruvbox dark background
       ctx.fillRect(0, 0, width, height);
 
       // Draw all frequency bins with emphasis on active ones
@@ -66,15 +66,15 @@ export function FrequencyVisualizer({ synthesizer }: FrequencyVisualizerProps) {
         let color: string;
         const position = i / numBars;
         if (position < 0.33) {
-          color = '#b8bb26'; // Gruvbox green
+          color = "#b8bb26"; // Gruvbox green
         } else if (position < 0.66) {
-          color = '#fabd2f'; // Gruvbox yellow
+          color = "#fabd2f"; // Gruvbox yellow
         } else {
-          color = '#fb4934'; // Gruvbox red
+          color = "#fb4934"; // Gruvbox red
         }
 
         // Add brightness based on amplitude
-        const alpha = 0.3 + (normalized * 0.7); // Vary opacity with amplitude
+        const alpha = 0.3 + normalized * 0.7; // Vary opacity with amplitude
 
         // Draw bar from bottom
         const x = i * barWidth + barSpacing / 2;
@@ -93,7 +93,7 @@ export function FrequencyVisualizer({ synthesizer }: FrequencyVisualizerProps) {
     draw();
 
     return () => {
-      window.removeEventListener('resize', updateCanvasSize);
+      window.removeEventListener("resize", updateCanvasSize);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }

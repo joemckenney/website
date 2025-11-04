@@ -6,7 +6,7 @@ export interface Coordinates {
 export async function getUserLocation(): Promise<Coordinates> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
-      reject(new Error('Geolocation is not supported by this browser'));
+      reject(new Error("Geolocation is not supported by this browser"));
       return;
     }
 
@@ -19,7 +19,7 @@ export async function getUserLocation(): Promise<Coordinates> {
       },
       (error) => {
         reject(new Error(`Geolocation error: ${error.message}`));
-      }
+      },
     );
   });
 }
