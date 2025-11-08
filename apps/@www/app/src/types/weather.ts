@@ -9,14 +9,33 @@ export interface WeatherData {
     longitude: number;
     city?: string;
   };
+  // New atmospheric parameters
+  apparentTemperature: number;
+  dewPoint: number;
+  cloudCover: number;
+  cloudCoverLow: number;
+  cloudCoverMid: number;
+  cloudCoverHigh: number;
+  visibility: number;
+  windDirection: number;
+  windGusts: number;
+  uvIndex: number;
+  isDay: number; // 0 or 1
+  cape: number; // Convective available potential energy
   hourly: {
     temperature: number[];
     precipitationProbability: number[];
     windSpeed: number[];
     cloudCover: number[];
+    uvIndex: number[];
+    windDirection: number[];
+    dewPoint: number[];
+    cape: number[];
   };
   solar: {
     shortwaveRadiation: number;
+    uvIndex: number;
+    uvIndexClearSky: number;
   };
 }
 

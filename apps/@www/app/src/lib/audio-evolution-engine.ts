@@ -98,12 +98,12 @@ export class AudioEvolutionEngine {
       const newWeather = await fetchWeatherData(this.coordinates);
       this.weather = newWeather;
 
-      // Generate new audio parameters from updated weather
+      // Generate new audio parameters from updated weather, evolving from current state
       log?.(
-        `Generating soundscape from weather update ${this.generationCount}...`,
+        `Evolving soundscape from weather update ${this.generationCount}...`,
         "info",
       );
-      const newParams = await generateAudioParameters(newWeather, undefined, log);
+      const newParams = await generateAudioParameters(newWeather, this.currentParams, undefined, log);
 
       // Update current state
       this.currentParams = newParams;

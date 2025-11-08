@@ -185,6 +185,7 @@ export async function createAISession(
 
 export async function generateAudioParameters(
   weather: WeatherData,
+  previousParams?: AudioParameters | null,
   onProgress?: (progress: number) => void,
   log?: (text: string, type?: "info" | "success" | "warning" | "error") => void,
 ): Promise<AudioParameters> {
@@ -196,7 +197,7 @@ export async function generateAudioParameters(
       "Chrome Prompt API not available, using rule-based generation",
       "warning",
     );
-    return getFallbackParameters(weather);
+    return getFallbackParameters(weather, previousParams);
   }
 
   // Check availability before creating session
@@ -205,7 +206,7 @@ export async function generateAudioParameters(
 
   if (availability === "unavailable") {
     log?.("AI model unavailable, using rule-based generation", "warning");
-    return getFallbackParameters(weather);
+    return getFallbackParameters(weather, previousParams);
   }
 
   if (availability === "downloading") {
@@ -214,7 +215,7 @@ export async function generateAudioParameters(
       "warning",
     );
     log?.("Using rule-based generation instead", "info");
-    return getFallbackParameters(weather);
+    return getFallbackParameters(weather, previousParams);
   }
 
   if (availability !== "available") {
@@ -222,7 +223,7 @@ export async function generateAudioParameters(
       `AI model status: ${availability}, using rule-based generation`,
       "warning",
     );
-    return getFallbackParameters(weather);
+    return getFallbackParameters(weather, previousParams);
   }
 
   log?.("AI model is ready, creating session...", "success");
@@ -236,11 +237,28 @@ export async function generateAudioParameters(
   const avgPrecipProb = weather.hourly.precipitationProbability.reduce((a, b) => a + b, 0) / weather.hourly.precipitationProbability.length;
   const avgCloudCover = weather.hourly.cloudCover.reduce((a, b) => a + b, 0) / weather.hourly.cloudCover.length;
 
-  const userPrompt = `Current weather: ${weather.temperature}°F, ${weather.conditions}, wind ${weather.windSpeed}mph, humidity ${weather.humidity}%, pressure ${weather.pressure}hPa, solar radiation ${weather.solar.shortwaveRadiation}W/m²
+  // Build current state description if we have previous params
+  let currentStateDesc = "";
+  if (previousParams) {
+    const oscList = previousParams.oscillators.map(o => `${o.type} @ ${o.frequency.toFixed(0)}Hz (gain: ${o.gain.toFixed(2)})`).join(", ");
+    currentStateDesc = `\nCurrent soundscape: ${previousParams.oscillators.length} oscillators - ${oscList}\n\nEvolve this soundscape GRADUALLY based on the new weather. Make subtle changes:\n- Shift 2-4 oscillator frequencies by ±10-50 Hz\n- Adjust 2-3 gains by ±0.02-0.08\n- Optionally add or remove 1-2 oscillators\n- Keep the same general harmonic structure\n- Preserve most oscillator types\n- Adjust LFOs subtly based on weather changes\n\n`;
+  }
+
+  const userPrompt = `Current weather conditions:
+- Temperature: ${weather.temperature}°F (feels like ${weather.apparentTemperature}°F)
+- Conditions: ${weather.conditions}
+- Wind: ${weather.windSpeed}mph (gusts ${weather.windGusts}mph) from ${weather.windDirection}°
+- Humidity: ${weather.humidity}% | Dew point: ${weather.dewPoint}°F
+- Pressure: ${weather.pressure}hPa
+- Cloud cover: ${weather.cloudCover}% (low: ${weather.cloudCoverLow}%, mid: ${weather.cloudCoverMid}%, high: ${weather.cloudCoverHigh}%)
+- Visibility: ${weather.visibility}m
+- UV Index: ${weather.uvIndex} | Solar radiation: ${weather.solar.shortwaveRadiation}W/m²
+- Day/Night: ${weather.isDay ? 'Day' : 'Night'}
+- CAPE: ${weather.cape}J/kg (atmospheric instability)
 
 12-hour forecast: temp ${tempTrend > 0 ? 'rising' : tempTrend < 0 ? 'falling' : 'stable'} (${tempTrend.toFixed(1)}°F), avg precipitation probability ${avgPrecipProb.toFixed(0)}%, avg cloud cover ${avgCloudCover.toFixed(0)}%
-
-Design a rich, layered ambient Web Audio soundscape representing this weather. Create 8-12 oscillators for additive synthesis, plus 2-4 LFOs to add organic movement. Think Brian Eno, Stars of the Lid, or Alva Noto - sparse but harmonically rich with slow evolution.
+${currentStateDesc}
+${previousParams ? 'Evolve the soundscape gradually to reflect the new weather conditions.' : 'Design a rich, layered ambient Web Audio soundscape representing this weather. Create 8-12 oscillators for additive synthesis, plus 2-4 LFOs to add organic movement. Think Brian Eno, Stars of the Lid, or Alva Noto - sparse but harmonically rich with slow evolution.'}
 
 Oscillator Guidelines:
 - Use 8-12 oscillators for depth and complexity
@@ -250,12 +268,18 @@ Oscillator Guidelines:
 - Use subtle detune values (-10 to +10) for organic movement
 - Choose frequencies that create interesting harmonic relationships
 
-LFO Guidelines:
+LFO Guidelines - Map weather to modulation:
 - Create 2-4 LFOs to modulate different parameters
-- Map solar radiation to brightness (higher radiation = more 'detune' LFOs for shimmer)
-- Map wind patterns to movement speed (higher wind = faster LFO rates)
-- Map temperature trends to frequency modulation depth
-- Map precipitation probability to gain modulation (rain = pulsing dynamics)
+- Wind gusts → faster LFO rates and higher depth (turbulent movement)
+- Wind direction → choose which oscillators to modulate (directional character)
+- Solar radiation/UV → brightness via 'detune' LFOs (shimmer and sparkle)
+- Cloud layers (low/mid/high) → different frequency bands to modulate
+- Visibility → depth of modulation (low visibility = deeper, more obscured sound)
+- CAPE (atmospheric instability) → aggressive modulation rates (stormy = faster)
+- Dew point → moisture-influenced gain modulation (humid = pulsing dynamics)
+- Day/Night → overall LFO rate (night = slower, more meditative)
+- Temperature difference (actual vs feels-like) → detune spread
+- Precipitation probability → gain modulation intensity
 - LFO rate: 0.05-2 Hz (slower = more meditative, faster = more active)
 - LFO depth: 0.1-0.8 (controls modulation intensity)
 - LFO targets: 'frequency', 'detune', 'gain', or 'filter'
@@ -352,7 +376,7 @@ LFO depth range: 0-1 (controls modulation intensity)`;
 
     log?.("Falling back to rule-based generation", "warning");
     // Return fallback parameters on any error
-    return getFallbackParameters(weather);
+    return getFallbackParameters(weather, previousParams);
   }
 }
 
@@ -417,18 +441,90 @@ function sanitizeAudioParameters(params: AudioParameters): AudioParameters {
   };
 }
 
-function getFallbackParameters(weather: WeatherData): AudioParameters {
-  // Rich rule-based fallback with multiple oscillators and LFOs
+/**
+ * Evolve audio parameters gradually from previous state based on weather changes
+ */
+function evolveFromPrevious(weather: WeatherData, previous: AudioParameters): AudioParameters {
+  const tempNorm = (weather.temperature - 32) / 68;
+  const windNorm = weather.windSpeed / 30;
+  const windGustNorm = weather.windGusts / 40;
+  const solarNorm = weather.solar.shortwaveRadiation / 1000;
+  const cloudNorm = weather.cloudCover / 100;
+  const visibilityNorm = Math.min(weather.visibility / 10000, 1);
+  const capeNorm = Math.min(weather.cape / 2000, 1);
+  const uvNorm = weather.uvIndex / 11;
+
+  // Evolve oscillators: keep most, but adjust frequencies/gains slightly
+  const evolvedOscillators = previous.oscillators.map((osc, idx) => {
+    // Frequency shifts influenced by temperature and CAPE (instability)
+    const freqShift = (Math.random() - 0.5) * 40 + tempNorm * 20 + capeNorm * 15;
+
+    // Gain adjustments based on solar radiation, UV, and cloud cover
+    const gainShift = (Math.random() - 0.5) * 0.06 + (solarNorm + uvNorm) * 0.02 - cloudNorm * 0.03;
+
+    // Detune adjustments based on wind gusts and visibility
+    const detuneShift = (Math.random() - 0.5) * 4 + windGustNorm * 5 - visibilityNorm * 2;
+
+    return {
+      type: osc.type,
+      frequency: Math.max(20, Math.min(20000, osc.frequency + freqShift)),
+      gain: Math.max(0.05, Math.min(0.3, osc.gain + gainShift)),
+      detune: (osc.detune || 0) + detuneShift,
+    };
+  });
+
+  // Evolve LFOs with weather-influenced changes
+  const evolvedLFOs = (previous.lfos || []).map(lfo => {
+    // LFO rate influenced by wind gusts and CAPE (atmospheric turbulence)
+    const rateShift = (Math.random() - 0.5) * 0.1 + (windGustNorm + capeNorm) * 0.05;
+
+    // LFO depth influenced by cloud cover and visibility
+    const depthShift = (Math.random() - 0.5) * 0.15 + cloudNorm * 0.1 - visibilityNorm * 0.05;
+
+    return {
+      ...lfo,
+      rate: Math.max(0.01, Math.min(20, lfo.rate + rateShift)),
+      depth: Math.max(0.1, Math.min(0.8, lfo.depth + depthShift)),
+    };
+  });
+
+  return {
+    oscillators: evolvedOscillators,
+    filters: previous.filters,  // Keep filters mostly the same
+    effects: previous.effects,  // Keep effects the same
+    lfos: evolvedLFOs,
+  };
+}
+
+function getFallbackParameters(weather: WeatherData, previousParams?: AudioParameters | null): AudioParameters {
+  // If we have previous params, evolve from them gradually
+  if (previousParams && previousParams.oscillators.length > 0) {
+    return evolveFromPrevious(weather, previousParams);
+  }
+
+  // Rich rule-based fallback with multiple oscillators and LFOs (initial generation)
   const tempNorm = (weather.temperature - 32) / 68; // normalize 32-100°F to 0-1
   const windNorm = weather.windSpeed / 30; // normalize 0-30mph to 0-1
+  const windGustNorm = weather.windGusts / 40;
   const humidityNorm = weather.humidity / 100;
   const solarNorm = weather.solar.shortwaveRadiation / 1000; // normalize solar radiation
+  const cloudNorm = weather.cloudCover / 100;
+  const cloudLowNorm = weather.cloudCoverLow / 100;
+  const cloudMidNorm = weather.cloudCoverMid / 100;
+  const cloudHighNorm = weather.cloudCoverHigh / 100;
+  const visibilityNorm = Math.min(weather.visibility / 10000, 1);
+  const uvNorm = weather.uvIndex / 11;
+  const capeNorm = Math.min(weather.cape / 2000, 1); // Atmospheric instability
+  const dewPointNorm = (weather.dewPoint - 32) / 68;
+  const isNight = weather.isDay === 0;
 
   // Calculate trends from hourly data
   const tempTrend = weather.hourly.temperature.length > 1
     ? (weather.hourly.temperature[11] - weather.hourly.temperature[0]) / 68
     : 0;
   const avgPrecipProb = weather.hourly.precipitationProbability.reduce((a, b) => a + b, 0) / weather.hourly.precipitationProbability.length / 100;
+  const avgUV = weather.hourly.uvIndex.reduce((a, b) => a + b, 0) / weather.hourly.uvIndex.length / 11;
+  const avgCAPE = weather.hourly.cape.reduce((a, b) => a + b, 0) / weather.hourly.cape.length / 2000;
 
   // Base frequency depends on temperature (warmer = higher)
   const baseFreq = 110 + tempNorm * 110; // 110-220 Hz
@@ -463,26 +559,26 @@ function getFallbackParameters(weather: WeatherData): AudioParameters {
         gain: 0.12,
         detune: humidityNorm * 10,
       },
-      // High shimmer (depends on solar radiation)
+      // High shimmer (depends on UV and solar radiation)
       {
         type: "sine",
-        frequency: 880 + solarNorm * 440,
-        gain: 0.10 + solarNorm * 0.05,
-        detune: -humidityNorm * 7,
+        frequency: 880 + (solarNorm + uvNorm) * 440,
+        gain: 0.10 + (solarNorm + uvNorm) * 0.05,
+        detune: -humidityNorm * 7 + visibilityNorm * 3,
       },
-      // Textural layer (more prominent in windy conditions)
+      // Textural layer (more prominent in gusty conditions)
       {
         type: "sawtooth",
         frequency: baseFreq * 0.75,
-        gain: 0.08 + windNorm * 0.08,
-        detune: windNorm * 12,
+        gain: 0.08 + windGustNorm * 0.10,
+        detune: windGustNorm * 15 - cloudNorm * 5,
       },
-      // Atmospheric high
+      // Atmospheric high (influenced by cloud layers)
       {
         type: "sine",
-        frequency: 1320 + humidityNorm * 440,
-        gain: 0.09,
-        detune: -5,
+        frequency: 1320 + cloudHighNorm * 440,
+        gain: 0.09 + visibilityNorm * 0.04,
+        detune: cloudMidNorm * 8 - 5,
       },
       // Mid-range harmonic
       {
@@ -518,34 +614,34 @@ function getFallbackParameters(weather: WeatherData): AudioParameters {
       },
     },
     lfos: [
-      // LFO 1: Detune modulation based on wind (creates shimmer)
+      // LFO 1: Detune modulation based on UV/solar (creates shimmer/brightness)
       {
-        rate: 0.1 + windNorm * 0.4, // Faster with more wind
-        depth: 0.3 + solarNorm * 0.3, // Deeper with more solar radiation
+        rate: (isNight ? 0.05 : 0.1) + (uvNorm + solarNorm) * 0.3,
+        depth: 0.3 + (uvNorm + solarNorm) * 0.3 - cloudNorm * 0.2, // Less shimmer when cloudy
         target: "detune" as const,
         waveform: "sine" as const,
         targetIndex: 4, // Modulate the high shimmer oscillator
       },
-      // LFO 2: Gain modulation based on precipitation probability (pulsing)
+      // LFO 2: Gain modulation based on dew point/moisture (pulsing)
       {
-        rate: 0.15 + avgPrecipProb * 0.2,
-        depth: 0.2 + avgPrecipProb * 0.4, // More pulsing when rain is likely
+        rate: 0.12 + dewPointNorm * 0.25 + avgPrecipProb * 0.15,
+        depth: 0.2 + avgPrecipProb * 0.4 + dewPointNorm * 0.2, // More pulsing when humid/rainy
         target: "gain" as const,
         waveform: "triangle" as const,
         targetIndex: 1, // Modulate fundamental
       },
-      // LFO 3: Frequency modulation based on temperature trend
+      // LFO 3: Frequency modulation based on CAPE (atmospheric instability)
       {
-        rate: 0.08 + Math.abs(tempTrend) * 0.3, // Faster when temp changing
-        depth: 0.4 + Math.abs(tempTrend) * 0.3,
+        rate: 0.08 + capeNorm * 0.5 + avgCAPE * 0.3, // Faster when unstable
+        depth: 0.4 + capeNorm * 0.3,
         target: "frequency" as const,
-        waveform: "sine" as const,
+        waveform: windGustNorm > 0.5 ? "sawtooth" as const : "sine" as const, // More aggressive in gusty conditions
         targetIndex: 6, // Modulate atmospheric high
       },
-      // LFO 4: Filter modulation based on overall weather activity
+      // LFO 4: Filter modulation based on visibility and wind gusts
       {
-        rate: 0.05 + (windNorm + avgPrecipProb) * 0.15,
-        depth: 0.5,
+        rate: 0.05 + (windGustNorm + capeNorm) * 0.2 - visibilityNorm * 0.1, // Slower in clear conditions
+        depth: 0.5 + cloudNorm * 0.2 - visibilityNorm * 0.2, // Deeper when obscured
         target: "filter" as const,
         waveform: "sine" as const,
         targetIndex: 0, // Modulate the lowpass filter

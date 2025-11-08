@@ -123,7 +123,8 @@ function App() {
 
     if (cmd === "help") {
       addLog("Available commands:", "info");
-      addLog("  start - Begin weather station", "output");
+      addLog("  start [lat,long] - Begin weather station", "output");
+      addLog("                     Optional: Provide coordinates (e.g., start 40.7128,-74.0060)", "output");
       addLog("  stop  - Stop weather station", "output");
       addLog("  setup - Show Chrome AI setup instructions", "output");
       addLog("  clear - Clear terminal output", "output");
@@ -131,11 +132,36 @@ function App() {
       addLog("  help  - Show this help message", "output");
     } else if (cmd === "setup") {
       handleSetup();
-    } else if (cmd === "start") {
+    } else if (cmd.startsWith("start")) {
       if (isPlaying) {
         addLog('Already playing. Use "stop" first.', "warning");
       } else {
-        handleStart();
+        // Parse optional coordinates from command
+        // Expected format: "start 40.7128,-74.0060" or "start 40.7128, -74.0060"
+        const parts = command.trim().split(/\s+/);
+        if (parts.length > 1) {
+          // User provided coordinates
+          const coordStr = parts.slice(1).join("").trim(); // Join remaining parts and remove spaces
+          const coordParts = coordStr.split(",");
+
+          if (coordParts.length === 2) {
+            const lat = parseFloat(coordParts[0].trim());
+            const long = parseFloat(coordParts[1].trim());
+
+            if (!isNaN(lat) && !isNaN(long) && lat >= -90 && lat <= 90 && long >= -180 && long <= 180) {
+              handleStart({ latitude: lat, longitude: long });
+            } else {
+              addLog("Invalid coordinates. Latitude must be -90 to 90, longitude -180 to 180.", "error");
+              addLog("Example: start 40.7128,-74.0060", "output");
+            }
+          } else {
+            addLog("Invalid coordinate format. Use: start lat,long", "error");
+            addLog("Example: start 40.7128,-74.0060", "output");
+          }
+        } else {
+          // No coordinates provided, use geolocation
+          handleStart();
+        }
       }
     } else if (cmd === "stop") {
       if (!isPlaying) {
@@ -289,17 +315,27 @@ function App() {
     addLog("=== End Debug Information ===", "info");
   };
 
-  const handleStart = async () => {
-    addLog("Getting your location...", "info");
-
+  const handleStart = async (providedCoords?: { latitude: number; longitude: number }) => {
     try {
-      // Get user location
-      const coords = await getUserLocation();
+      // Use provided coordinates or get user location
+      let coords: { latitude: number; longitude: number };
+
+      if (providedCoords) {
+        coords = providedCoords;
+        addLog(
+          `Using provided coordinates: ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
+          "success",
+        );
+      } else {
+        addLog("Getting your location...", "info");
+        coords = await getUserLocation();
+        addLog(
+          `Location: ${coords.latitude.toFixed(2)}, ${coords.longitude.toFixed(2)}`,
+          "success",
+        );
+      }
+
       coordinatesRef.current = coords;
-      addLog(
-        `Location: ${coords.latitude.toFixed(2)}, ${coords.longitude.toFixed(2)}`,
-        "success",
-      );
       addLog("Fetching weather data...", "info");
 
       // Fetch weather
@@ -315,10 +351,11 @@ function App() {
       );
       addLog("Generating initial soundscape...", "info");
 
-      // Generate audio parameters with Chrome AI
+      // Generate audio parameters with Chrome AI (no previous params for initial generation)
       const audioParams = await generateAudioParameters(
         weatherData,
-        undefined,
+        null, // previousParams
+        undefined, // onProgress
         (text, type) => {
           if (type) addLog(text, type);
           else addLog(text);
@@ -341,7 +378,7 @@ function App() {
         addLog("Starting continuous weather-driven evolution...", "info");
         if (!evolutionEngineRef.current) {
           evolutionEngineRef.current = new AudioEvolutionEngine({
-            weatherUpdateInterval: 60, // Fetch new weather every 60 seconds
+            weatherUpdateInterval: 10, // Fetch new weather every 10 seconds
             crossfadeDuration: 8, // 8 second crossfade
           });
         }
@@ -370,7 +407,7 @@ function App() {
 
         setIsEvolving(true);
         addLog(
-          "Soundscape will evolve continuously based on weather updates (every 60s).",
+          "Soundscape will evolve continuously based on weather updates (every 10s).",
           "success",
         );
       }
