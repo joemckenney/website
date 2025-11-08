@@ -9,6 +9,23 @@ export interface WeatherData {
     longitude: number;
     city?: string;
   };
+  hourly: {
+    temperature: number[];
+    precipitationProbability: number[];
+    windSpeed: number[];
+    cloudCover: number[];
+  };
+  solar: {
+    shortwaveRadiation: number;
+  };
+}
+
+export interface LFOConfig {
+  rate: number; // Hz (0.01 - 20)
+  depth: number; // 0-1
+  target: 'frequency' | 'gain' | 'detune' | 'filter';
+  waveform: 'sine' | 'square' | 'triangle' | 'sawtooth';
+  targetIndex?: number; // Which oscillator/filter to modulate
 }
 
 export interface AudioParameters {
@@ -35,4 +52,5 @@ export interface AudioParameters {
       mix: number;
     };
   };
+  lfos?: LFOConfig[];
 }

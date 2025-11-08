@@ -8,6 +8,14 @@ interface OpenMeteoResponse {
     wind_speed_10m: number;
     surface_pressure: number;
     weather_code: number;
+    shortwave_radiation?: number;
+  };
+  hourly: {
+    time: string[];
+    temperature_2m: number[];
+    precipitation_probability: number[];
+    wind_speed_10m: number[];
+    cloud_cover: number[];
   };
 }
 
@@ -42,7 +50,7 @@ const weatherCodeMap: Record<number, string> = {
 export async function fetchWeatherData(
   coords: Coordinates,
 ): Promise<WeatherData> {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,weather_code&temperature_unit=fahrenheit&wind_speed_unit=mph`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,weather_code,shortwave_radiation&hourly=temperature_2m,precipitation_probability,wind_speed_10m,cloud_cover&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=1`;
 
   const response = await fetch(url);
 
@@ -51,6 +59,14 @@ export async function fetchWeatherData(
   }
 
   const data: OpenMeteoResponse = await response.json();
+
+  // Get next 12 hours of forecast data
+  const next12Hours = {
+    temperature: data.hourly.temperature_2m.slice(0, 12),
+    precipitationProbability: data.hourly.precipitation_probability.slice(0, 12),
+    windSpeed: data.hourly.wind_speed_10m.slice(0, 12),
+    cloudCover: data.hourly.cloud_cover.slice(0, 12),
+  };
 
   return {
     temperature: data.current.temperature_2m,
@@ -61,6 +77,10 @@ export async function fetchWeatherData(
     location: {
       latitude: coords.latitude,
       longitude: coords.longitude,
+    },
+    hourly: next12Hours,
+    solar: {
+      shortwaveRadiation: data.current.shortwave_radiation || 0,
     },
   };
 }

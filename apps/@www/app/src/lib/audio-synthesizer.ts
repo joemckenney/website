@@ -5,6 +5,8 @@ export class AudioSynthesizer {
   private oscillators: OscillatorNode[] = [];
   private gainNodes: GainNode[] = [];
   private filterNodes: BiquadFilterNode[] = [];
+  private lfoNodes: OscillatorNode[] = [];
+  private lfoGainNodes: GainNode[] = [];
   private masterGain: GainNode | null = null;
   private delayNode: DelayNode | null = null;
   private delayFeedback: GainNode | null = null;
@@ -47,9 +49,6 @@ export class AudioSynthesizer {
     this.isPlaying = true;
     this.currentParams = params;
 
-    // Simple, clean audio graph:
-    // oscillators -> oscillator gains -> master gain -> destination
-
     // Create oscillators
     for (const oscParam of params.oscillators) {
       const osc = ctx.createOscillator();
@@ -65,26 +64,87 @@ export class AudioSynthesizer {
       osc.connect(gain);
       gain.connect(this.masterGain);
 
-      // Add subtle LFO for movement
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = 0.1 + Math.random() * 0.3;
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.value = 5;
-      lfo.connect(lfoGain);
-      lfoGain.connect(osc.detune);
-
       osc.start();
-      lfo.start();
 
       this.oscillators.push(osc);
-      this.oscillators.push(lfo);
       this.gainNodes.push(gain);
-      this.gainNodes.push(lfoGain);
     }
+
+    // Create and apply LFOs
+    this.applyLFOs(params, this.oscillators, this.gainNodes, this.filterNodes);
 
     // Fade in
     this.masterGain.gain.setValueAtTime(0, ctx.currentTime);
     this.masterGain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 2);
+  }
+
+  private applyLFOs(
+    params: AudioParameters,
+    oscillators: OscillatorNode[],
+    gainNodes: GainNode[],
+    filterNodes: BiquadFilterNode[],
+  ): void {
+    if (!this.audioContext || !params.lfos || params.lfos.length === 0) {
+      return;
+    }
+
+    const ctx = this.audioContext;
+
+    for (const lfoConfig of params.lfos) {
+      const lfo = ctx.createOscillator();
+      lfo.type = lfoConfig.waveform;
+      lfo.frequency.value = lfoConfig.rate;
+
+      const lfoGain = ctx.createGain();
+
+      // Connect LFO based on target
+      switch (lfoConfig.target) {
+        case 'frequency': {
+          const targetIndex = lfoConfig.targetIndex ?? 0;
+          if (targetIndex < oscillators.length) {
+            // Modulate frequency (depth controls range in Hz)
+            lfoGain.gain.value = oscillators[targetIndex].frequency.value * lfoConfig.depth * 0.1;
+            lfo.connect(lfoGain);
+            lfoGain.connect(oscillators[targetIndex].frequency);
+          }
+          break;
+        }
+        case 'detune': {
+          const targetIndex = lfoConfig.targetIndex ?? 0;
+          if (targetIndex < oscillators.length) {
+            // Modulate detune (depth controls range in cents)
+            lfoGain.gain.value = lfoConfig.depth * 50; // Up to 50 cents
+            lfo.connect(lfoGain);
+            lfoGain.connect(oscillators[targetIndex].detune);
+          }
+          break;
+        }
+        case 'gain': {
+          const targetIndex = lfoConfig.targetIndex ?? 0;
+          if (targetIndex < gainNodes.length) {
+            // Modulate gain (depth controls amplitude)
+            lfoGain.gain.value = gainNodes[targetIndex].gain.value * lfoConfig.depth * 0.5;
+            lfo.connect(lfoGain);
+            lfoGain.connect(gainNodes[targetIndex].gain);
+          }
+          break;
+        }
+        case 'filter': {
+          const targetIndex = lfoConfig.targetIndex ?? 0;
+          if (targetIndex < filterNodes.length) {
+            // Modulate filter frequency
+            lfoGain.gain.value = filterNodes[targetIndex].frequency.value * lfoConfig.depth * 0.3;
+            lfo.connect(lfoGain);
+            lfoGain.connect(filterNodes[targetIndex].frequency);
+          }
+          break;
+        }
+      }
+
+      lfo.start();
+      this.lfoNodes.push(lfo);
+      this.lfoGainNodes.push(lfoGain);
+    }
   }
 
   /**
@@ -104,6 +164,8 @@ export class AudioSynthesizer {
     // Store old nodes
     const oldOscillators = this.oscillators;
     const oldGainNodes = this.gainNodes;
+    const oldLfoNodes = this.lfoNodes;
+    const oldLfoGainNodes = this.lfoGainNodes;
 
     // Create new oscillators/nodes
     const newOscillators: OscillatorNode[] = [];
@@ -124,30 +186,17 @@ export class AudioSynthesizer {
       osc.connect(gain);
       gain.connect(this.masterGain);
 
-      // Add subtle LFO for movement
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = 0.1 + Math.random() * 0.3;
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.value = 5;
-      lfo.connect(lfoGain);
-      lfoGain.connect(osc.detune);
-
       osc.start();
-      lfo.start();
 
       newOscillators.push(osc);
-      newOscillators.push(lfo);
       newGainNodes.push(gain);
-      newGainNodes.push(lfoGain);
 
       // Fade in new oscillator
       gain.gain.linearRampToValueAtTime(targetGain, ctx.currentTime + duration);
     }
 
     // Fade out old oscillators
-    for (let i = 0; i < oldGainNodes.length; i += 2) {
-      // Every other gain node is an oscillator gain (not LFO)
-      const gain = oldGainNodes[i];
+    for (const gain of oldGainNodes) {
       try {
         gain.gain.cancelScheduledValues(ctx.currentTime);
         gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
@@ -160,7 +209,12 @@ export class AudioSynthesizer {
     // Update state immediately
     this.oscillators = newOscillators;
     this.gainNodes = newGainNodes;
+    this.lfoNodes = [];
+    this.lfoGainNodes = [];
     this.currentParams = newParams;
+
+    // Apply new LFOs
+    this.applyLFOs(newParams, newOscillators, newGainNodes, this.filterNodes);
 
     // Clean up old nodes after crossfade completes
     setTimeout(
@@ -176,6 +230,21 @@ export class AudioSynthesizer {
         for (const gain of oldGainNodes) {
           try {
             gain.disconnect();
+          } catch (e) {
+            // Ignore
+          }
+        }
+        for (const lfo of oldLfoNodes) {
+          try {
+            lfo.stop();
+            lfo.disconnect();
+          } catch (e) {
+            // Ignore
+          }
+        }
+        for (const lfoGain of oldLfoGainNodes) {
+          try {
+            lfoGain.disconnect();
           } catch (e) {
             // Ignore
           }
@@ -267,9 +336,28 @@ export class AudioSynthesizer {
         }
       }
 
+      // Clean up LFO nodes
+      for (const lfo of this.lfoNodes) {
+        try {
+          lfo.stop();
+          lfo.disconnect();
+        } catch (e) {
+          // Ignore
+        }
+      }
+      for (const lfoGain of this.lfoGainNodes) {
+        try {
+          lfoGain.disconnect();
+        } catch (e) {
+          // Ignore
+        }
+      }
+
       this.oscillators = [];
       this.gainNodes = [];
       this.filterNodes = [];
+      this.lfoNodes = [];
+      this.lfoGainNodes = [];
       this.delayNode = null;
       this.delayFeedback = null;
       this.delayMix = null;

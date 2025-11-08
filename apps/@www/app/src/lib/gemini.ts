@@ -229,27 +229,49 @@ export async function generateAudioParameters(
 
   const systemPrompt = `You are a creative sound designer. You respond ONLY with valid JSON matching the requested format. Never add markdown formatting, explanations, or any text outside the JSON structure.`;
 
-  const userPrompt = `Current weather: ${weather.temperature}°F, ${weather.conditions}, wind ${weather.windSpeed}mph, humidity ${weather.humidity}%, pressure ${weather.pressure}hPa
+  // Calculate temperature trend from hourly data
+  const tempTrend = weather.hourly.temperature.length > 1
+    ? weather.hourly.temperature[11] - weather.hourly.temperature[0]
+    : 0;
+  const avgPrecipProb = weather.hourly.precipitationProbability.reduce((a, b) => a + b, 0) / weather.hourly.precipitationProbability.length;
+  const avgCloudCover = weather.hourly.cloudCover.reduce((a, b) => a + b, 0) / weather.hourly.cloudCover.length;
 
-Design a rich, layered ambient Web Audio soundscape representing this weather. Create 5-8 oscillators at different frequencies to build a complex, evolving drone with distinct tonal layers. Think Brian Eno, Stars of the Lid, or Alva Noto - sparse but harmonically rich.
+  const userPrompt = `Current weather: ${weather.temperature}°F, ${weather.conditions}, wind ${weather.windSpeed}mph, humidity ${weather.humidity}%, pressure ${weather.pressure}hPa, solar radiation ${weather.solar.shortwaveRadiation}W/m²
 
-Guidelines:
-- Use 5-8 oscillators for depth and complexity
+12-hour forecast: temp ${tempTrend > 0 ? 'rising' : tempTrend < 0 ? 'falling' : 'stable'} (${tempTrend.toFixed(1)}°F), avg precipitation probability ${avgPrecipProb.toFixed(0)}%, avg cloud cover ${avgCloudCover.toFixed(0)}%
+
+Design a rich, layered ambient Web Audio soundscape representing this weather. Create 8-12 oscillators for additive synthesis, plus 2-4 LFOs to add organic movement. Think Brian Eno, Stars of the Lid, or Alva Noto - sparse but harmonically rich with slow evolution.
+
+Oscillator Guidelines:
+- Use 8-12 oscillators for depth and complexity
 - Spread frequencies across the spectrum (both low drones and high shimmer)
 - Vary oscillator types (sine for purity, triangle for warmth, sawtooth for texture)
-- Keep individual gains low (0.1-0.3) since we're layering many sounds
+- Keep individual gains low (0.08-0.25) since we're layering many sounds
 - Use subtle detune values (-10 to +10) for organic movement
 - Choose frequencies that create interesting harmonic relationships
+
+LFO Guidelines:
+- Create 2-4 LFOs to modulate different parameters
+- Map solar radiation to brightness (higher radiation = more 'detune' LFOs for shimmer)
+- Map wind patterns to movement speed (higher wind = faster LFO rates)
+- Map temperature trends to frequency modulation depth
+- Map precipitation probability to gain modulation (rain = pulsing dynamics)
+- LFO rate: 0.05-2 Hz (slower = more meditative, faster = more active)
+- LFO depth: 0.1-0.8 (controls modulation intensity)
+- LFO targets: 'frequency', 'detune', 'gain', or 'filter'
+- LFO waveforms: 'sine' (smooth), 'triangle' (linear), 'sawtooth' (ramping), 'square' (stepping)
 
 Return ONLY valid JSON in this exact format:
 {
   "oscillators": [
-    {"type": "sine", "frequency": 110, "gain": 0.2, "detune": 0},
-    {"type": "sine", "frequency": 220, "gain": 0.25, "detune": 5},
-    {"type": "triangle", "frequency": 165, "gain": 0.15, "detune": -3},
-    {"type": "sine", "frequency": 440, "gain": 0.2, "detune": 7},
-    {"type": "sawtooth", "frequency": 55, "gain": 0.1, "detune": 0},
-    {"type": "sine", "frequency": 880, "gain": 0.15, "detune": -5}
+    {"type": "sine", "frequency": 110, "gain": 0.15, "detune": 0},
+    {"type": "sine", "frequency": 220, "gain": 0.18, "detune": 5},
+    {"type": "triangle", "frequency": 165, "gain": 0.12, "detune": -3},
+    {"type": "sine", "frequency": 440, "gain": 0.15, "detune": 7},
+    {"type": "sawtooth", "frequency": 55, "gain": 0.10, "detune": 0},
+    {"type": "sine", "frequency": 880, "gain": 0.12, "detune": -5},
+    {"type": "sine", "frequency": 330, "gain": 0.14, "detune": 3},
+    {"type": "triangle", "frequency": 660, "gain": 0.11, "detune": -2}
   ],
   "filters": [
     {"type": "lowpass", "frequency": 2000, "q": 1}
@@ -257,15 +279,24 @@ Return ONLY valid JSON in this exact format:
   "effects": {
     "reverb": {"decay": 3, "mix": 0.4},
     "delay": {"time": 0.5, "feedback": 0.3, "mix": 0.2}
-  }
+  },
+  "lfos": [
+    {"rate": 0.15, "depth": 0.4, "target": "detune", "waveform": "sine", "targetIndex": 0},
+    {"rate": 0.3, "depth": 0.5, "target": "gain", "waveform": "triangle", "targetIndex": 2},
+    {"rate": 0.08, "depth": 0.6, "target": "frequency", "waveform": "sine", "targetIndex": 5}
+  ]
 }
 
 Valid oscillator types: sine, square, sawtooth, triangle
 Valid filter types: lowpass, highpass, bandpass, notch
+Valid LFO targets: frequency, detune, gain, filter
+Valid LFO waveforms: sine, triangle, sawtooth, square
 Frequency range: 20-20000 Hz (try 55Hz, 110Hz, 220Hz, 440Hz, 880Hz, 1760Hz for harmonic relationships)
-Gain range: 0-1 (use 0.1-0.3 for layered sounds)
+Gain range: 0-1 (use 0.08-0.25 for layered sounds)
 Detune range: -100 to +100 cents (use -10 to +10 for subtle movement)
-Q range: 0.0001-1000`;
+Q range: 0.0001-1000
+LFO rate range: 0.01-20 Hz (use 0.05-2 for organic movement)
+LFO depth range: 0-1 (controls modulation intensity)`;
 
   try {
     // Create session with system prompt and download monitor
@@ -338,6 +369,8 @@ function sanitizeAudioParameters(params: AudioParameters): AudioParameters {
     "bandpass",
     "notch",
   ];
+  const validLFOTargets = ["frequency", "detune", "gain", "filter"];
+  const validLFOWaveforms = ["sine", "triangle", "sawtooth", "square"];
 
   return {
     oscillators: (params.oscillators || []).map((osc) => ({
@@ -374,14 +407,28 @@ function sanitizeAudioParameters(params: AudioParameters): AudioParameters {
           }
         : undefined,
     },
+    lfos: (params.lfos || []).map((lfo) => ({
+      rate: Math.max(0.01, Math.min(20, lfo.rate || 0.1)),
+      depth: Math.max(0, Math.min(1, lfo.depth || 0.5)),
+      target: validLFOTargets.includes(lfo.target) ? lfo.target as any : "detune",
+      waveform: validLFOWaveforms.includes(lfo.waveform) ? lfo.waveform as any : "sine",
+      targetIndex: lfo.targetIndex,
+    })),
   };
 }
 
 function getFallbackParameters(weather: WeatherData): AudioParameters {
-  // Rich rule-based fallback with multiple oscillators
+  // Rich rule-based fallback with multiple oscillators and LFOs
   const tempNorm = (weather.temperature - 32) / 68; // normalize 32-100°F to 0-1
   const windNorm = weather.windSpeed / 30; // normalize 0-30mph to 0-1
   const humidityNorm = weather.humidity / 100;
+  const solarNorm = weather.solar.shortwaveRadiation / 1000; // normalize solar radiation
+
+  // Calculate trends from hourly data
+  const tempTrend = weather.hourly.temperature.length > 1
+    ? (weather.hourly.temperature[11] - weather.hourly.temperature[0]) / 68
+    : 0;
+  const avgPrecipProb = weather.hourly.precipitationProbability.reduce((a, b) => a + b, 0) / weather.hourly.precipitationProbability.length / 100;
 
   // Base frequency depends on temperature (warmer = higher)
   const baseFreq = 110 + tempNorm * 110; // 110-220 Hz
@@ -392,56 +439,70 @@ function getFallbackParameters(weather: WeatherData): AudioParameters {
       {
         type: "sine",
         frequency: baseFreq * 0.5, // Sub-bass
-        gain: 0.15,
+        gain: 0.12,
         detune: 0,
       },
       // Fundamental
       {
         type: "sine",
         frequency: baseFreq,
-        gain: 0.2,
+        gain: 0.15,
         detune: windNorm * 8,
       },
       // Fifth harmonic
       {
         type: "triangle",
         frequency: baseFreq * 1.5,
-        gain: 0.18,
+        gain: 0.14,
         detune: -windNorm * 6,
       },
       // Octave
       {
         type: "sine",
         frequency: baseFreq * 2,
-        gain: 0.15,
+        gain: 0.12,
         detune: humidityNorm * 10,
       },
-      // High shimmer (depends on conditions)
+      // High shimmer (depends on solar radiation)
       {
         type: "sine",
-        frequency: 880 + tempNorm * 440,
-        gain: 0.12,
+        frequency: 880 + solarNorm * 440,
+        gain: 0.10 + solarNorm * 0.05,
         detune: -humidityNorm * 7,
       },
       // Textural layer (more prominent in windy conditions)
       {
         type: "sawtooth",
         frequency: baseFreq * 0.75,
-        gain: 0.08 + windNorm * 0.1,
+        gain: 0.08 + windNorm * 0.08,
         detune: windNorm * 12,
       },
       // Atmospheric high
       {
         type: "sine",
         frequency: 1320 + humidityNorm * 440,
-        gain: 0.1,
+        gain: 0.09,
         detune: -5,
+      },
+      // Mid-range harmonic
+      {
+        type: "triangle",
+        frequency: baseFreq * 3,
+        gain: 0.10,
+        detune: tempNorm * 8,
+      },
+      // Upper harmonic
+      {
+        type: "sine",
+        frequency: baseFreq * 4,
+        gain: 0.08,
+        detune: -tempNorm * 5,
       },
     ],
     filters: [
       {
         type: "lowpass",
-        frequency: 1500 + tempNorm * 1500,
+        frequency: 1500 + tempNorm * 1500 + solarNorm * 500,
         q: 1 + windNorm * 0.5,
       },
     ],
@@ -456,5 +517,39 @@ function getFallbackParameters(weather: WeatherData): AudioParameters {
         mix: 0.2,
       },
     },
+    lfos: [
+      // LFO 1: Detune modulation based on wind (creates shimmer)
+      {
+        rate: 0.1 + windNorm * 0.4, // Faster with more wind
+        depth: 0.3 + solarNorm * 0.3, // Deeper with more solar radiation
+        target: "detune" as const,
+        waveform: "sine" as const,
+        targetIndex: 4, // Modulate the high shimmer oscillator
+      },
+      // LFO 2: Gain modulation based on precipitation probability (pulsing)
+      {
+        rate: 0.15 + avgPrecipProb * 0.2,
+        depth: 0.2 + avgPrecipProb * 0.4, // More pulsing when rain is likely
+        target: "gain" as const,
+        waveform: "triangle" as const,
+        targetIndex: 1, // Modulate fundamental
+      },
+      // LFO 3: Frequency modulation based on temperature trend
+      {
+        rate: 0.08 + Math.abs(tempTrend) * 0.3, // Faster when temp changing
+        depth: 0.4 + Math.abs(tempTrend) * 0.3,
+        target: "frequency" as const,
+        waveform: "sine" as const,
+        targetIndex: 6, // Modulate atmospheric high
+      },
+      // LFO 4: Filter modulation based on overall weather activity
+      {
+        rate: 0.05 + (windNorm + avgPrecipProb) * 0.15,
+        depth: 0.5,
+        target: "filter" as const,
+        waveform: "sine" as const,
+        targetIndex: 0, // Modulate the lowpass filter
+      },
+    ],
   };
 }

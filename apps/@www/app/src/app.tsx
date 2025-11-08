@@ -1,21 +1,20 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import {useState, useEffect, useRef, useCallback} from "react";
 import "./styles/global.css";
 import * as styles from "./app.css";
-import { LoginButton } from "./components/login-button";
-import { Terminal, type TerminalLine } from "./components/terminal";
-import { FrequencyVisualizer } from "./components/frequency-visualizer";
-import { getUserLocation } from "./lib/geolocation";
-import { fetchWeatherData } from "./lib/weather";
+import {LoginButton} from "./components/login-button";
+import {Terminal, type TerminalLine} from "./components/terminal";
+import {FrequencyVisualizer} from "./components/frequency-visualizer";
+import {getUserLocation} from "./lib/geolocation";
+import {fetchWeatherData} from "./lib/weather";
 import {
   checkGeminiAvailability,
   generateAudioParameters,
-  createAISession,
   type AvailabilityStatus,
 } from "./lib/gemini";
-import { AudioSynthesizer } from "./lib/audio-synthesizer";
-import { AudioEvolutionEngine } from "./lib/audio-evolution-engine";
-import { performSystemCheck, getSetupInstructions } from "./lib/system-check";
-import type { WeatherData } from "./types/weather";
+import {AudioSynthesizer} from "./lib/audio-synthesizer";
+import {AudioEvolutionEngine} from "./lib/audio-evolution-engine";
+import {performSystemCheck, getSetupInstructions} from "./lib/system-check";
+import type {WeatherData} from "./types/weather";
 
 function App() {
   const [terminalLines, setTerminalLines] = useState<TerminalLine[]>([]);
@@ -25,12 +24,13 @@ function App() {
   const synthRef = useRef<AudioSynthesizer | null>(null);
   const evolutionEngineRef = useRef<AudioEvolutionEngine | null>(null);
   const weatherDataRef = useRef<WeatherData | null>(null);
+  const coordinatesRef = useRef<{latitude: number; longitude: number} | null>(null);
 
   const addLog = useCallback(
     (text: string, type: TerminalLine["type"] = "output") => {
       setTerminalLines((prev) => [
         ...prev,
-        { text, type, timestamp: Date.now() },
+        {text, type, timestamp: Date.now()},
       ]);
     },
     [],
@@ -123,12 +123,8 @@ function App() {
 
     if (cmd === "help") {
       addLog("Available commands:", "info");
-      addLog("  start - Begin weather sonification experience", "output");
-      addLog(
-        "  evolve - Enable continuous soundscape evolution (use after start)",
-        "output",
-      );
-      addLog("  stop  - Stop audio playback and evolution", "output");
+      addLog("  start - Begin weather station", "output");
+      addLog("  stop  - Stop weather station", "output");
       addLog("  setup - Show Chrome AI setup instructions", "output");
       addLog("  clear - Clear terminal output", "output");
       addLog("  debug - Show system status and debug information", "output");
@@ -140,14 +136,6 @@ function App() {
         addLog('Already playing. Use "stop" first.', "warning");
       } else {
         handleStart();
-      }
-    } else if (cmd === "evolve") {
-      if (!isPlaying) {
-        addLog('Start audio first with "start" command.', "warning");
-      } else if (isEvolving) {
-        addLog("Evolution already enabled.", "warning");
-      } else {
-        handleEvolve();
       }
     } else if (cmd === "stop") {
       if (!isPlaying) {
@@ -307,6 +295,7 @@ function App() {
     try {
       // Get user location
       const coords = await getUserLocation();
+      coordinatesRef.current = coords;
       addLog(
         `Location: ${coords.latitude.toFixed(2)}, ${coords.longitude.toFixed(2)}`,
         "success",
@@ -321,10 +310,10 @@ function App() {
         "success",
       );
       addLog(
-        `Wind: ${weatherData.windSpeed}mph, Humidity: ${weatherData.humidity}%`,
+        `Wind: ${weatherData.windSpeed}mph, Humidity: ${weatherData.humidity}%, Solar: ${weatherData.solar.shortwaveRadiation.toFixed(0)}W/m²`,
         "output",
       );
-      addLog("Generating soundscape...", "info");
+      addLog("Generating initial soundscape...", "info");
 
       // Generate audio parameters with Chrome AI
       const audioParams = await generateAudioParameters(
@@ -337,7 +326,7 @@ function App() {
       );
 
       addLog(
-        `Created soundscape: ${audioParams.oscillators.length} oscillators, ${audioParams.filters.length} filters`,
+        `Created soundscape: ${audioParams.oscillators.length} oscillators, ${audioParams.lfos?.length || 0} LFOs`,
         "success",
       );
       addLog("Starting audio playback...", "info");
@@ -347,82 +336,47 @@ function App() {
         await synthRef.current.start(audioParams);
         setIsPlaying(true);
         addLog('Audio playing. Use "stop" command to end.', "success");
+
+        // Initialize and start continuous weather-driven evolution
+        addLog("Starting continuous weather-driven evolution...", "info");
+        if (!evolutionEngineRef.current) {
+          evolutionEngineRef.current = new AudioEvolutionEngine({
+            weatherUpdateInterval: 60, // Fetch new weather every 60 seconds
+            crossfadeDuration: 8, // 8 second crossfade
+          });
+        }
+
+        // Start evolution loop
+        await evolutionEngineRef.current.start(
+          coords,
+          weatherData,
+          audioParams,
+          async (newParams, newWeather) => {
+            // Crossfade callback with updated weather
+            if (synthRef.current) {
+              await synthRef.current.crossfade(newParams, 8);
+              weatherDataRef.current = newWeather;
+              addLog(
+                `Weather updated: ${newWeather.temperature}°F, ${newWeather.conditions}`,
+                "info",
+              );
+            }
+          },
+          (text, type) => {
+            if (type) addLog(text, type);
+            else addLog(text);
+          },
+        );
+
+        setIsEvolving(true);
         addLog(
-          'Tip: Use "evolve" command to enable continuous evolution.',
-          "info",
+          "Soundscape will evolve continuously based on weather updates (every 60s).",
+          "success",
         );
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "An error occurred";
       addLog(`Error: ${errorMsg}`, "error");
-    }
-  };
-
-  const handleEvolve = async () => {
-    if (!weatherDataRef.current || !synthRef.current) {
-      addLog("Missing weather or synth data", "error");
-      return;
-    }
-
-    addLog("Starting evolution engine...", "info");
-    addLog("Creating persistent AI session...", "info");
-
-    try {
-      // Create AI session
-      const aiSession = await createAISession((text, type) => {
-        if (type) addLog(text, type);
-        else addLog(text);
-      });
-
-      if (!aiSession) {
-        addLog("Could not create AI session, evolution unavailable", "error");
-        return;
-      }
-
-      addLog("AI session created successfully", "success");
-
-      // Get current audio params from synthesizer
-      const currentParams = (synthRef.current as any).currentParams;
-      if (!currentParams) {
-        addLog("No current audio parameters found", "error");
-        aiSession.destroy();
-        return;
-      }
-
-      // Initialize evolution engine
-      if (!evolutionEngineRef.current) {
-        evolutionEngineRef.current = new AudioEvolutionEngine({
-          intervalSeconds: 10, // Evolve every 45 seconds
-          crossfadeDuration: 8, // 8 second crossfade
-          enableEvolution: true,
-        });
-      }
-
-      // Start evolution loop
-      await evolutionEngineRef.current.start(
-        aiSession,
-        weatherDataRef.current,
-        currentParams,
-        async (newParams) => {
-          // Crossfade callback
-          if (synthRef.current) {
-            await synthRef.current.crossfade(newParams, 8);
-          }
-        },
-        (text, type) => {
-          if (type) addLog(text, type);
-          else addLog(text);
-        },
-      );
-
-      setIsEvolving(true);
-      addLog(
-        "Evolution enabled. Soundscape will organically evolve every 10s.",
-        "success",
-      );
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "An error occurred";
-      addLog(`Evolution failed: ${errorMsg}`, "error");
     }
   };
 
