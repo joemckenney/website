@@ -109,14 +109,9 @@ export class AudioEvolutionEngine {
     this.generationCount++;
 
     try {
-      // On first check, add the detecting line
-      if (this.generationCount === 1) {
-        log?.("Detecting changes in weather.", "info");
-      } else {
-        // Update the detecting line with animated dots
-        const dots = ".".repeat((this.generationCount % 3) + 1);
-        updateLog?.(`Detecting changes in weather${dots}`, "info");
-      }
+      // Update the detecting line with animated dots
+      const dots = ".".repeat((this.generationCount % 3) + 1);
+      updateLog?.(`Detecting changes in weather${dots}`, "info");
 
       // Fetch fresh weather data
       const newWeather = await fetchWeatherData(this.coordinates);

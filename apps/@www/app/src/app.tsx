@@ -438,6 +438,7 @@ function App() {
           "Soundscape will evolve continuously based on weather updates (every 10s).",
           "success",
         );
+        addLog("Detecting changes in weather.", "info");
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "An error occurred";
