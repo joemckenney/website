@@ -2,6 +2,7 @@ import type { AudioParameters, WeatherData } from "../types/weather";
 import type { Coordinates } from "./geolocation";
 import { fetchWeatherData } from "./weather";
 import { generateAudioParameters } from "./gemini";
+import { compareWeather, type WeatherChange } from "./weather-diff";
 
 export interface EvolutionConfig {
   weatherUpdateInterval: number; // How often to fetch new weather data (60 seconds = 1 minute)
@@ -28,11 +29,16 @@ export class AudioEvolutionEngine {
     coordinates: Coordinates,
     initialWeather: WeatherData,
     initialParams: AudioParameters,
-    onEvolution: (params: AudioParameters, weather: WeatherData) => Promise<void>,
+    onEvolution: (params: AudioParameters, weather: WeatherData, changes: WeatherChange[]) => Promise<void>,
     log?: (
       text: string,
-      type?: "info" | "success" | "warning" | "error",
+      type?: "info" | "success" | "warning" | "error" | "output",
     ) => void,
+    updateLog?: (
+      text: string,
+      type?: "info" | "success" | "warning" | "error" | "output",
+    ) => void,
+    removeLog?: () => void,
   ): Promise<void> {
     if (this.isRunning) {
       log?.("Evolution already running", "warning");
@@ -51,7 +57,7 @@ export class AudioEvolutionEngine {
     );
 
     // Schedule first evolution
-    this.scheduleNextEvolution(onEvolution, log);
+    this.scheduleNextEvolution(onEvolution, log, updateLog, removeLog);
   }
 
   /**
@@ -67,54 +73,91 @@ export class AudioEvolutionEngine {
   }
 
   private scheduleNextEvolution(
-    onEvolution: (params: AudioParameters, weather: WeatherData) => Promise<void>,
+    onEvolution: (params: AudioParameters, weather: WeatherData, changes: WeatherChange[]) => Promise<void>,
     log?: (
       text: string,
-      type?: "info" | "success" | "warning" | "error",
+      type?: "info" | "success" | "warning" | "error" | "output",
     ) => void,
+    updateLog?: (
+      text: string,
+      type?: "info" | "success" | "warning" | "error" | "output",
+    ) => void,
+    removeLog?: () => void,
   ): void {
     if (!this.isRunning) return;
 
     this.evolutionTimer = window.setTimeout(async () => {
-      await this.generateEvolution(onEvolution, log);
-      this.scheduleNextEvolution(onEvolution, log);
+      await this.generateEvolution(onEvolution, log, updateLog, removeLog);
+      this.scheduleNextEvolution(onEvolution, log, updateLog, removeLog);
     }, this.config.weatherUpdateInterval * 1000);
   }
 
   private async generateEvolution(
-    onEvolution: (params: AudioParameters, weather: WeatherData) => Promise<void>,
+    onEvolution: (params: AudioParameters, weather: WeatherData, changes: WeatherChange[]) => Promise<void>,
     log?: (
       text: string,
-      type?: "info" | "success" | "warning" | "error",
+      type?: "info" | "success" | "warning" | "error" | "output",
     ) => void,
+    updateLog?: (
+      text: string,
+      type?: "info" | "success" | "warning" | "error" | "output",
+    ) => void,
+    removeLog?: () => void,
   ): Promise<void> {
-    if (!this.coordinates) return;
+    if (!this.coordinates || !this.weather) return;
 
     this.generationCount++;
 
     try {
+      // On first check, add the detecting line
+      if (this.generationCount === 1) {
+        log?.("Detecting changes in weather.", "info");
+      } else {
+        // Update the detecting line with animated dots
+        const dots = ".".repeat((this.generationCount % 3) + 1);
+        updateLog?.(`Detecting changes in weather${dots}`, "info");
+      }
+
       // Fetch fresh weather data
-      log?.(`Fetching updated weather data...`, "info");
       const newWeather = await fetchWeatherData(this.coordinates);
-      this.weather = newWeather;
+
+      // Compare with previous weather to detect changes
+      const changes = compareWeather(this.weather, newWeather);
+
+      if (changes.length === 0) {
+        // No significant weather changes, keep the detecting line
+        return;
+      }
+
+      // Weather has changed - remove the detecting line and log what changed
+      removeLog?.();
+      log?.(`Weather changed (${changes.length} parameter${changes.length > 1 ? 's' : ''})`, "info");
+      for (const change of changes) {
+        log?.(change.description, "output");
+      }
 
       // Generate new audio parameters from updated weather, evolving from current state
-      log?.(
-        `Evolving soundscape from weather update ${this.generationCount}...`,
-        "info",
-      );
+      log?.(`Updating soundscape...`, "info");
       const newParams = await generateAudioParameters(newWeather, this.currentParams, undefined, log);
 
       // Update current state
       this.currentParams = newParams;
+      this.weather = newWeather;
 
-      // Trigger crossfade with new weather data
-      await onEvolution(newParams, newWeather);
+      // Trigger crossfade with new weather data and changes
+      await onEvolution(newParams, newWeather, changes);
 
-      log?.(`Weather update ${this.generationCount} complete`, "success");
+      log?.(`Soundscape updated`, "success");
+
+      // Reset generation count and add new detecting line
+      this.generationCount = 0;
+      log?.("Detecting changes in weather.", "info");
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      removeLog?.(); // Remove detecting line on error
       log?.(`Weather update failed: ${errorMsg}`, "error");
+      // Add detecting line back
+      log?.("Detecting changes in weather.", "info");
     }
   }
 

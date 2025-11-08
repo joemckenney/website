@@ -25,6 +25,8 @@ function App() {
   const evolutionEngineRef = useRef<AudioEvolutionEngine | null>(null);
   const weatherDataRef = useRef<WeatherData | null>(null);
   const coordinatesRef = useRef<{latitude: number; longitude: number} | null>(null);
+  const detectingLineIndexRef = useRef<number | null>(null);
+  const dotCountRef = useRef<number>(0);
 
   const addLog = useCallback(
     (text: string, type: TerminalLine["type"] = "output") => {
@@ -35,6 +37,25 @@ function App() {
     },
     [],
   );
+
+  const updateLastLog = useCallback(
+    (text: string, type: TerminalLine["type"] = "output") => {
+      setTerminalLines((prev) => {
+        if (prev.length === 0) return prev;
+        const newLines = [...prev];
+        newLines[newLines.length - 1] = {text, type, timestamp: Date.now()};
+        return newLines;
+      });
+    },
+    [],
+  );
+
+  const removeLastLog = useCallback(() => {
+    setTerminalLines((prev) => {
+      if (prev.length === 0) return prev;
+      return prev.slice(0, -1);
+    });
+  }, []);
 
   const hasLoggedInitial = useRef(false);
 
@@ -388,20 +409,27 @@ function App() {
           coords,
           weatherData,
           audioParams,
-          async (newParams, newWeather) => {
+          async (newParams, newWeather, changes) => {
             // Crossfade callback with updated weather
             if (synthRef.current) {
               await synthRef.current.crossfade(newParams, 8);
               weatherDataRef.current = newWeather;
-              addLog(
-                `Weather updated: ${newWeather.temperature}°F, ${newWeather.conditions}`,
-                "info",
-              );
+
+              // Changes are already logged by the evolution engine
+              // Just update the ref here
             }
           },
           (text, type) => {
             if (type) addLog(text, type);
             else addLog(text);
+          },
+          (text, type) => {
+            // Update last log in place
+            updateLastLog(text, type);
+          },
+          () => {
+            // Remove the "detecting" line when changes are found
+            removeLastLog();
           },
         );
 
