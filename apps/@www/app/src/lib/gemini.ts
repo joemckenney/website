@@ -90,7 +90,32 @@ export async function checkGeminiAvailability(
       );
       log?.("   First request will use rule-based generation", "info");
     } else {
-      log?.(`⚠️  Chrome AI status: ${status}`, "warning");
+      // Status is "unavailable" - trigger the download by calling create()
+      log?.("ℹ️  Chrome AI model not yet downloaded", "warning");
+      log?.("   Initiating download (~1.7GB)...", "info");
+
+      try {
+        // Call create() to trigger the download
+        // Per Chrome docs: calling create() is what actually initiates the download
+        const session = await languageModel.create({
+          monitor: (m) => {
+            m.addEventListener("downloadprogress", (e) => {
+              const progress = (e.loaded / e.total) * 100;
+              log?.(`   Download progress: ${progress.toFixed(1)}%`, "info");
+            });
+          },
+        });
+
+        // Clean up the session immediately
+        session.destroy();
+
+        log?.("✓ Download initiated successfully", "success");
+        log?.("   Use 'debug' command to check download status", "info");
+      } catch (downloadError) {
+        const errorMsg = downloadError instanceof Error ? downloadError.message : "Unknown error";
+        log?.(`Failed to initiate download: ${errorMsg}`, "error");
+        log?.("   Check chrome://flags settings and try again", "warning");
+      }
     }
 
     return {

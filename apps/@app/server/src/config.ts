@@ -8,8 +8,8 @@ export const config = {
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET || 'dev-access-secret',
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret',
-    accessTokenExpiry: '15m', // 15 minutes
-    refreshTokenExpiry: '7d', // 7 days
+    accessTokenExpiry: '15m' as const, // 15 minutes
+    refreshTokenExpiry: '7d' as const, // 7 days
   },
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3001',
 };
