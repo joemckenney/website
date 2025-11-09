@@ -1,22 +1,18 @@
+import { postAuthRefresh, postAuthLogout, client } from '@app/sdk';
+
 const ACCESS_TOKEN_KEY = 'access_token';
-const REFRESH_TOKEN_KEY = 'refresh_token';
 
 export function getAccessToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
-export function getRefreshToken(): string | null {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
-}
-
-export function setTokens(accessToken: string, refreshToken: string): void {
+export function setAccessToken(accessToken: string): void {
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
 }
 
 export function clearTokens(): void {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  // Note: refresh token is now an httpOnly cookie managed by the server
 }
 
 export function isAuthenticated(): boolean {
@@ -24,26 +20,22 @@ export function isAuthenticated(): boolean {
 }
 
 export async function refreshAccessToken(): Promise<boolean> {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) return false;
-
   try {
-    const response = await fetch('http://localhost:3000/auth/refresh', {
-      method: 'POST',
+    // No need to send refresh token - it's automatically sent as httpOnly cookie
+    const response = await postAuthRefresh({
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ refresh_token: refreshToken }),
     });
 
-    if (!response.ok) {
+    if (response.error) {
       clearTokens();
       return false;
     }
 
-    const data = await response.json();
+    const data = response.data as any;
     if (data.access_token) {
-      localStorage.setItem(ACCESS_TOKEN_KEY, data.access_token);
+      setAccessToken(data.access_token);
       return true;
     }
 
@@ -57,12 +49,14 @@ export async function refreshAccessToken(): Promise<boolean> {
 
 export async function logout(): Promise<void> {
   try {
-    await fetch('http://localhost:3000/auth/logout', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${getAccessToken()}`,
-      },
-    });
+    const token = getAccessToken();
+    if (token) {
+      await postAuthLogout({
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    }
   } catch (error) {
     console.error('Logout error:', error);
   } finally {

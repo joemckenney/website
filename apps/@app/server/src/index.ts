@@ -2,6 +2,7 @@ import "dotenv/config";
 import Fastify from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import cors from "@fastify/cors";
+import cookie from "@fastify/cookie";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { writeFile, mkdir } from "node:fs/promises";
@@ -21,9 +22,13 @@ const fastify = Fastify({
   },
 }).withTypeProvider<TypeBoxTypeProvider>();
 
+// Register cookie support
+await fastify.register(cookie);
+
 // Register CORS
 await fastify.register(cors, {
   origin: true, // Allow all origins in development
+  credentials: true, // Allow cookies to be sent
 });
 
 // Register Swagger/OpenAPI

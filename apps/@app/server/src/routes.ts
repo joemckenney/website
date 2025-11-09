@@ -42,8 +42,9 @@ export async function registerRoutes(
     },
     async (request) => {
       const { number } = request.body;
-      const result = squared(request.body.number);
-      return { input: number, result };
+      // Type assertion safe due to schema validation
+      const result = squared(number as number);
+      return { input: number as number, result };
     },
   );
 }

@@ -86,10 +86,18 @@ export async function registerAuthRoutes(
       const accessToken = generateAccessToken(userInfo.email);
       const refreshToken = generateRefreshToken(userInfo.email);
 
-      // Redirect to frontend with tokens
+      // Set refresh token as httpOnly cookie
+      reply.setCookie('refresh_token', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+      });
+
+      // Redirect to frontend with only access token (not refresh token)
       const redirectUrl = new URL(config.frontendUrl);
       redirectUrl.searchParams.set('access_token', accessToken);
-      redirectUrl.searchParams.set('refresh_token', refreshToken);
 
       return reply.redirect(redirectUrl.toString());
     } catch (error) {
@@ -100,7 +108,7 @@ export async function registerAuthRoutes(
 
   // Refresh access token
   app.post('/auth/refresh', async (request, reply) => {
-    const { refresh_token } = request.body as { refresh_token?: string };
+    const refresh_token = request.cookies.refresh_token;
 
     if (!refresh_token) {
       return reply.status(400).send({ error: 'Missing refresh token' });
@@ -126,8 +134,16 @@ export async function registerAuthRoutes(
     }
   });
 
-  // Logout (client-side token removal, but endpoint for consistency)
+  // Logout (clears httpOnly cookie)
   app.post('/auth/logout', async (request, reply) => {
+    // Clear the httpOnly refresh token cookie
+    reply.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+
     return reply.send({ message: 'Logged out successfully' });
   });
 

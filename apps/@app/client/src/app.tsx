@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react";
-import { client, postSquared } from "@app/sdk";
+import { client, postSquared, getAuthMe } from "@app/sdk";
 import * as styles from "./app.css";
 import {
   getAccessToken,
-  setTokens,
+  setAccessToken,
   isAuthenticated,
   logout,
   refreshAccessToken,
 } from "./lib/auth";
 
-// Configure SDK client base URL
+// Configure SDK client base URL and credentials for httpOnly cookies
 client.setConfig({
   baseUrl: "http://localhost:3000",
+  credentials: "include", // Send cookies with cross-origin requests
 });
 
 function App() {
@@ -21,11 +22,10 @@ function App() {
   const [authenticated, setAuthenticated] = useState(isAuthenticated());
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  // Extract tokens from URL on mount
+  // Extract access token from URL on mount (refresh token is now httpOnly cookie)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get("access_token");
-    const refreshToken = params.get("refresh_token");
     const error = params.get("error");
 
     if (error) {
@@ -34,8 +34,8 @@ function App() {
       return;
     }
 
-    if (accessToken && refreshToken) {
-      setTokens(accessToken, refreshToken);
+    if (accessToken) {
+      setAccessToken(accessToken);
       setAuthenticated(true);
       window.history.replaceState({}, "", window.location.pathname);
       fetchUserInfo();
@@ -49,17 +49,17 @@ function App() {
     if (!token) return;
 
     try {
-      const response = await fetch("http://localhost:3000/auth/me", {
+      const response = await getAuthMe({
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.data) {
+        const data = response.data as any;
         setUserEmail(data.email);
-      } else if (response.status === 401) {
-        // Try to refresh token
+      } else if (response.error) {
+        // Try to refresh token on 401
         const refreshed = await refreshAccessToken();
         if (refreshed) {
           fetchUserInfo();
