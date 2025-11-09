@@ -19,3 +19,25 @@ export const SquaredResponse = Type.Object({
 
 export type SquaredRequestType = Static<typeof SquaredRequest>;
 export type SquaredResponseType = Static<typeof SquaredResponse>;
+
+// Auth endpoint schemas
+export const RefreshTokenResponse = Type.Object({
+  access_token: Type.String({ description: "New access token" }),
+});
+
+export const LogoutResponse = Type.Object({
+  message: Type.String({ description: "Logout confirmation message" }),
+});
+
+export const MeResponse = Type.Object({
+  email: Type.String({ description: "User email address" }),
+});
+
+export const ErrorResponse = Type.Object({
+  error: Type.String({ description: "Error message" }),
+});
+
+export type RefreshTokenResponseType = Static<typeof RefreshTokenResponse>;
+export type LogoutResponseType = Static<typeof LogoutResponse>;
+export type MeResponseType = Static<typeof MeResponse>;
+export type ErrorResponseType = Static<typeof ErrorResponse>;

@@ -1,39 +1,52 @@
-import type { FastifyInstance } from 'fastify';
-import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
-import { Google, generateState, generateCodeVerifier } from 'arctic';
-import { config } from '../config.js';
+import type { FastifyInstance } from "fastify";
+import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
+import { Google, generateState, generateCodeVerifier } from "arctic";
+import { config } from "../config.js";
 import {
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
-} from '../lib/jwt.js';
+} from "../lib/jwt.js";
+import {
+  RefreshTokenResponse,
+  LogoutResponse,
+  MeResponse,
+  ErrorResponse,
+} from "../schemas.js";
 
 const google = new Google(
   config.google.clientId,
   config.google.clientSecret,
-  config.google.redirectUri
+  config.google.redirectUri,
 );
 
 // In-memory store for OAuth state and code verifier (use Redis in production)
-const oauthStore = new Map<string, { codeVerifier: string; timestamp: number }>();
+const oauthStore = new Map<
+  string,
+  { codeVerifier: string; timestamp: number }
+>();
 
 // Clean up old entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [state, data] of oauthStore.entries()) {
-    if (now - data.timestamp > 10 * 60 * 1000) { // 10 minutes
-      oauthStore.delete(state);
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [state, data] of oauthStore.entries()) {
+      if (now - data.timestamp > 10 * 60 * 1000) {
+        // 10 minutes
+        oauthStore.delete(state);
+      }
     }
-  }
-}, 5 * 60 * 1000);
+  },
+  5 * 60 * 1000,
+);
 
 export async function registerAuthRoutes(
-  fastify: FastifyInstance & { withTypeProvider: <T>() => FastifyInstance }
+  fastify: FastifyInstance & { withTypeProvider: <T>() => FastifyInstance },
 ) {
   const app = fastify.withTypeProvider<TypeBoxTypeProvider>();
 
   // Initiate Google OAuth flow
-  app.get('/auth/google', async (request, reply) => {
+  app.get("/auth/google", async (request, reply) => {
     const state = generateState();
     const codeVerifier = generateCodeVerifier();
 
@@ -43,22 +56,28 @@ export async function registerAuthRoutes(
       timestamp: Date.now(),
     });
 
-    const url = google.createAuthorizationURL(state, codeVerifier, ['openid', 'email', 'profile']);
+    const url = google.createAuthorizationURL(state, codeVerifier, [
+      "openid",
+      "email",
+      "profile",
+    ]);
 
     return reply.redirect(url.toString());
   });
 
   // Google OAuth callback
-  app.get('/auth/google/callback', async (request, reply) => {
+  app.get("/auth/google/callback", async (request, reply) => {
     const { code, state } = request.query as { code?: string; state?: string };
 
     if (!code || !state) {
-      return reply.status(400).send({ error: 'Missing code or state parameter' });
+      return reply
+        .status(400)
+        .send({ error: "Missing code or state parameter" });
     }
 
     const storedData = oauthStore.get(state);
     if (!storedData) {
-      return reply.status(400).send({ error: 'Invalid state parameter' });
+      return reply.status(400).send({ error: "Invalid state parameter" });
     }
 
     // Clean up used state
@@ -66,16 +85,25 @@ export async function registerAuthRoutes(
 
     try {
       // Exchange code for tokens
-      const tokens = await google.validateAuthorizationCode(code, storedData.codeVerifier);
+      const tokens = await google.validateAuthorizationCode(
+        code,
+        storedData.codeVerifier,
+      );
 
       // Fetch user info from Google
-      const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-        headers: {
-          Authorization: `Bearer ${tokens.accessToken()}`,
+      const response = await fetch(
+        "https://www.googleapis.com/oauth2/v2/userinfo",
+        {
+          headers: {
+            Authorization: `Bearer ${tokens.accessToken()}`,
+          },
         },
-      });
+      );
 
-      const userInfo = await response.json() as { email: string; name: string };
+      const userInfo = (await response.json()) as {
+        email: string;
+        name: string;
+      };
 
       // Check if email is allowed
       if (userInfo.email !== config.allowedEmail) {
@@ -87,17 +115,17 @@ export async function registerAuthRoutes(
       const refreshToken = generateRefreshToken(userInfo.email);
 
       // Set refresh token as httpOnly cookie
-      reply.setCookie('refresh_token', refreshToken, {
+      reply.setCookie("refresh_token", refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-        sameSite: 'lax',
-        path: '/',
+        secure: process.env.NODE_ENV === "production", // HTTPS only in production
+        sameSite: "lax",
+        path: "/",
         maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
       });
 
       // Redirect to frontend with only access token (not refresh token)
       const redirectUrl = new URL(config.frontendUrl);
-      redirectUrl.searchParams.set('access_token', accessToken);
+      redirectUrl.searchParams.set("access_token", accessToken);
 
       return reply.redirect(redirectUrl.toString());
     } catch (error) {
@@ -106,70 +134,110 @@ export async function registerAuthRoutes(
     }
   });
 
-  // Refresh access token
-  app.post('/auth/refresh', async (request, reply) => {
-    const refresh_token = request.cookies.refresh_token;
+  app.post(
+    "/auth/refresh",
+    {
+      schema: {
+        description: "Refresh access token using httpOnly cookie",
+        tags: ["auth"],
+        response: {
+          200: RefreshTokenResponse,
+          400: ErrorResponse,
+          401: ErrorResponse,
+          403: ErrorResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const refresh_token = request.cookies.refresh_token;
 
-    if (!refresh_token) {
-      return reply.status(400).send({ error: 'Missing refresh token' });
-    }
-
-    try {
-      const payload = verifyRefreshToken(refresh_token);
-
-      if (payload.type !== 'refresh') {
-        return reply.status(400).send({ error: 'Invalid token type' });
+      if (!refresh_token) {
+        return reply.status(400).send({ error: "Missing refresh token" });
       }
 
-      if (payload.email !== config.allowedEmail) {
-        return reply.status(403).send({ error: 'Access denied' });
-      }
-
-      // Generate new access token
-      const accessToken = generateAccessToken(payload.email);
-
-      return reply.send({ access_token: accessToken });
-    } catch (error) {
-      return reply.status(401).send({ error: 'Invalid or expired refresh token' });
-    }
-  });
-
-  // Logout (clears httpOnly cookie)
-  app.post('/auth/logout', async (request, reply) => {
-    // Clear the httpOnly refresh token cookie
-    reply.clearCookie('refresh_token', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-    });
-
-    return reply.send({ message: 'Logged out successfully' });
-  });
-
-  // Get current user info (protected endpoint example)
-  app.get('/auth/me', {
-    preHandler: async (request, reply) => {
-      const authHeader = request.headers.authorization;
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return reply.status(401).send({ error: 'Missing authorization header' });
-      }
-
-      const token = authHeader.substring(7);
       try {
-        const { verifyAccessToken } = await import('../lib/jwt.js');
-        const payload = verifyAccessToken(token);
+        const payload = verifyRefreshToken(refresh_token);
 
-        if (payload.email !== config.allowedEmail) {
-          return reply.status(403).send({ error: 'Access denied' });
+        if (payload.type !== "refresh") {
+          return reply.status(400).send({ error: "Invalid token type" });
         }
 
-        request.user = { email: payload.email };
+        if (payload.email !== config.allowedEmail) {
+          return reply.status(403).send({ error: "Access denied" });
+        }
+
+        // Generate new access token
+        const accessToken = generateAccessToken(payload.email);
+
+        return reply.send({ access_token: accessToken });
       } catch (error) {
-        return reply.status(401).send({ error: 'Invalid or expired token' });
+        return reply
+          .status(401)
+          .send({ error: "Invalid or expired refresh token" });
       }
     },
-  }, async (request, reply) => {
-    return reply.send({ email: request.user?.email });
-  });
+  );
+
+  app.post(
+    "/auth/logout",
+    {
+      schema: {
+        description: "Logout and clear refresh token cookie",
+        tags: ["auth"],
+        response: {
+          200: LogoutResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      reply.clearCookie("refresh_token", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+      });
+
+      return reply.send({ message: "Logged out successfully" });
+    },
+  );
+
+  app.get(
+    "/auth/me",
+    {
+      schema: {
+        description: "Get current authenticated user information",
+        tags: ["auth"],
+        response: {
+          200: MeResponse,
+          401: ErrorResponse,
+          403: ErrorResponse,
+        },
+      },
+      preHandler: async (request, reply) => {
+        const authHeader = request.headers.authorization;
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+          return reply
+            .status(401)
+            .send({ error: "Missing authorization header" });
+        }
+
+        const token = authHeader.substring(7);
+        try {
+          const { verifyAccessToken } = await import("../lib/jwt.js");
+          const payload = verifyAccessToken(token);
+
+          if (payload.email !== config.allowedEmail) {
+            return reply.status(403).send({ error: "Access denied" });
+          }
+
+          request.user = { email: payload.email };
+        } catch (error) {
+          return reply.status(401).send({ error: "Invalid or expired token" });
+        }
+      },
+    },
+    async (request, reply) => {
+      return reply.send({ email: request.user?.email as string });
+    },
+  );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { client, postSquared, getAuthMe } from "@app/sdk";
+import { client, postSquared, getPing, getAuthMe } from "@app/sdk";
 import * as styles from "./app.css";
 import {
   getAccessToken,
@@ -8,6 +8,7 @@ import {
   logout,
   refreshAccessToken,
 } from "./lib/auth";
+import { decodeJWT, getTimeUntilExpiry, formatTimestamp } from "./lib/jwt-utils";
 
 // Configure SDK client base URL and credentials for httpOnly cookies
 client.setConfig({
@@ -16,11 +17,28 @@ client.setConfig({
 });
 
 function App() {
-  const [input, setInput] = useState("");
-  const [result, setResult] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
   const [authenticated, setAuthenticated] = useState(isAuthenticated());
   const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  // Squared endpoint state
+  const [squaredInput, setSquaredInput] = useState("");
+  const [squaredResult, setSquaredResult] = useState<number | null>(null);
+  const [squaredLoading, setSquaredLoading] = useState(false);
+
+  // Ping endpoint state
+  const [pingResult, setPingResult] = useState<string | null>(null);
+  const [pingLoading, setPingLoading] = useState(false);
+  const [pingTiming, setPingTiming] = useState<number | null>(null);
+  const [pingRequest, setPingRequest] = useState<any>(null);
+  const [pingResponse, setPingResponse] = useState<any>(null);
+
+  // Squared timing/request/response
+  const [squaredTiming, setSquaredTiming] = useState<number | null>(null);
+  const [squaredRequest, setSquaredRequest] = useState<any>(null);
+  const [squaredResponse, setSquaredResponse] = useState<any>(null);
+
+  // Debug state
+  const [tokenExpiry, setTokenExpiry] = useState<string>("");
 
   // Extract access token from URL on mount (refresh token is now httpOnly cookie)
   useEffect(() => {
@@ -44,6 +62,23 @@ function App() {
     }
   }, []);
 
+  // Update token expiry every second
+  useEffect(() => {
+    if (!authenticated) return;
+
+    const interval = setInterval(() => {
+      const token = getAccessToken();
+      if (token) {
+        const decoded = decodeJWT(token);
+        if (decoded) {
+          setTokenExpiry(getTimeUntilExpiry(decoded.exp));
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [authenticated]);
+
   const fetchUserInfo = async () => {
     const token = getAccessToken();
     if (!token) return;
@@ -56,8 +91,7 @@ function App() {
       });
 
       if (response.data) {
-        const data = response.data as any;
-        setUserEmail(data.email);
+        setUserEmail(response.data.email);
       } else if (response.error) {
         // Try to refresh token on 401
         const refreshed = await refreshAccessToken();
@@ -79,14 +113,27 @@ function App() {
     window.location.href = "http://localhost:5000";
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSquaredSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const num = parseFloat(input);
+    const num = parseFloat(squaredInput);
     if (isNaN(num)) return;
 
-    setLoading(true);
+    setSquaredLoading(true);
+    const startTime = performance.now();
+    const token = getAccessToken();
+
+    const requestData = {
+      method: "POST",
+      url: "/squared",
+      headers: {
+        Authorization: token ? `Bearer ${token.substring(0, 20)}...` : "none",
+        "Content-Type": "application/json",
+      },
+      body: { number: num },
+    };
+    setSquaredRequest(requestData);
+
     try {
-      const token = getAccessToken();
       const response = await postSquared({
         body: { number: num },
         headers: {
@@ -94,108 +141,245 @@ function App() {
         },
       });
 
+      const endTime = performance.now();
+      setSquaredTiming(Math.round(endTime - startTime));
+
       if (response.data) {
-        setResult(response.data.result);
+        setSquaredResult(response.data.result);
+        setSquaredResponse({
+          status: 200,
+          data: response.data,
+        });
       }
     } catch (error: any) {
+      const endTime = performance.now();
+      setSquaredTiming(Math.round(endTime - startTime));
+
       // Handle 401 - token expired
       if (error?.status === 401) {
+        setSquaredResponse({
+          status: 401,
+          error: "Unauthorized - token expired",
+        });
         const refreshed = await refreshAccessToken();
         if (refreshed) {
           // Retry the request
-          handleSubmit(e);
+          handleSquaredSubmit(e);
         } else {
           alert("Session expired. Please login again.");
           handleLogout();
         }
       } else {
         console.error("API error:", error);
+        setSquaredResponse({
+          status: error?.status || 500,
+          error: error?.message || "Unknown error",
+        });
         alert("Failed to calculate. Please try again.");
       }
     } finally {
-      setLoading(false);
+      setSquaredLoading(false);
+    }
+  };
+
+  const handlePing = async () => {
+    setPingLoading(true);
+    const startTime = performance.now();
+
+    const requestData = {
+      method: "GET",
+      url: "/ping",
+      headers: {},
+      body: null,
+    };
+    setPingRequest(requestData);
+
+    try {
+      const response = await getPing();
+
+      const endTime = performance.now();
+      setPingTiming(Math.round(endTime - startTime));
+
+      if (response.data) {
+        setPingResult(response.data.message);
+        setPingResponse({
+          status: 200,
+          data: response.data,
+        });
+      }
+    } catch (error: any) {
+      const endTime = performance.now();
+      setPingTiming(Math.round(endTime - startTime));
+
+      console.error("Ping error:", error);
+      setPingResponse({
+        status: error?.status || 500,
+        error: error?.message || "Unknown error",
+      });
+      alert("Failed to ping. Please try again.");
+    } finally {
+      setPingLoading(false);
     }
   };
 
   if (!authenticated) {
     return (
-      <div style={{ padding: "2rem", fontFamily: "system-ui, sans-serif" }}>
-        <h1>Not Authenticated</h1>
-        <p>Please login from the main app to access this page.</p>
-        <button
-          onClick={() => (window.location.href = "http://localhost:5000")}
-          style={{ padding: "0.5rem 1rem", fontSize: "1rem", cursor: "pointer" }}
-        >
-          Go to Main App
-        </button>
+      <div className={styles.unauthPage}>
+        <div className={styles.unauthBox}>
+          <h1 className={styles.unauthTitle}>Not Authenticated</h1>
+          <p className={styles.unauthText}>
+            Please login from the main app to access this page.
+          </p>
+          <button
+            onClick={() => (window.location.href = "http://localhost:5000")}
+            className={styles.primaryButton}
+          >
+            Go to Main App
+          </button>
+        </div>
       </div>
     );
   }
 
+  const accessToken = getAccessToken();
+  const decodedToken = accessToken ? decodeJWT(accessToken) : null;
+
   return (
-    <div style={{ padding: "2rem", fontFamily: "system-ui, sans-serif" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "2rem",
-        }}
-      >
+    <div className={styles.page}>
+      <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Squared Calculator</h1>
-          {userEmail && (
-            <p style={{ color: "#666", fontSize: "0.9rem" }}>
-              Logged in as: {userEmail}
-            </p>
-          )}
+          <h1 className={styles.title}>API Client</h1>
+          <p className={styles.subtitle}>
+            Authenticated as: {userEmail || "Loading..."}
+          </p>
         </div>
-        <button
-          onClick={handleLogout}
-          style={{
-            padding: "0.5rem 1rem",
-            fontSize: "1rem",
-            cursor: "pointer",
-            background: "#dc3545",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-          }}
-        >
+        <button onClick={handleLogout} className={styles.button}>
           Logout
         </button>
-      </div>
+      </header>
 
-      <form onSubmit={handleSubmit}>
-        <input
-          type="number"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Enter a number"
-          disabled={loading}
-          style={{
-            padding: "0.5rem",
-            fontSize: "1rem",
-            marginRight: "0.5rem",
-          }}
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            padding: "0.5rem 1rem",
-            fontSize: "1rem",
-            cursor: loading ? "not-allowed" : "pointer",
-          }}
-        >
-          {loading ? "Calculating..." : "Calculate"}
-        </button>
-      </form>
-      {result !== null && (
-        <p style={{ marginTop: "1rem", fontSize: "1.25rem" }}>
-          {input}² = <span className={styles.result}>{result}</span>
-        </p>
-      )}
+      {/* Debug Section */}
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Debug Information</h2>
+        <div className={styles.debugGrid}>
+          <div className={styles.debugLabel}>Email:</div>
+          <div className={styles.debugValue}>{userEmail || "—"}</div>
+
+          <div className={styles.debugLabel}>Access Token:</div>
+          <div className={styles.debugValue}>
+            {accessToken ? `${accessToken.substring(0, 40)}...` : "—"}
+          </div>
+
+          <div className={styles.debugLabel}>Token Type:</div>
+          <div className={styles.debugValue}>
+            {decodedToken?.type || "—"}
+          </div>
+
+          <div className={styles.debugLabel}>Issued At:</div>
+          <div className={styles.debugValue}>
+            {decodedToken ? formatTimestamp(decodedToken.iat) : "—"}
+          </div>
+
+          <div className={styles.debugLabel}>Expires At:</div>
+          <div className={styles.debugValue}>
+            {decodedToken ? formatTimestamp(decodedToken.exp) : "—"}
+          </div>
+
+          <div className={styles.debugLabel}>Time Until Expiry:</div>
+          <div className={styles.debugValue}>{tokenExpiry || "—"}</div>
+
+          <div className={styles.debugLabel}>Refresh Token:</div>
+          <div className={styles.debugValue}>
+            httpOnly cookie (not accessible)
+          </div>
+        </div>
+      </section>
+
+      {/* Endpoints Section */}
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Endpoints</h2>
+        <div className={styles.endpointsGrid}>
+          {/* Ping Endpoint */}
+          <div className={styles.endpointBox}>
+            <h3 className={styles.subsectionTitle}>Ping Endpoint</h3>
+            <button
+              onClick={handlePing}
+              disabled={pingLoading}
+              className={styles.button}
+            >
+              {pingLoading ? "Pinging..." : "Ping Server"}
+            </button>
+            {pingRequest && (
+            <div className={styles.requestResponse}>
+              <div className={styles.requestBox}>
+                <div className={styles.boxTitle}>Request</div>
+                <div className={styles.codeBlock}>
+                  {JSON.stringify(pingRequest, null, 2)}
+                </div>
+              </div>
+              {pingResponse && (
+                <div className={styles.responseBox}>
+                  <div className={styles.boxTitle}>Response</div>
+                  <div className={styles.codeBlock}>
+                    {JSON.stringify(pingResponse, null, 2)}
+                  </div>
+                  {pingTiming !== null && (
+                    <div className={styles.timing}>
+                      Response time: {pingTiming}ms
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          </div>
+
+          {/* Squared Endpoint */}
+          <div className={styles.endpointBox}>
+            <h3 className={styles.subsectionTitle}>Squared Endpoint</h3>
+            <form onSubmit={handleSquaredSubmit} className={styles.form}>
+              <input
+                type="number"
+                value={squaredInput}
+                onChange={(e) => setSquaredInput(e.target.value)}
+                placeholder="Enter a number"
+                disabled={squaredLoading}
+                className={styles.input}
+              />
+              <button
+                type="submit"
+                disabled={squaredLoading}
+                className={styles.button}
+              >
+                {squaredLoading ? "Calculating..." : "Calculate"}
+              </button>
+            </form>
+            {squaredRequest && (
+            <div className={styles.requestResponse}>
+              <div className={styles.requestBox}>
+                <div className={styles.boxTitle}>Request</div>
+                <div className={styles.codeBlock}>
+                  {JSON.stringify(squaredRequest, null, 2)}
+                </div>
+              </div>
+              {squaredResponse && (
+                <div className={styles.responseBox}>
+                  <div className={styles.boxTitle}>Response</div>
+                  <div className={styles.codeBlock}>
+                    {JSON.stringify(squaredResponse, null, 2)}
+                  </div>
+                  {squaredTiming !== null && (
+                    <div className={styles.timing}>
+                      Response time: {squaredTiming}ms
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

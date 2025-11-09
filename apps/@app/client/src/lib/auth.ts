@@ -33,9 +33,8 @@ export async function refreshAccessToken(): Promise<boolean> {
       return false;
     }
 
-    const data = response.data as any;
-    if (data.access_token) {
-      setAccessToken(data.access_token);
+    if (response.data?.access_token) {
+      setAccessToken(response.data.access_token);
       return true;
     }
 
