@@ -1,0 +1,6 @@
+apiVersion: v2
+name: app-client
+description: React client application served with nginx
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

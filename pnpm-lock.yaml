@@ -93,9 +93,6 @@ importers:
       '@fastify/type-provider-typebox':
         specifier: ^6.1.0
         version: 6.1.0(typebox@1.0.51)
-      '@sinclair/typebox':
-        specifier: ^0.33.15
-        version: 0.33.22
       '@website/squared':
         specifier: workspace:*
         version: link:../../../packages/@website/squared
@@ -111,6 +108,9 @@ importers:
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
+      typebox:
+        specifier: ^1.0.13
+        version: 1.0.51
     devDependencies:
       '@types/jsonwebtoken':
         specifier: ^9.0.10
@@ -118,6 +118,9 @@ importers:
       '@types/node':
         specifier: ^20.14.0
         version: 20.19.22
+      '@website/topoftree':
+        specifier: workspace:*
+        version: link:../../../packages/@website/topoftree
       '@website/tsconfig':
         specifier: workspace:*
         version: link:../../../packages/@website/tsconfig
@@ -788,9 +791,6 @@ packages:
     resolution: {integrity: sha512-bf9PtUa0u8IXDVxzRToFQKsNCRz9qLYfR/MpECxl4mRoWYjAeFjgxj1XdZr2M/GNVpT05p+LgQOHopYDlUu6/w==}
     cpu: [x64]
     os: [win32]
-
-  '@sinclair/typebox@0.33.22':
-    resolution: {integrity: sha512-auUj4k+f4pyrIVf4GW5UKquSZFHJWri06QgARy9C0t9ZTjJLIuNIrr1yl9bWcJWJ1Gz1vOvYN1D+QPaIlNMVkQ==}
 
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
@@ -2318,8 +2318,6 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.52.4':
     optional: true
-
-  '@sinclair/typebox@0.33.22': {}
 
   '@types/babel__core@7.20.5':
     dependencies:

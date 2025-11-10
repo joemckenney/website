@@ -1,15 +1,12 @@
-import type { FastifyInstance } from "fastify";
-import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
-import { squared } from "@website/squared";
-import { PingResponse, SquaredRequest, SquaredResponse } from "./schemas.js";
-import { authenticateRequest } from "./middleware/auth.js";
+import {type FastifyPluginAsync} from "fastify";
+import type {TypeBoxTypeProvider} from "@fastify/type-provider-typebox";
+import {squared} from "@website/squared";
+import {PingResponse, SquaredRequest, SquaredResponse} from "./schemas.js";
+import {authenticateRequest} from "./middleware/auth.js";
 
-export async function registerRoutes(
-  fastify: FastifyInstance & { withTypeProvider: <T>() => FastifyInstance },
-) {
+export const registerRoutes: FastifyPluginAsync = async (fastify) => {
   const app = fastify.withTypeProvider<TypeBoxTypeProvider>();
 
-  // Ping endpoint
   app.get(
     "/ping",
     {
@@ -22,11 +19,10 @@ export async function registerRoutes(
       },
     },
     async () => {
-      return { message: "pong" };
+      return {message: "pong"};
     },
   );
 
-  // Squared endpoint (protected - requires authentication)
   app.post(
     "/squared",
     {
@@ -41,10 +37,9 @@ export async function registerRoutes(
       },
     },
     async (request) => {
-      const { number } = request.body;
-      // Type assertion safe due to schema validation
-      const result = squared(number as number);
-      return { input: number as number, result };
+      const {number} = request.body;
+      const result = squared(number);
+      return {input: number as number, result};
     },
   );
-}
+};

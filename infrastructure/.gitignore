@@ -1,0 +1,39 @@
+# Terraform
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfplan
+**/*.tfvars
+!**/*.tfvars.example
+**/crash.log
+**/override.tf
+**/override.tf.json
+**/*_override.tf
+**/*_override.tf.json
+**/kubeconfig
+
+# Helm
+**/charts/*.tgz
+**/.helmignore
+
+# Kubernetes
+**/secrets.yaml
+**/secrets/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Backup files
+*.backup
+*.bak

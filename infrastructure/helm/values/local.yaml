@@ -1,0 +1,62 @@
+# Local Minikube environment values
+app-server:
+  replicaCount: 1
+
+  image:
+    repository: localhost:5000/app-server  # Local registry
+    tag: latest
+    pullPolicy: Never  # Don't pull, use local
+
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: api.local.test
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []  # No TLS locally
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  secrets:
+    googleClientId: "your-google-client-id"
+    googleClientSecret: "your-google-client-secret"
+    jwtSecret: "local-jwt-secret-change-me"
+    allowedEmail: "your@email.com"
+    frontendUrl: "http://client.local.test"
+    backendUrl: "http://api.local.test"
+
+app-client:
+  replicaCount: 1
+
+  image:
+    repository: localhost:5000/app-client  # Local registry
+    tag: latest
+    pullPolicy: Never  # Don't pull, use local
+
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: client.local.test
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []  # No TLS locally
+
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 32Mi

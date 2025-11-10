@@ -1,0 +1,85 @@
+# Production Vultr environment values
+app-server:
+  replicaCount: 2
+
+  image:
+    repository: registry.digitalocean.com/your-registry/app-server  # Use your container registry
+    tag: latest
+    pullPolicy: Always
+
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    hosts:
+      - host: api.yourdomain.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: app-server-tls
+        hosts:
+          - api.yourdomain.com
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+
+  secrets:
+    # DO NOT commit real secrets - use encrypted secrets or external secret managers
+    googleClientId: "REPLACE_WITH_SECRET"
+    googleClientSecret: "REPLACE_WITH_SECRET"
+    jwtSecret: "REPLACE_WITH_SECRET"
+    allowedEmail: "your@email.com"
+    frontendUrl: "https://client.yourdomain.com"
+    backendUrl: "https://api.yourdomain.com"
+
+app-client:
+  replicaCount: 2
+
+  image:
+    repository: registry.digitalocean.com/your-registry/app-client  # Use your container registry
+    tag: latest
+    pullPolicy: Always
+
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    hosts:
+      - host: client.yourdomain.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: app-client-tls
+        hosts:
+          - client.yourdomain.com
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 200m
+      memory: 128Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
