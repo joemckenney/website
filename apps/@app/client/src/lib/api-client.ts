@@ -23,9 +23,9 @@ export function setupApiClient(baseUrl: string) {
 
   // Request interceptor - Add auth token to every request (with proactive refresh)
   client.interceptors.request.use(async (request, options) => {
-    // Skip auth for public endpoints
+    // Skip auth for public endpoints and auth management endpoints
     const url = options?.url || '';
-    if (url.includes('/auth/google') || url.includes('/ping')) {
+    if (url.includes('/auth/google') || url.includes('/auth/refresh') || url.includes('/auth/logout') || url.includes('/ping')) {
       return request;
     }
 

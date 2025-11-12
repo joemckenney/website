@@ -7,8 +7,9 @@ import {
   isAuthenticated,
   logout,
 } from "./lib/auth";
-import {decodeJWT, getTimeUntilExpiry, formatTimestamp} from "./lib/jwt-utils";
+import {decodeJWT, getTimeUntilExpiry} from "./lib/jwt-utils";
 import {setupApiClient} from "./lib/api-client";
+import {DebugInfo} from "./components/debug-info";
 
 setupApiClient("http://localhost:3000");
 
@@ -16,22 +17,7 @@ function App() {
   const [authenticated, setAuthenticated] = useState(isAuthenticated());
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  // Squared endpoint state
   const [squaredInput, setSquaredInput] = useState("");
-  const [squaredResult, setSquaredResult] = useState<number | null>(null);
-  const [squaredLoading, setSquaredLoading] = useState(false);
-
-  // Ping endpoint state
-  const [pingResult, setPingResult] = useState<string | null>(null);
-  const [pingLoading, setPingLoading] = useState(false);
-  const [pingTiming, setPingTiming] = useState<number | null>(null);
-  const [pingRequest, setPingRequest] = useState<any>(null);
-  const [pingResponse, setPingResponse] = useState<any>(null);
-
-  // Squared timing/request/response
-  const [squaredTiming, setSquaredTiming] = useState<number | null>(null);
-  const [squaredRequest, setSquaredRequest] = useState<any>(null);
-  const [squaredResponse, setSquaredResponse] = useState<any>(null);
 
   // Debug state
   const [tokenExpiry, setTokenExpiry] = useState<string>("");
@@ -105,94 +91,33 @@ function App() {
     const num = parseFloat(squaredInput);
     if (isNaN(num)) return;
 
-    setSquaredLoading(true);
-    const startTime = performance.now();
-    const token = getAccessToken();
-
-    const requestData = {
-      method: "POST",
-      url: "/squared",
-      headers: {
-        Authorization: token ? `Bearer ${token.substring(0, 20)}...` : "none",
-        "Content-Type": "application/json",
-      },
-      body: {number: num},
-    };
-    setSquaredRequest(requestData);
 
     try {
       const response = await postSquared({
         body: {number: num},
       });
 
-      const endTime = performance.now();
-      setSquaredTiming(Math.round(endTime - startTime));
-
       if (response.data) {
-        setSquaredResult(response.data.result);
-        setSquaredResponse({
-          status: 200,
-          data: response.data,
-        });
+        console.log(response.data.result);
       } else if (response.error) {
-        setSquaredResponse({
-          status: response.response.status,
-          error: response.error,
-        });
         alert("Failed to calculate. Please try again.");
       }
     } catch (error: any) {
-      const endTime = performance.now();
-      setSquaredTiming(Math.round(endTime - startTime));
-
       console.error("API error:", error);
-      setSquaredResponse({
-        status: 500,
-        error: error?.message || "Unknown error",
-      });
       alert("Failed to calculate. Please try again.");
-    } finally {
-      setSquaredLoading(false);
     }
   };
 
   const handlePing = async () => {
-    setPingLoading(true);
-    const startTime = performance.now();
-
-    const requestData = {
-      method: "GET",
-      url: "/ping",
-      headers: {},
-      body: null,
-    };
-    setPingRequest(requestData);
-
     try {
       const response = await getPing();
 
-      const endTime = performance.now();
-      setPingTiming(Math.round(endTime - startTime));
-
       if (response.data) {
-        setPingResult(response.data.message);
-        setPingResponse({
-          status: 200,
-          data: response.data,
-        });
+        console.log(response.data.message);
       }
     } catch (error: any) {
-      const endTime = performance.now();
-      setPingTiming(Math.round(endTime - startTime));
-
       console.error("Ping error:", error);
-      setPingResponse({
-        status: error?.status || 500,
-        error: error?.message || "Unknown error",
-      });
       alert("Failed to ping. Please try again.");
-    } finally {
-      setPingLoading(false);
     }
   };
 
@@ -232,83 +157,26 @@ function App() {
         </button>
       </header>
 
-      {/* Debug Section */}
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Debug Information</h2>
-        <div className={styles.debugGrid}>
-          <div className={styles.debugLabel}>Email:</div>
-          <div className={styles.debugValue}>{userEmail || "—"}</div>
+      <DebugInfo
+        userEmail={userEmail}
+        accessToken={accessToken}
+        decodedToken={decodedToken}
+        tokenExpiry={tokenExpiry}
+      />
 
-          <div className={styles.debugLabel}>Access Token:</div>
-          <div className={styles.debugValue}>
-            {accessToken ? `${accessToken.substring(0, 40)}...` : "—"}
-          </div>
-
-          <div className={styles.debugLabel}>Token Type:</div>
-          <div className={styles.debugValue}>
-            {decodedToken?.type || "—"}
-          </div>
-
-          <div className={styles.debugLabel}>Issued At:</div>
-          <div className={styles.debugValue}>
-            {decodedToken ? formatTimestamp(decodedToken.iat) : "—"}
-          </div>
-
-          <div className={styles.debugLabel}>Expires At:</div>
-          <div className={styles.debugValue}>
-            {decodedToken ? formatTimestamp(decodedToken.exp) : "—"}
-          </div>
-
-          <div className={styles.debugLabel}>Time Until Expiry:</div>
-          <div className={styles.debugValue}>{tokenExpiry || "—"}</div>
-
-          <div className={styles.debugLabel}>Refresh Token:</div>
-          <div className={styles.debugValue}>
-            httpOnly cookie (not accessible)
-          </div>
-        </div>
-      </section>
-
-      {/* Endpoints Section */}
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Endpoints</h2>
         <div className={styles.endpointsGrid}>
-          {/* Ping Endpoint */}
           <div className={styles.endpointBox}>
             <h3 className={styles.subsectionTitle}>Ping Endpoint</h3>
             <button
               onClick={handlePing}
-              disabled={pingLoading}
               className={styles.button}
             >
-              {pingLoading ? "Pinging..." : "Ping Server"}
+              {"Ping Server"}
             </button>
-            {pingRequest && (
-              <div className={styles.requestResponse}>
-                <div className={styles.requestBox}>
-                  <div className={styles.boxTitle}>Request</div>
-                  <div className={styles.codeBlock}>
-                    {JSON.stringify(pingRequest, null, 2)}
-                  </div>
-                </div>
-                {pingResponse && (
-                  <div className={styles.responseBox}>
-                    <div className={styles.boxTitle}>Response</div>
-                    <div className={styles.codeBlock}>
-                      {JSON.stringify(pingResponse, null, 2)}
-                    </div>
-                    {pingTiming !== null && (
-                      <div className={styles.timing}>
-                        Response time: {pingTiming}ms
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
-          {/* Squared Endpoint */}
           <div className={styles.endpointBox}>
             <h3 className={styles.subsectionTitle}>Squared Endpoint</h3>
             <form onSubmit={handleSquaredSubmit} className={styles.form}>
@@ -317,40 +185,15 @@ function App() {
                 value={squaredInput}
                 onChange={(e) => setSquaredInput(e.target.value)}
                 placeholder="Enter a number"
-                disabled={squaredLoading}
                 className={styles.input}
               />
               <button
                 type="submit"
-                disabled={squaredLoading}
                 className={styles.button}
               >
-                {squaredLoading ? "Calculating..." : "Calculate"}
+                {"Calculate"}
               </button>
             </form>
-            {squaredRequest && (
-              <div className={styles.requestResponse}>
-                <div className={styles.requestBox}>
-                  <div className={styles.boxTitle}>Request</div>
-                  <div className={styles.codeBlock}>
-                    {JSON.stringify(squaredRequest, null, 2)}
-                  </div>
-                </div>
-                {squaredResponse && (
-                  <div className={styles.responseBox}>
-                    <div className={styles.boxTitle}>Response</div>
-                    <div className={styles.codeBlock}>
-                      {JSON.stringify(squaredResponse, null, 2)}
-                    </div>
-                    {squaredTiming !== null && (
-                      <div className={styles.timing}>
-                        Response time: {squaredTiming}ms
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </section>
