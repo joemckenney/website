@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { client, postSquared, getPing, getAuthMe } from "@app/sdk";
+import {useState, useEffect} from "react";
+import {postSquared, getPing, getAuthMe} from "@app/sdk";
 import * as styles from "./app.css";
 import {
   getAccessToken,
@@ -8,13 +8,11 @@ import {
   logout,
   refreshAccessToken,
 } from "./lib/auth";
-import { decodeJWT, getTimeUntilExpiry, formatTimestamp } from "./lib/jwt-utils";
+import {decodeJWT, getTimeUntilExpiry, formatTimestamp} from "./lib/jwt-utils";
+import {setupApiClient, getAuthHeaders} from "./lib/api-client";
 
-// Configure SDK client base URL and credentials for httpOnly cookies
-client.setConfig({
-  baseUrl: "http://localhost:3000",
-  credentials: "include", // Send cookies with cross-origin requests
-});
+// Configure SDK client
+setupApiClient("http://localhost:3000");
 
 function App() {
   const [authenticated, setAuthenticated] = useState(isAuthenticated());
@@ -84,19 +82,21 @@ function App() {
     if (!token) return;
 
     try {
+      // SDK methods return properly typed responses
+      // response.data is typed as { email: string } | undefined
       const response = await getAuthMe({
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: await getAuthHeaders(),
       });
 
       if (response.data) {
+        // TypeScript knows response.data has { email: string }
         setUserEmail(response.data.email);
       } else if (response.error) {
-        // Try to refresh token on 401
+        console.error("Failed to fetch user info:", response.error);
+        // Try refreshing once on error
         const refreshed = await refreshAccessToken();
         if (refreshed) {
-          fetchUserInfo();
+          fetchUserInfo(); // Retry
         } else {
           handleLogout();
         }
@@ -129,16 +129,14 @@ function App() {
         Authorization: token ? `Bearer ${token.substring(0, 20)}...` : "none",
         "Content-Type": "application/json",
       },
-      body: { number: num },
+      body: {number: num},
     };
     setSquaredRequest(requestData);
 
     try {
       const response = await postSquared({
-        body: { number: num },
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        body: {number: num},
+        headers: await getAuthHeaders(),
       });
 
       const endTime = performance.now();
@@ -150,33 +148,35 @@ function App() {
           status: 200,
           data: response.data,
         });
+      } else if (response.error) {
+        // Handle 401 - try refreshing
+        if (response.response.status === 401) {
+          const refreshed = await refreshAccessToken();
+          if (refreshed) {
+            handleSquaredSubmit(e); // Retry
+            return;
+          } else {
+            handleLogout();
+            return;
+          }
+        }
+
+        setSquaredResponse({
+          status: response.response.status,
+          error: response.error,
+        });
+        alert("Failed to calculate. Please try again.");
       }
     } catch (error: any) {
       const endTime = performance.now();
       setSquaredTiming(Math.round(endTime - startTime));
 
-      // Handle 401 - token expired
-      if (error?.status === 401) {
-        setSquaredResponse({
-          status: 401,
-          error: "Unauthorized - token expired",
-        });
-        const refreshed = await refreshAccessToken();
-        if (refreshed) {
-          // Retry the request
-          handleSquaredSubmit(e);
-        } else {
-          alert("Session expired. Please login again.");
-          handleLogout();
-        }
-      } else {
-        console.error("API error:", error);
-        setSquaredResponse({
-          status: error?.status || 500,
-          error: error?.message || "Unknown error",
-        });
-        alert("Failed to calculate. Please try again.");
-      }
+      console.error("API error:", error);
+      setSquaredResponse({
+        status: 500,
+        error: error?.message || "Unknown error",
+      });
+      alert("Failed to calculate. Please try again.");
     } finally {
       setSquaredLoading(false);
     }
@@ -310,28 +310,28 @@ function App() {
               {pingLoading ? "Pinging..." : "Ping Server"}
             </button>
             {pingRequest && (
-            <div className={styles.requestResponse}>
-              <div className={styles.requestBox}>
-                <div className={styles.boxTitle}>Request</div>
-                <div className={styles.codeBlock}>
-                  {JSON.stringify(pingRequest, null, 2)}
-                </div>
-              </div>
-              {pingResponse && (
-                <div className={styles.responseBox}>
-                  <div className={styles.boxTitle}>Response</div>
+              <div className={styles.requestResponse}>
+                <div className={styles.requestBox}>
+                  <div className={styles.boxTitle}>Request</div>
                   <div className={styles.codeBlock}>
-                    {JSON.stringify(pingResponse, null, 2)}
+                    {JSON.stringify(pingRequest, null, 2)}
                   </div>
-                  {pingTiming !== null && (
-                    <div className={styles.timing}>
-                      Response time: {pingTiming}ms
-                    </div>
-                  )}
                 </div>
-              )}
-            </div>
-          )}
+                {pingResponse && (
+                  <div className={styles.responseBox}>
+                    <div className={styles.boxTitle}>Response</div>
+                    <div className={styles.codeBlock}>
+                      {JSON.stringify(pingResponse, null, 2)}
+                    </div>
+                    {pingTiming !== null && (
+                      <div className={styles.timing}>
+                        Response time: {pingTiming}ms
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Squared Endpoint */}
@@ -355,28 +355,28 @@ function App() {
               </button>
             </form>
             {squaredRequest && (
-            <div className={styles.requestResponse}>
-              <div className={styles.requestBox}>
-                <div className={styles.boxTitle}>Request</div>
-                <div className={styles.codeBlock}>
-                  {JSON.stringify(squaredRequest, null, 2)}
-                </div>
-              </div>
-              {squaredResponse && (
-                <div className={styles.responseBox}>
-                  <div className={styles.boxTitle}>Response</div>
+              <div className={styles.requestResponse}>
+                <div className={styles.requestBox}>
+                  <div className={styles.boxTitle}>Request</div>
                   <div className={styles.codeBlock}>
-                    {JSON.stringify(squaredResponse, null, 2)}
+                    {JSON.stringify(squaredRequest, null, 2)}
                   </div>
-                  {squaredTiming !== null && (
-                    <div className={styles.timing}>
-                      Response time: {squaredTiming}ms
-                    </div>
-                  )}
                 </div>
-              )}
-            </div>
-          )}
+                {squaredResponse && (
+                  <div className={styles.responseBox}>
+                    <div className={styles.boxTitle}>Response</div>
+                    <div className={styles.codeBlock}>
+                      {JSON.stringify(squaredResponse, null, 2)}
+                    </div>
+                    {squaredTiming !== null && (
+                      <div className={styles.timing}>
+                        Response time: {squaredTiming}ms
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </section>

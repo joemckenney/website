@@ -3,24 +3,24 @@
   "version": "0.0.0",
   "type": "module",
   "private": true,
-  "main": "./dist/generated/index.js",
-  "types": "./dist/generated/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/generated/index.d.ts",
-      "default": "./dist/generated/index.js"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
-    "generate": "openapi-ts --input ../server/dist/openapi.json --output ./src/generated --client @hey-api/client-fetch",
+    "generate": "openapi-ts",
     "build": "npm run generate && tsc",
     "format": "biome format --write ."
   },
   "devDependencies": {
-    "@website/tsconfig": "workspace:*",
-    "@hey-api/client-fetch": "^0.13.1",
-    "@hey-api/openapi-ts": "^0.62.0",
     "@app/server": "workspace:*",
+    "@hey-api/client-fetch": "^0.7.1",
+    "@hey-api/openapi-ts": "^0.87.2",
+    "@website/tsconfig": "workspace:*",
     "typescript": "^5.5.3"
   }
 }

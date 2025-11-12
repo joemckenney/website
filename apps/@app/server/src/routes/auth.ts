@@ -138,7 +138,7 @@ export async function registerAuthRoutes(
     "/auth/refresh",
     {
       schema: {
-        description: "Refresh access token using httpOnly cookie",
+        description: "Refresh access token using httpOnly cookie with token rotation",
         tags: ["auth"],
         response: {
           200: RefreshTokenResponse,
@@ -169,8 +169,28 @@ export async function registerAuthRoutes(
         // Generate new access token
         const accessToken = generateAccessToken(payload.email);
 
+        // Generate new refresh token (token rotation for security)
+        const newRefreshToken = generateRefreshToken(payload.email);
+
+        // Update refresh token cookie with new token
+        reply.setCookie("refresh_token", newRefreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+        });
+
         return reply.send({ access_token: accessToken });
       } catch (error) {
+        // Clear invalid refresh token cookie
+        reply.clearCookie("refresh_token", {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+        });
+
         return reply
           .status(401)
           .send({ error: "Invalid or expired refresh token" });

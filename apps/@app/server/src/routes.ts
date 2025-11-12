@@ -1,8 +1,8 @@
-import {type FastifyPluginAsync} from "fastify";
-import type {TypeBoxTypeProvider} from "@fastify/type-provider-typebox";
-import {squared} from "@website/squared";
-import {PingResponse, SquaredRequest, SquaredResponse} from "./schemas.js";
-import {authenticateRequest} from "./middleware/auth.js";
+import type { FastifyPluginAsync } from "fastify";
+import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
+import { squared } from "@website/squared";
+import { Type } from "typebox";
+import { authenticateRequest } from "./middleware/auth.js";
 
 export const registerRoutes: FastifyPluginAsync = async (fastify) => {
   const app = fastify.withTypeProvider<TypeBoxTypeProvider>();
@@ -14,12 +14,14 @@ export const registerRoutes: FastifyPluginAsync = async (fastify) => {
         description: "Health check endpoint",
         tags: ["health"],
         response: {
-          200: PingResponse,
+          200: Type.Object({
+            message: Type.String({ description: "Response message" }),
+          }),
         },
       },
     },
     async () => {
-      return {message: "pong"};
+      return { message: "pong" };
     },
   );
 
@@ -30,16 +32,21 @@ export const registerRoutes: FastifyPluginAsync = async (fastify) => {
       schema: {
         description: "Calculate the square of a number using WASM",
         tags: ["math"],
-        body: SquaredRequest,
+        body: Type.Object({
+          number: Type.Number({ description: "The number to square" }),
+        }),
         response: {
-          200: SquaredResponse,
+          200: Type.Object({
+            input: Type.Number({ description: "The input number" }),
+            result: Type.Number({ description: "The squared result" }),
+          }),
         },
       },
     },
     async (request) => {
-      const {number} = request.body;
+      const { number } = request.body;
       const result = squared(number);
-      return {input: number as number, result};
+      return { input: number, result };
     },
   );
 };
