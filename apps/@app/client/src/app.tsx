@@ -6,12 +6,10 @@ import {
   setAccessToken,
   isAuthenticated,
   logout,
-  refreshAccessToken,
 } from "./lib/auth";
 import {decodeJWT, getTimeUntilExpiry, formatTimestamp} from "./lib/jwt-utils";
-import {setupApiClient, getAuthHeaders} from "./lib/api-client";
+import {setupApiClient} from "./lib/api-client";
 
-// Configure SDK client
 setupApiClient("http://localhost:3000");
 
 function App() {
@@ -38,7 +36,7 @@ function App() {
   // Debug state
   const [tokenExpiry, setTokenExpiry] = useState<string>("");
 
-  // Extract access token from URL on mount (refresh token is now httpOnly cookie)
+  // Extract access token from URL on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get("access_token");
@@ -82,24 +80,13 @@ function App() {
     if (!token) return;
 
     try {
-      // SDK methods return properly typed responses
-      // response.data is typed as { email: string } | undefined
-      const response = await getAuthMe({
-        headers: await getAuthHeaders(),
-      });
+      const response = await getAuthMe();
 
       if (response.data) {
-        // TypeScript knows response.data has { email: string }
         setUserEmail(response.data.email);
       } else if (response.error) {
         console.error("Failed to fetch user info:", response.error);
-        // Try refreshing once on error
-        const refreshed = await refreshAccessToken();
-        if (refreshed) {
-          fetchUserInfo(); // Retry
-        } else {
-          handleLogout();
-        }
+        handleLogout();
       }
     } catch (error) {
       console.error("Failed to fetch user info:", error);
@@ -136,7 +123,6 @@ function App() {
     try {
       const response = await postSquared({
         body: {number: num},
-        headers: await getAuthHeaders(),
       });
 
       const endTime = performance.now();
@@ -149,18 +135,6 @@ function App() {
           data: response.data,
         });
       } else if (response.error) {
-        // Handle 401 - try refreshing
-        if (response.response.status === 401) {
-          const refreshed = await refreshAccessToken();
-          if (refreshed) {
-            handleSquaredSubmit(e); // Retry
-            return;
-          } else {
-            handleLogout();
-            return;
-          }
-        }
-
         setSquaredResponse({
           status: response.response.status,
           error: response.error,

@@ -2,7 +2,6 @@ import { postAuthRefresh, postAuthLogout } from '@app/sdk';
 
 const ACCESS_TOKEN_KEY = 'access_token';
 
-// Decode JWT without verification (client-side) to read expiration
 function decodeToken(token: string): { exp?: number; email?: string; type?: string } | null {
   try {
     const base64Url = token.split('.')[1];
@@ -30,14 +29,12 @@ export function setAccessToken(accessToken: string): void {
 
 export function clearTokens(): void {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
-  // Note: refresh token is now an httpOnly cookie managed by the server
 }
 
 export function isAuthenticated(): boolean {
   return getAccessToken() !== null;
 }
 
-// Check if token is expired or will expire soon (within buffer time)
 export function isTokenExpired(token: string, bufferSeconds = 300): boolean {
   const decoded = decodeToken(token);
   if (!decoded?.exp) {
@@ -48,7 +45,6 @@ export function isTokenExpired(token: string, bufferSeconds = 300): boolean {
   return decoded.exp - now < bufferSeconds;
 }
 
-// Get time until token expires (in seconds)
 export function getTokenTimeToExpiry(token: string): number | null {
   const decoded = decodeToken(token);
   if (!decoded?.exp) {
@@ -59,18 +55,15 @@ export function getTokenTimeToExpiry(token: string): number | null {
   return Math.max(0, decoded.exp - now);
 }
 
-// Promise to prevent multiple simultaneous refresh attempts
 let refreshPromise: Promise<boolean> | null = null;
 
 export async function refreshAccessToken(): Promise<boolean> {
-  // If refresh is already in progress, return the existing promise
   if (refreshPromise) {
     return refreshPromise;
   }
 
   refreshPromise = (async () => {
     try {
-      // No need to send refresh token - it's automatically sent as httpOnly cookie
       const response = await postAuthRefresh({
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +93,6 @@ export async function refreshAccessToken(): Promise<boolean> {
   return refreshPromise;
 }
 
-// Ensure we have a valid token, refreshing if needed
 export async function ensureValidToken(): Promise<string | null> {
   const token = getAccessToken();
 
@@ -108,7 +100,6 @@ export async function ensureValidToken(): Promise<string | null> {
     return null;
   }
 
-  // If token will expire in less than 5 minutes, proactively refresh
   if (isTokenExpired(token, 300)) {
     const refreshed = await refreshAccessToken();
     if (!refreshed) {
