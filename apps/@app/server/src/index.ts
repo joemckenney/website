@@ -42,6 +42,16 @@ await fastify.register(swagger, {
         description: "Development server",
       },
     ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+          description: "JWT access token obtained from /auth/google flow",
+        },
+      },
+    },
   },
 });
 

@@ -227,6 +227,7 @@ export async function registerAuthRoutes(
       schema: {
         description: "Get current authenticated user information",
         tags: ["auth"],
+        security: [{ bearerAuth: [] }],
         response: {
           200: MeResponse,
           401: ErrorResponse,

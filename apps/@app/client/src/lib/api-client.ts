@@ -1,5 +1,5 @@
-import { client } from '@app/sdk';
-import { ensureValidToken, refreshAccessToken, getAccessToken, clearTokens } from './auth';
+import {client} from '@app/sdk';
+import {ensureValidToken, refreshAccessToken, getAccessToken, clearTokens} from './auth';
 
 // Track if we're currently refreshing to prevent loops
 let isRefreshing = false;
@@ -23,9 +23,10 @@ export function setupApiClient(baseUrl: string) {
 
   // Request interceptor - Add auth token to every request (with proactive refresh)
   client.interceptors.request.use(async (request, options) => {
-    // Skip auth for public endpoints and auth management endpoints
-    const url = options?.url || '';
-    if (url.includes('/auth/google') || url.includes('/auth/refresh') || url.includes('/auth/logout') || url.includes('/ping')) {
+    // Check if endpoint requires authentication based on OpenAPI security metadata
+    const requiresAuth = options?.security && Array.isArray(options.security) && options.security.length > 0;
+
+    if (!requiresAuth) {
       return request;
     }
 
@@ -44,9 +45,9 @@ export function setupApiClient(baseUrl: string) {
       return response;
     }
 
-    // Don't try to refresh on auth endpoints
-    const url = options?.url || '';
-    if (url.includes('/auth/refresh') || url.includes('/auth/logout')) {
+    // Only retry for endpoints that require authentication (based on OpenAPI security metadata)
+    const requiresAuth = options?.security && Array.isArray(options.security) && options.security.length > 0;
+    if (!requiresAuth) {
       return response;
     }
 

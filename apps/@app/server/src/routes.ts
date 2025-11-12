@@ -32,6 +32,7 @@ export const registerRoutes: FastifyPluginAsync = async (fastify) => {
       schema: {
         description: "Calculate the square of a number using WASM",
         tags: ["math"],
+        security: [{ bearerAuth: [] }],
         body: Type.Object({
           number: Type.Number({ description: "The number to square" }),
         }),
