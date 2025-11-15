@@ -20,23 +20,29 @@ minikube start --cpus=4 --memory=8192
 minikube addons enable ingress
 minikube addons enable registry
 
-# 4. Configure DNS
-echo "$(minikube ip) api.local.test client.local.test" | sudo tee -a /etc/hosts
+# 4. Set up local registry (in a separate terminal)
+cd infrastructure
+./scripts/setup-local-registry.sh
+# Keep this terminal open, or run in background:
+# nohup ./scripts/registry-daemon.sh > /tmp/registry-daemon.log 2>&1 &
 
-# 5. Build images
+# 5. Configure DNS
+echo "$(minikube ip) api.local.com client.local.com" | sudo tee -a /etc/hosts
+
+# 6. Build images
 cd infrastructure
 ./scripts/build-local.sh
 
-# 6. Configure secrets
-vim helm/values/local.yaml
+# 7. Configure secrets
+vim helm/values/app-server-local.yaml
 # Update Google OAuth credentials and other secrets
 
-# 7. Deploy
+# 8. Deploy
 ./scripts/deploy-local.sh
 
-# 8. Access
-open http://client.local.test
-open http://api.local.test/docs
+# 9. Access
+open http://client.local.com
+open http://api.local.com/docs
 ```
 
 **Full guide**: [Local Development Setup](./terraform/environments/local/README.md)
@@ -205,8 +211,10 @@ infrastructure/
 │   │   ├── app-server/     # Server chart
 │   │   └── app-client/     # Client chart
 │   └── values/
-│       ├── local.yaml      # Local config
-│       └── production.yaml # Production config
+│       ├── app-server-local.yaml      # Server local config
+│       ├── app-client-local.yaml      # Client local config
+│       ├── app-server-production.yaml # Server production config (or use production.yaml)
+│       └── app-client-production.yaml # Client production config (or use production.yaml)
 └── terraform/              # Infrastructure as Code
     ├── modules/
     │   └── vultr-vke/     # VKE cluster module
@@ -217,11 +225,37 @@ infrastructure/
 
 ## Troubleshooting
 
+### Registry not accessible (local)
+```bash
+# Check if registry addon is enabled
+minikube addons list | grep registry
+
+# Check if port-forward is running
+lsof -i :5000
+
+# Restart registry setup
+pkill -f 'port-forward.*registry'
+./scripts/setup-local-registry.sh
+
+# Or run persistent daemon
+nohup ./scripts/registry-daemon.sh > /tmp/registry-daemon.log 2>&1 &
+```
+
 ### Images not found (local)
 ```bash
+# Check if images exist in minikube
 eval $(minikube docker-env)
+docker images | grep -E "app-server|app-client"
+
+# Rebuild if missing
 ./scripts/build-local.sh
+
+# Restart deployments to pick up new images
 kubectl rollout restart deployment/app-server deployment/app-client
+
+# Check pod status
+kubectl get pods
+kubectl describe pod <pod-name>  # For detailed error info
 ```
 
 ### SSL not working (production)

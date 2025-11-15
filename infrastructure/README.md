@@ -112,7 +112,7 @@ User → Ingress → app-client (nginx) → app-server (Fastify) → External AP
 
 ### Local (Minikube)
 
-- Domain: `*.local.test` (add to /etc/hosts)
+- Domain: `*.local.com` (add to /etc/hosts)
 - No TLS (HTTP only)
 - Single replica
 - Lower resource limits

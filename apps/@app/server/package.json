@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "type": "module",
   "private": true,
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "NODE_OPTIONS='--experimental-wasm-modules' tsx watch src/index.ts",
     "build": "tsc",

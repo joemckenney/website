@@ -28,23 +28,23 @@ cd "$INFRA_DIR"
 echo -e "${YELLOW}Deploying app-server...${NC}"
 helm upgrade --install app-server \
     ./helm/charts/app-server \
-    -f ./helm/values/local.yaml \
+    -f ./helm/values/app-server-local.yaml \
     --wait \
     --timeout=5m
 
 echo -e "${YELLOW}Deploying app-client...${NC}"
 helm upgrade --install app-client \
     ./helm/charts/app-client \
-    -f ./helm/values/local.yaml \
+    -f ./helm/values/app-client-local.yaml \
     --wait \
     --timeout=5m
 
 echo -e "${GREEN}Deployment complete!${NC}"
 echo ""
 echo "Access your applications:"
-echo "  Client: http://client.local.test"
-echo "  API:    http://api.local.test"
-echo "  Docs:   http://api.local.test/docs"
+echo "  Client: http://client.local.com"
+echo "  API:    http://api.local.com"
+echo "  Docs:   http://api.local.com/docs"
 echo ""
 echo "Useful commands:"
 echo "  kubectl get pods                    # Check pod status"

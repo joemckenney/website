@@ -12,7 +12,7 @@ app-server:
     className: "nginx"
     annotations: {}
     hosts:
-      - host: api.local.test
+      - host: api.local.com
         paths:
           - path: /
             pathType: Prefix
@@ -31,8 +31,8 @@ app-server:
     googleClientSecret: "your-google-client-secret"
     jwtSecret: "local-jwt-secret-change-me"
     allowedEmail: "your@email.com"
-    frontendUrl: "http://client.local.test"
-    backendUrl: "http://api.local.test"
+    frontendUrl: "http://client.local.com"
+    backendUrl: "http://api.local.com"
 
 app-client:
   replicaCount: 1
@@ -47,7 +47,7 @@ app-client:
     className: "nginx"
     annotations: {}
     hosts:
-      - host: client.local.test
+      - host: client.local.com
         paths:
           - path: /
             pathType: Prefix

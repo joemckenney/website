@@ -44,12 +44,12 @@ Add the following to your `/etc/hosts` file:
 minikube ip
 
 # Add to /etc/hosts (replace <MINIKUBE_IP> with actual IP)
-echo "<MINIKUBE_IP> api.local.test client.local.test" | sudo tee -a /etc/hosts
+echo "<MINIKUBE_IP> api.local.com client.local.com" | sudo tee -a /etc/hosts
 ```
 
 Example:
 ```
-192.168.49.2 api.local.test client.local.test
+192.168.49.2 api.local.com client.local.com
 ```
 
 ### 4. Set Up Local Registry
@@ -103,8 +103,8 @@ app-server:
     googleClientSecret: "your-google-client-secret"
     jwtSecret: "your-local-jwt-secret"
     allowedEmail: "your@email.com"
-    frontendUrl: "http://client.local.test"
-    backendUrl: "http://api.local.test"
+    frontendUrl: "http://client.local.com"
+    backendUrl: "http://api.local.com"
 ```
 
 ### 7. Deploy Applications
@@ -147,9 +147,9 @@ kubectl logs -f deployment/app-client
 ### 9. Access Applications
 
 Open your browser:
-- Client: http://client.local.test
-- Server API: http://api.local.test
-- Server API Docs: http://api.local.test/docs
+- Client: http://client.local.com
+- Server API: http://api.local.com
+- Server API Docs: http://api.local.com/docs
 
 ## Development Workflow
 
@@ -227,7 +227,7 @@ kubectl describe ingress app-server
 kubectl describe ingress app-client
 
 # Verify /etc/hosts entry
-cat /etc/hosts | grep local.test
+cat /etc/hosts | grep local.com
 
 # Test with minikube tunnel (alternative)
 minikube tunnel
@@ -270,7 +270,7 @@ helm uninstall app-client
 minikube delete
 
 # Remove /etc/hosts entries
-sudo sed -i '/local.test/d' /etc/hosts
+sudo sed -i '/local.com/d' /etc/hosts
 ```
 
 ## Tips

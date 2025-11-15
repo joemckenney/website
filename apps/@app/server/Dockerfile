@@ -69,8 +69,6 @@ ENV NODE_ENV=production
 # Copy the entire pruned deployment (includes app, workspace deps, node_modules)
 COPY --from=deployer /app/pruned .
 
-WORKDIR /app/apps/@app/server
-
 EXPOSE 3000
 
 CMD ["node", "--experimental-wasm-modules", "dist/index.js"]

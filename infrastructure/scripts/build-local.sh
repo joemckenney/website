@@ -24,11 +24,11 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
 echo -e "${YELLOW}Building app-server image...${NC}"
-docker build -t localhost:5000/app-server:latest \
+docker buildx build -t localhost:5000/app-server:latest \
     -f apps/@app/server/Dockerfile .
 
 echo -e "${YELLOW}Building app-client image...${NC}"
-docker build -t localhost:5000/app-client:latest \
+docker buildx build -t localhost:5000/app-client:latest \
     -f apps/@app/client/Dockerfile .
 
 # Push to local registry (requires port-forward to be running)
