@@ -1,5 +1,5 @@
 # Local Minikube environment values for app-server
-# Copy this file to app-server-local.yaml and fill in your secrets
+# Copy this file to values-local.yaml and fill in your secrets
 replicaCount: 1
 
 image:
@@ -27,10 +27,10 @@ resources:
     memory: 128Mi
 
 secrets:
-  googleClientId: "54664911873-2rn5pbd5bccamdgl9l6o8bregai6fm40.apps.googleusercontent.com"
-  googleClientSecret: "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"
+  googleClientId: "YOUR_GOOGLE_CLIENT_ID"
+  googleClientSecret: "YOUR_GOOGLE_CLIENT_SECRET"
   googleRedirectUri: "http://api.local.com/auth/google/callback"
-  jwtSecret: "local-jwt-secret-change-me"
-  allowedEmail: "j.mckenney00@gmail.com"
+  jwtSecret: "YOUR_JWT_SECRET"
+  allowedEmail: "your-email@example.com"
   frontendUrl: "http://app.local.com"
   backendUrl: "http://api.local.com"

@@ -1,10 +1,11 @@
 # Local Minikube environment values for app-client
+# Copy this file to values-local.yaml and customize for your environment
 replicaCount: 1
 
 image:
-  repository: localhost:5000/app-client  # Local registry
+  repository: localhost:5000/app-client
   tag: latest
-  pullPolicy: IfNotPresent  # Try local first, then registry
+  pullPolicy: IfNotPresent
 
 ingress:
   enabled: true
@@ -15,12 +16,12 @@ ingress:
       paths:
         - path: /
           pathType: Prefix
-  tls: []  # No TLS locally
+  tls: []
 
 resources:
   limits:
     cpu: 200m
     memory: 128Mi
   requests:
-    cpu: 50m
-    memory: 32Mi
+    cpu: 100m
+    memory: 64Mi

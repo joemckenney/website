@@ -67,3 +67,5 @@ Thumbs.db
 # Secrets - local development values
 infrastructure/helm/values/*-local.yaml
 infrastructure/helm/values/local.yaml
+**/helm/values-local.yaml
+**/helm/*-local.yaml

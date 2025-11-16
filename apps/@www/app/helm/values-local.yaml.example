@@ -1,4 +1,5 @@
 # Local Minikube environment values for www-app
+# Copy this file to values-local.yaml and customize for your environment
 replicaCount: 1
 
 image:
