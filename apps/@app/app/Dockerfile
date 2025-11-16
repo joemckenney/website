@@ -16,8 +16,8 @@ RUN pnpm add -g turbo
 # Copy entire monorepo
 COPY . .
 
-# Prune workspace to only include @app/client and its dependencies
-RUN turbo prune @app/client --docker
+# Prune workspace to only include @app/app and its dependencies
+RUN turbo prune @app/app --docker
 
 # Build stage (includes all build tooling for workspace packages)
 FROM node:20-alpine AS builder
@@ -53,16 +53,16 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 COPY --from=workspace-pruner /app/out/full/ .
 
 # Build using turbo (builds all dependencies including devDependencies)
-RUN pnpm turbo build --filter=@app/client...
+RUN pnpm turbo build --filter=@app/app...
 
 # Production stage - nginx to serve static files
 FROM nginx:alpine
 
 # Copy built static files (Vite output)
-COPY --from=builder /app/apps/@app/client/dist /usr/share/nginx/html
+COPY --from=builder /app/apps/@app/app/dist /usr/share/nginx/html
 
 # Copy nginx configuration (replace main config for non-root support)
-COPY --from=builder /app/apps/@app/client/nginx.conf /etc/nginx/nginx.conf
+COPY --from=builder /app/apps/@app/app/nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80
 

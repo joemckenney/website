@@ -25,12 +25,12 @@ cd "$REPO_ROOT"
 
 echo -e "${YELLOW}Building app-server image...${NC}"
 docker buildx build -t localhost:5000/app-server:latest \
-    -f apps/@app/server/Dockerfile .
+    -f apps/@api/app/Dockerfile .
 
 echo -e "${YELLOW}Building app-client image...${NC}"
 docker buildx build -t localhost:5000/app-client:latest \
     --build-arg VITE_API_URL=http://api.local.com \
-    -f apps/@app/client/Dockerfile .
+    -f apps/@app/app/Dockerfile .
 
 # Push to local registry (requires port-forward to be running)
 if lsof -Pi :5000 -sTCP:LISTEN -t >/dev/null ; then

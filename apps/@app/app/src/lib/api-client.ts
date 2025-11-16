@@ -1,4 +1,4 @@
-import {client} from '@app/sdk';
+import {client} from '@api/sdk';
 import {ensureValidToken, refreshAccessToken, getAccessToken, clearTokens} from './auth';
 
 // Track if we're currently refreshing to prevent loops

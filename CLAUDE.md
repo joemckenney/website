@@ -11,10 +11,11 @@ This is a monorepo exploring modern full-stack development with TypeScript, Rust
 ```
 apps/
   @www/app/          - Main web app: Weather sonification with Chrome AI
-  @app/
-    client/          - Legacy React + Vite frontend demo
-    server/          - Legacy Fastify API with OpenAPI/TypeBox
+  @api/
+    app/             - Fastify API with OpenAPI/TypeBox
     sdk/             - Auto-generated TypeScript client from OpenAPI spec
+  @app/
+    app/             - React + Vite frontend demo
 
 packages/
   @website/
@@ -24,7 +25,7 @@ packages/
     utils/           - TypeScript utility library
 ```
 
-The `@www/app` is the primary application. The `@app/*` workspace contains a legacy prototype demonstrating the type-safe full-stack pattern (server → OpenAPI spec → SDK generation → client).
+The `@www/app` is the primary application. The `@api` workspace contains the API server and SDK. The `@app/app` is a demo client that demonstrates the type-safe full-stack pattern (server → OpenAPI spec → SDK generation → client).
 
 ## Build System
 
@@ -46,7 +47,7 @@ pnpm run format
 
 # Build specific workspace (from repo root)
 pnpm --filter @www/app build
-pnpm --filter @app/server build
+pnpm --filter @api/app build
 
 # Run dev server for main app
 cd apps/@www/app
@@ -129,30 +130,30 @@ Once the app is running, available commands in the terminal:
 - `clear` - Clear terminal
 - `help` - Show command list
 
-## Legacy Demo: Type-Safe Full-Stack
+## Demo: Type-Safe Full-Stack
 
-**Location**: `apps/@app/`
+**Location**: `apps/@api/` and `apps/@app/`
 
 This demonstrates the type-safe API development pattern:
 
-1. **Server** (`@app/server`) defines API with TypeBox schemas
+1. **Server** (`@api/app`) defines API with TypeBox schemas
 2. **OpenAPI spec** auto-generated to `dist/openapi.json` on server start
-3. **SDK** (`@app/sdk`) reads spec and generates typed client with `@hey-api/openapi-ts`
-4. **Client** (`@app/client`) imports SDK and gets full type safety
+3. **SDK** (`@api/sdk`) reads spec and generates typed client with `@hey-api/openapi-ts`
+4. **Client** (`@app/app`) imports SDK and gets full type safety
 
 ### Running the Demo
 
 ```bash
 # Terminal 1: Start server (generates OpenAPI spec)
-cd apps/@app/server
+cd apps/@api/app
 pnpm run dev  # Runs on http://localhost:3000, docs at /docs
 
 # Terminal 2: Generate SDK (after server starts once)
-cd apps/@app/sdk
-pnpm run build  # Generates typed client from ../server/dist/openapi.json
+cd apps/@api/sdk
+pnpm run build  # Generates typed client from ../app/dist/openapi.json
 
 # Terminal 3: Start client
-cd apps/@app/client
+cd apps/@app/app
 pnpm run dev  # Vite dev server
 ```
 
@@ -177,7 +178,7 @@ import { squared } from '@website/squared';
 const result = squared(5);  // 25
 ```
 
-**Note**: Server's WASM import is currently commented out (`apps/@app/server/src/index.ts:7`) but can be re-enabled. Requires `NODE_OPTIONS='--experimental-wasm-modules'`.
+**Note**: Server's WASM import is currently commented out (`apps/@api/app/src/index.ts:7`) but can be re-enabled. Requires `NODE_OPTIONS='--experimental-wasm-modules'`.
 
 ## Styling
 

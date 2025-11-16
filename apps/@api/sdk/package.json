@@ -1,5 +1,5 @@
 {
-  "name": "@app/sdk",
+  "name": "@api/sdk",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -20,7 +20,7 @@
     "format": "biome format --write ."
   },
   "devDependencies": {
-    "@app/server": "workspace:*",
+    "@api/app": "workspace:*",
     "@hey-api/client-fetch": "^0.7.1",
     "@hey-api/openapi-ts": "^0.87.2",
     "@website/tsconfig": "workspace:*",

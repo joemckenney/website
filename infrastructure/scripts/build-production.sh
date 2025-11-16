@@ -23,11 +23,11 @@ cd "$REPO_ROOT"
 
 echo -e "${YELLOW}Building app-server image...${NC}"
 docker build -t "$REGISTRY/app-server:$TAG" \
-    -f apps/@app/server/Dockerfile .
+    -f apps/@api/app/Dockerfile .
 
 echo -e "${YELLOW}Building app-client image...${NC}"
 docker build -t "$REGISTRY/app-client:$TAG" \
-    -f apps/@app/client/Dockerfile .
+    -f apps/@app/app/Dockerfile .
 
 echo -e "${YELLOW}Pushing images to registry...${NC}"
 docker push "$REGISTRY/app-server:$TAG"

@@ -1,5 +1,5 @@
 import {useState, useEffect} from "react";
-import {postSquared, getPing, getAuthMe} from "@app/sdk";
+import {postSquared, getPing, getAuthMe} from "@api/sdk";
 import * as styles from "./app.css";
 import {
   getAccessToken,

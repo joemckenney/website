@@ -1,7 +1,7 @@
 import {defineConfig} from '@hey-api/openapi-ts';
 
 export default defineConfig({
-  input: '../server/dist/openapi.json',
+  input: '../app/dist/openapi.json',
   output: './src/generated',
   client: '@hey-api/client-fetch', // Specify the client to use
   plugins: [

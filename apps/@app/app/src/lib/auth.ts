@@ -1,4 +1,4 @@
-import { postAuthRefresh, postAuthLogout } from '@app/sdk';
+import { postAuthRefresh, postAuthLogout } from '@api/sdk';
 
 const ACCESS_TOKEN_KEY = 'access_token';
 

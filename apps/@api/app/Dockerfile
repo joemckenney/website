@@ -16,8 +16,8 @@ RUN pnpm add -g turbo
 # Copy entire monorepo
 COPY . .
 
-# Prune workspace to only include @app/server and its dependencies
-RUN turbo prune @app/server --docker
+# Prune workspace to only include @api/app and its dependencies
+RUN turbo prune @api/app --docker
 
 # Build stage (includes all build tooling for workspace packages)
 FROM node:20-alpine AS builder
@@ -49,7 +49,7 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 COPY --from=workspace-pruner /app/out/full/ .
 
 # Build using turbo (builds all dependencies including devDependencies)
-RUN pnpm turbo build --filter=@app/server...
+RUN pnpm turbo build --filter=@api/app...
 
 # Deploy stage - creates production deployment
 FROM builder AS deployer
@@ -58,7 +58,7 @@ ENV NODE_ENV=production
 
 # Deploy production-ready output to /app/pruned with only prod dependencies
 # Modern pnpm deploy properly handles workspace dependencies and their files
-RUN pnpm --filter=@app/server --prod deploy /app/pruned
+RUN pnpm --filter=@api/app --prod deploy /app/pruned
 
 # Production stage
 FROM node:20-alpine
