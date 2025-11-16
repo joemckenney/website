@@ -32,5 +32,5 @@ secrets:
   googleRedirectUri: "http://api.local.com/auth/google/callback"
   jwtSecret: "local-jwt-secret-change-me"
   allowedEmail: "your-email@example.com"
-  frontendUrl: "http://client.local.com"
+  frontendUrl: "http://app.local.com"
   backendUrl: "http://api.local.com"

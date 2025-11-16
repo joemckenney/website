@@ -27,7 +27,7 @@ cd infrastructure
 # nohup ./scripts/registry-daemon.sh > /tmp/registry-daemon.log 2>&1 &
 
 # 5. Configure DNS
-echo "$(minikube ip) api.local.com client.local.com" | sudo tee -a /etc/hosts
+echo "$(minikube ip) www.local.com app.local.com api.local.com" | sudo tee -a /etc/hosts
 
 # 6. Build images
 cd infrastructure
@@ -41,7 +41,7 @@ vim helm/values/app-server-local.yaml
 ./scripts/deploy-local.sh
 
 # 9. Access
-open http://client.local.com
+open http://app.local.com
 open http://api.local.com/docs
 ```
 

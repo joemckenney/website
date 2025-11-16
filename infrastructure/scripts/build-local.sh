@@ -32,11 +32,16 @@ docker buildx build -t localhost:5000/app-client:latest \
     --build-arg VITE_API_URL=http://api.local.com \
     -f apps/@app/app/Dockerfile .
 
+echo -e "${YELLOW}Building www-app image...${NC}"
+docker buildx build -t localhost:5000/www-app:latest \
+    -f apps/@www/app/Dockerfile .
+
 # Push to local registry (requires port-forward to be running)
 if lsof -Pi :5000 -sTCP:LISTEN -t >/dev/null ; then
     echo -e "${YELLOW}Pushing images to local registry...${NC}"
     docker push localhost:5000/app-server:latest
     docker push localhost:5000/app-client:latest
+    docker push localhost:5000/www-app:latest
     echo -e "${GREEN}Images pushed successfully!${NC}"
 else
     echo -e "${YELLOW}Warning: Local registry port-forward not detected${NC}"
@@ -47,7 +52,13 @@ fi
 echo -e "${GREEN}Build complete!${NC}"
 echo ""
 echo "Next steps:"
-echo "  1. Deploy with: ./scripts/deploy-local.sh"
-echo "  2. Or use helm directly:"
-echo "     helm upgrade --install app-server ./helm/charts/app-server -f ./helm/values/local.yaml"
-echo "     helm upgrade --install app-client ./helm/charts/app-client -f ./helm/values/local.yaml"
+echo "  1. Deploy with Helm:"
+echo "     cd infrastructure"
+echo "     helm upgrade --install app-server ./helm/charts/app-server -f ./helm/values/app-server-local.yaml"
+echo "     helm upgrade --install app-client ./helm/charts/app-client -f ./helm/values/app-client-local.yaml"
+echo "     helm upgrade --install www-app ./helm/charts/www-app -f ./helm/values/www-app-local.yaml"
+echo ""
+echo "  2. Access the apps:"
+echo "     http://www.local.com - Weather sonification app"
+echo "     http://app.local.com - Demo client app"
+echo "     http://api.local.com - API server"

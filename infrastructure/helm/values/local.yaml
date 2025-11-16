@@ -31,7 +31,7 @@ app-server:
     googleClientSecret: "your-google-client-secret"
     jwtSecret: "local-jwt-secret-change-me"
     allowedEmail: "your@email.com"
-    frontendUrl: "http://client.local.com"
+    frontendUrl: "http://app.local.com"
     backendUrl: "http://api.local.com"
 
 app-client:
@@ -47,7 +47,7 @@ app-client:
     className: "nginx"
     annotations: {}
     hosts:
-      - host: client.local.com
+      - host: app.local.com
         paths:
           - path: /
             pathType: Prefix

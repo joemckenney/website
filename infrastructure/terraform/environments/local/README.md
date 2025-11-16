@@ -44,12 +44,12 @@ Add the following to your `/etc/hosts` file:
 minikube ip
 
 # Add to /etc/hosts (replace <MINIKUBE_IP> with actual IP)
-echo "<MINIKUBE_IP> api.local.com client.local.com" | sudo tee -a /etc/hosts
+echo "<MINIKUBE_IP> www.local.com app.local.com api.local.com" | sudo tee -a /etc/hosts
 ```
 
 Example:
 ```
-192.168.49.2 api.local.com client.local.com
+192.168.49.2 www.local.com app.local.com api.local.com
 ```
 
 ### 4. Set Up Local Registry
@@ -103,7 +103,7 @@ app-server:
     googleClientSecret: "your-google-client-secret"
     jwtSecret: "your-local-jwt-secret"
     allowedEmail: "your@email.com"
-    frontendUrl: "http://client.local.com"
+    frontendUrl: "http://app.local.com"
     backendUrl: "http://api.local.com"
 ```
 
@@ -147,7 +147,8 @@ kubectl logs -f deployment/app-client
 ### 9. Access Applications
 
 Open your browser:
-- Client: http://client.local.com
+- WWW: http://www.local.com
+- App: http://app.local.com
 - Server API: http://api.local.com
 - Server API Docs: http://api.local.com/docs
 

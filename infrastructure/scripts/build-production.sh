@@ -29,15 +29,21 @@ echo -e "${YELLOW}Building app-client image...${NC}"
 docker build -t "$REGISTRY/app-client:$TAG" \
     -f apps/@app/app/Dockerfile .
 
+echo -e "${YELLOW}Building www-app image...${NC}"
+docker build -t "$REGISTRY/www-app:$TAG" \
+    -f apps/@www/app/Dockerfile .
+
 echo -e "${YELLOW}Pushing images to registry...${NC}"
 docker push "$REGISTRY/app-server:$TAG"
 docker push "$REGISTRY/app-client:$TAG"
+docker push "$REGISTRY/www-app:$TAG"
 
 echo -e "${GREEN}Build and push complete!${NC}"
 echo ""
 echo "Images:"
 echo "  $REGISTRY/app-server:$TAG"
 echo "  $REGISTRY/app-client:$TAG"
+echo "  $REGISTRY/www-app:$TAG"
 echo ""
 echo "Next steps:"
 echo "  1. Update infrastructure/helm/values/production.yaml with correct image repositories"

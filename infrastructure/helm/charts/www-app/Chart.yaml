@@ -1,0 +1,6 @@
+apiVersion: v2
+name: www-app
+description: Weather sonification web app with Chrome AI
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

@@ -11,7 +11,7 @@ ingress:
   className: "nginx"
   annotations: {}
   hosts:
-    - host: client.local.com
+    - host: app.local.com
       paths:
         - path: /
           pathType: Prefix
