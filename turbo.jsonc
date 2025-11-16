@@ -18,11 +18,9 @@
       "persistent": true
     },
     "build:docker:local": {
-      "dependsOn": ["build"],
       "cache": false
     },
     "build:docker:prod": {
-      "dependsOn": ["build"],
       "cache": false
     },
     "deploy:helm:local": {

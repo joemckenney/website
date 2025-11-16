@@ -9,9 +9,9 @@
   "scripts": {
     "dev": "NODE_OPTIONS='--experimental-wasm-modules' tsx watch src/index.ts",
     "build": "tsc",
-    "build:docker": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/app-server:latest -f Dockerfile $REPO_ROOT",
-    "build:docker:local": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/app-server:latest -f Dockerfile $REPO_ROOT",
-    "build:docker:prod": "REPO_ROOT=$(git rev-parse --show-toplevel) && docker build -t ${REGISTRY:-registry.digitalocean.com/your-registry}/app-server:${TAG:-latest} -f Dockerfile $REPO_ROOT",
+    "build:docker": "REPO_ROOT=$(pnpm exec topoftree) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/app-server:latest -f Dockerfile $REPO_ROOT",
+    "build:docker:local": "REPO_ROOT=$(pnpm exec topoftree) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/app-server:latest -f Dockerfile $REPO_ROOT",
+    "build:docker:prod": "REPO_ROOT=$(pnpm exec topoftree) && docker build -t ${REGISTRY:-registry.digitalocean.com/your-registry}/app-server:${TAG:-latest} -f Dockerfile $REPO_ROOT",
     "deploy:helm:local": "helm upgrade --install app-server ./helm -f ./helm/values-local.yaml --wait --timeout=5m",
     "clean:docker": "docker rmi localhost:5000/app-server:latest || true",
     "start": "NODE_OPTIONS='--experimental-wasm-modules' node dist/index.js",
@@ -34,9 +34,9 @@
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.14.0",
+    "@website/topoftree": "workspace:*",
     "@website/tsconfig": "workspace:*",
     "pino-pretty": "^13.1.2",
-    "@website/topoftree": "workspace:*",
     "tsx": "^4.16.2",
     "typescript": "^5.5.3"
   }

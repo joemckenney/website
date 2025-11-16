@@ -128,6 +128,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.4
         version: 4.7.0(vite@6.4.0(@types/node@24.8.1)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.8.1))
+      '@website/topoftree':
+        specifier: workspace:*
+        version: link:../../../packages/@website/topoftree
       '@website/tsconfig':
         specifier: workspace:*
         version: link:../../../packages/@website/tsconfig
@@ -162,6 +165,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.4
         version: 4.7.0(vite@6.4.0(@types/node@24.8.1)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.8.1))
+      '@website/topoftree':
+        specifier: workspace:*
+        version: link:../../../packages/@website/topoftree
       '@website/tsconfig':
         specifier: workspace:*
         version: link:../../../packages/@website/tsconfig
