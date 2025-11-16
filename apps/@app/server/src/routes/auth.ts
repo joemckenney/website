@@ -115,9 +115,11 @@ export async function registerAuthRoutes(
       const refreshToken = generateRefreshToken(userInfo.email);
 
       // Set refresh token as httpOnly cookie
+      // Use secure flag only when request is over HTTPS (not based on NODE_ENV)
+      const isHttps = request.protocol === "https";
       reply.setCookie("refresh_token", refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // HTTPS only in production
+        secure: isHttps, // Only send over HTTPS if request came via HTTPS
         sameSite: "lax",
         path: "/",
         maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
@@ -173,9 +175,10 @@ export async function registerAuthRoutes(
         const newRefreshToken = generateRefreshToken(payload.email);
 
         // Update refresh token cookie with new token
+        const isHttps = request.protocol === "https";
         reply.setCookie("refresh_token", newRefreshToken, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
+          secure: isHttps,
           sameSite: "lax",
           path: "/",
           maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
@@ -184,9 +187,10 @@ export async function registerAuthRoutes(
         return reply.send({ access_token: accessToken });
       } catch (error) {
         // Clear invalid refresh token cookie
+        const isHttps = request.protocol === "https";
         reply.clearCookie("refresh_token", {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
+          secure: isHttps,
           sameSite: "lax",
           path: "/",
         });
@@ -210,9 +214,10 @@ export async function registerAuthRoutes(
       },
     },
     async (request, reply) => {
+      const isHttps = request.protocol === "https";
       reply.clearCookie("refresh_token", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: isHttps,
         sameSite: "lax",
         path: "/",
       });
