@@ -16,49 +16,25 @@ if ! minikube status > /dev/null 2>&1; then
     exit 1
 fi
 
-# Set docker env to use minikube's docker daemon
-eval $(minikube docker-env)
-
 # Build from repository root
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
-echo -e "${YELLOW}Building app-server image...${NC}"
-docker buildx build -t localhost:5000/app-server:latest \
-    -f apps/@api/app/Dockerfile .
-
-echo -e "${YELLOW}Building app-client image...${NC}"
-docker buildx build -t localhost:5000/app-client:latest \
-    --build-arg VITE_API_URL=http://api.local.com \
-    -f apps/@app/app/Dockerfile .
-
-echo -e "${YELLOW}Building www-app image...${NC}"
-docker buildx build -t localhost:5000/www-app:latest \
-    -f apps/@www/app/Dockerfile .
-
-# Push to local registry (requires port-forward to be running)
-if lsof -Pi :5000 -sTCP:LISTEN -t >/dev/null ; then
-    echo -e "${YELLOW}Pushing images to local registry...${NC}"
-    docker push localhost:5000/app-server:latest
-    docker push localhost:5000/app-client:latest
-    docker push localhost:5000/www-app:latest
-    echo -e "${GREEN}Images pushed successfully!${NC}"
-else
-    echo -e "${YELLOW}Warning: Local registry port-forward not detected${NC}"
-    echo "Images are built in minikube's docker daemon"
-    echo "They will be available with imagePullPolicy: Never"
-fi
+echo -e "${YELLOW}Building all Docker images using Turbo...${NC}"
+pnpm turbo run build:docker:local
 
 echo -e "${GREEN}Build complete!${NC}"
 echo ""
 echo "Next steps:"
-echo "  1. Deploy with Helm:"
-echo "     cd infrastructure"
-echo "     helm upgrade --install app-server ./helm/charts/app-server -f ./helm/values/app-server-local.yaml"
-echo "     helm upgrade --install app-client ./helm/charts/app-client -f ./helm/values/app-client-local.yaml"
-echo "     helm upgrade --install www-app ./helm/charts/www-app -f ./helm/values/www-app-local.yaml"
+echo "  1. Deploy with Turbo:"
+echo "     pnpm turbo run deploy:helm:local"
 echo ""
-echo "  2. Access the apps:"
+echo "  2. Or deploy individually:"
+echo "     cd apps/@api/app && pnpm run deploy:helm:local"
+echo "     cd apps/@app/app && pnpm run deploy:helm:local"
+echo "     cd apps/@www/app && pnpm run deploy:helm:local"
+echo ""
+echo "  3. Access the apps:"
 echo "     http://www.local.com - Weather sonification app"
 echo "     http://app.local.com - Demo client app"
 echo "     http://api.local.com - API server"

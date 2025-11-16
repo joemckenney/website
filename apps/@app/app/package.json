@@ -6,6 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsgo && vite build",
+    "build:docker": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/app-client:latest --build-arg VITE_API_URL=http://api.local.com -f Dockerfile $REPO_ROOT",
+    "build:docker:local": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/app-client:latest --build-arg VITE_API_URL=http://api.local.com -f Dockerfile $REPO_ROOT",
+    "build:docker:prod": "REPO_ROOT=$(git rev-parse --show-toplevel) && docker build -t ${REGISTRY:-registry.digitalocean.com/your-registry}/app-client:${TAG:-latest} --build-arg VITE_API_URL=${VITE_API_URL} -f Dockerfile $REPO_ROOT",
+    "deploy:helm:local": "helm upgrade --install app-client ./helm -f ./helm/values-local.yaml --wait --timeout=5m",
+    "clean:docker": "docker rmi localhost:5000/app-client:latest || true",
     "preview": "vite preview",
     "format": "biome format --write ."
   },

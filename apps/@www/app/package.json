@@ -6,6 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsgo && vite build",
+    "build:docker": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/www-app:latest -f Dockerfile $REPO_ROOT",
+    "build:docker:local": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/www-app:latest -f Dockerfile $REPO_ROOT",
+    "build:docker:prod": "REPO_ROOT=$(git rev-parse --show-toplevel) && docker build -t ${REGISTRY:-registry.digitalocean.com/your-registry}/www-app:${TAG:-latest} -f Dockerfile $REPO_ROOT",
+    "deploy:helm:local": "helm upgrade --install www-app ./helm -f ./helm/values-local.yaml --wait --timeout=5m",
+    "clean:docker": "docker rmi localhost:5000/www-app:latest || true",
     "preview": "vite preview",
     "format": "biome format --write ."
   },

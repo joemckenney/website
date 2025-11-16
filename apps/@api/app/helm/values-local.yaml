@@ -1,0 +1,36 @@
+# Local Minikube environment values for app-server
+# Copy this file to app-server-local.yaml and fill in your secrets
+replicaCount: 1
+
+image:
+  repository: localhost:5000/app-server  # Local registry
+  tag: latest
+  pullPolicy: IfNotPresent  # Try local first, then registry
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: api.local.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []  # No TLS locally
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+secrets:
+  googleClientId: "54664911873-2rn5pbd5bccamdgl9l6o8bregai6fm40.apps.googleusercontent.com"
+  googleClientSecret: "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"
+  googleRedirectUri: "http://api.local.com/auth/google/callback"
+  jwtSecret: "local-jwt-secret-change-me"
+  allowedEmail: "j.mckenney00@gmail.com"
+  frontendUrl: "http://app.local.com"
+  backendUrl: "http://api.local.com"
