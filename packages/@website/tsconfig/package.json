@@ -2,6 +2,9 @@
   "name": "@website/tsconfig",
   "version": "0.0.0",
   "private": true,
+  "files": [
+    "*.json"
+  ],
   "exports": {
     "./base.json": "./base.json",
     "./react.json": "./react.json",

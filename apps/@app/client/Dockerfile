@@ -22,6 +22,10 @@ RUN turbo prune @app/client --docker
 # Build stage (includes all build tooling for workspace packages)
 FROM node:20-alpine AS builder
 
+# Accept build arg for API URL (passed from docker-compose or docker build)
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
+
 WORKDIR /app
 
 # Install pnpm

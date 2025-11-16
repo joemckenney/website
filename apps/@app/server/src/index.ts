@@ -10,16 +10,20 @@ import {registerAuthRoutes} from "./routes/auth.js";
 import {TypeBoxTypeProvider} from "@fastify/type-provider-typebox";
 
 const fastify = Fastify({
-  logger: {
-    transport: {
-      target: "pino-pretty",
-      options: {
-        translateTime: "HH:MM:ss Z",
-        ignore: "pid,hostname",
-        colorize: true,
-      },
-    },
-  },
+  logger:
+    process.env.NODE_ENV === "production"
+      ? true // JSON logging in production
+      : {
+          // Pretty logging in development
+          transport: {
+            target: "pino-pretty",
+            options: {
+              translateTime: "HH:MM:ss Z",
+              ignore: "pid,hostname",
+              colorize: true,
+            },
+          },
+        },
 }).withTypeProvider<TypeBoxTypeProvider>();
 
 await fastify.register(cookie);

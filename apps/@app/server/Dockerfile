@@ -57,7 +57,8 @@ FROM builder AS deployer
 ENV NODE_ENV=production
 
 # Deploy production-ready output to /app/pruned with only prod dependencies
-RUN pnpm --filter "@app/server" --prod deploy --legacy pruned
+# Modern pnpm deploy properly handles workspace dependencies and their files
+RUN pnpm --filter=@app/server --prod deploy /app/pruned
 
 # Production stage
 FROM node:20-alpine

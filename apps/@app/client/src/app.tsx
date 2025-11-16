@@ -11,7 +11,9 @@ import {decodeJWT, getTimeUntilExpiry} from "./lib/jwt-utils";
 import {setupApiClient} from "./lib/api-client";
 import {DebugInfo} from "./components/debug-info";
 
-setupApiClient("http://localhost:3000");
+// Use environment variable or default to localhost for local dev
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+setupApiClient(API_URL);
 
 function App() {
   const [authenticated, setAuthenticated] = useState(isAuthenticated());

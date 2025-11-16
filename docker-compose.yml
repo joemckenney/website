@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app-server:
+    build:
+      context: .
+      dockerfile: apps/@app/server/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - app-network
+
+  app-client:
+    build:
+      context: .
+      dockerfile: apps/@app/client/Dockerfile
+      args:
+        - VITE_API_URL=http://app-server:3000
+    ports:
+      - "3001:80"
+    depends_on:
+      - app-server
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
