@@ -29,6 +29,7 @@ docker buildx build -t localhost:5000/app-server:latest \
 
 echo -e "${YELLOW}Building app-client image...${NC}"
 docker buildx build -t localhost:5000/app-client:latest \
+    --build-arg VITE_API_URL=http://api.local.com \
     -f apps/@app/client/Dockerfile .
 
 # Push to local registry (requires port-forward to be running)

@@ -63,3 +63,7 @@ Thumbs.db
 
 # Optional: Remove if you want to commit lock files for root
 # pnpm-lock.yaml
+
+# Secrets - local development values
+infrastructure/helm/values/*-local.yaml
+infrastructure/helm/values/local.yaml

@@ -1,4 +1,5 @@
 # Local Minikube environment values for app-server
+# Copy this file to app-server-local.yaml and fill in your secrets
 replicaCount: 1
 
 image:

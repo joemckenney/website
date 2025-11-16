@@ -64,6 +64,11 @@ spec:
             secretKeyRef:
               name: {{ include "app-server.fullname" . }}-secrets
               key: googleClientSecret
+        - name: GOOGLE_REDIRECT_URI
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "app-server.fullname" . }}-secrets
+              key: googleRedirectUri
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:

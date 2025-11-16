@@ -85,7 +85,12 @@ function App() {
     await logout();
     setAuthenticated(false);
     setUserEmail(null);
-    window.location.href = "http://localhost:5000";
+    window.location.href = window.location.origin; // Return to client home
+  };
+
+  const handleLogin = () => {
+    // Redirect to the API's Google OAuth endpoint
+    window.location.href = `${API_URL}/auth/google`;
   };
 
   const handleSquaredSubmit = async (e: React.FormEvent) => {
@@ -129,13 +134,13 @@ function App() {
         <div className={styles.unauthBox}>
           <h1 className={styles.unauthTitle}>Not Authenticated</h1>
           <p className={styles.unauthText}>
-            Please login from the main app to access this page.
+            Please sign in with Google to access this application.
           </p>
           <button
-            onClick={() => (window.location.href = "http://localhost:5000")}
+            onClick={handleLogin}
             className={styles.primaryButton}
           >
-            Go to Main App
+            Login with Google
           </button>
         </div>
       </div>

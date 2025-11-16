@@ -6,8 +6,8 @@ export const config = {
   },
   allowedEmail: process.env.ALLOWED_EMAIL || '',
   jwt: {
-    accessSecret: process.env.JWT_ACCESS_SECRET || 'dev-access-secret',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret',
+    accessSecret: process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'dev-access-secret',
+    refreshSecret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'dev-refresh-secret',
     accessTokenExpiry: '15m' as const, // 15 minutes
     refreshTokenExpiry: '7d' as const, // 7 days
   },
