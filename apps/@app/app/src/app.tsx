@@ -1,5 +1,5 @@
 import { getAuthMe, getPing, postSquared } from "@api/sdk";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import * as styles from "./app.css";
 import { DebugInfo } from "./components/debug-info";
@@ -24,6 +24,31 @@ function App() {
 
   // Debug state
   const [tokenExpiry, setTokenExpiry] = useState<string>("");
+
+  const handleLogout = useCallback(async () => {
+    await logout();
+    setAuthenticated(false);
+    setUserEmail(null);
+    window.location.href = window.location.origin; // Return to client home
+  }, []);
+
+  const fetchUserInfo = useCallback(async () => {
+    const token = getAccessToken();
+    if (!token) return;
+
+    try {
+      const response = await getAuthMe();
+
+      if (response.data) {
+        setUserEmail(response.data.email);
+      } else if (response.error) {
+        console.error("Failed to fetch user info:", response.error);
+        handleLogout();
+      }
+    } catch (error) {
+      console.error("Failed to fetch user info:", error);
+    }
+  }, [handleLogout]);
 
   // Extract access token from URL on mount
   useEffect(() => {
@@ -63,31 +88,6 @@ function App() {
 
     return () => clearInterval(interval);
   }, [authenticated]);
-
-  const fetchUserInfo = async () => {
-    const token = getAccessToken();
-    if (!token) return;
-
-    try {
-      const response = await getAuthMe();
-
-      if (response.data) {
-        setUserEmail(response.data.email);
-      } else if (response.error) {
-        console.error("Failed to fetch user info:", response.error);
-        handleLogout();
-      }
-    } catch (error) {
-      console.error("Failed to fetch user info:", error);
-    }
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    setAuthenticated(false);
-    setUserEmail(null);
-    window.location.href = window.location.origin; // Return to client home
-  };
 
   const handleLogin = () => {
     // Redirect to the API's Google OAuth endpoint
