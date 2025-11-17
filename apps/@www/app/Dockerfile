@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Workspace pruner - creates a minimal workspace with only necessary dependencies
-FROM node:20-alpine AS workspace-pruner
+FROM node:24-alpine AS workspace-pruner
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ COPY . .
 RUN turbo prune @www/app --docker
 
 # Build stage (includes all build tooling for workspace packages)
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
