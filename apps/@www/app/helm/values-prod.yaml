@@ -1,0 +1,42 @@
+# Production values for www-app (www.joemckenney.com)
+replicaCount: 1
+
+image:
+  repository: YOUR_DOCKERHUB_USERNAME/www-app
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: www.joemckenney.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: www-app-tls
+      hosts:
+        - www.joemckenney.com
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

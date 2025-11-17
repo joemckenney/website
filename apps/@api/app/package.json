@@ -11,8 +11,9 @@
     "build": "tsc",
     "build:docker": "REPO_ROOT=$(pnpm exec topoftree) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/app-server:latest -f Dockerfile $REPO_ROOT",
     "build:docker:local": "REPO_ROOT=$(pnpm exec topoftree) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/app-server:latest -f Dockerfile $REPO_ROOT",
-    "build:docker:prod": "REPO_ROOT=$(pnpm exec topoftree) && docker build -t ${REGISTRY:-registry.digitalocean.com/your-registry}/app-server:${TAG:-latest} -f Dockerfile $REPO_ROOT",
+    "build:docker:prod": "REPO_ROOT=$(pnpm exec topoftree) && docker build -t ${DOCKERHUB_USERNAME}/app-server:${TAG:-latest} -f Dockerfile $REPO_ROOT",
     "deploy:helm:local": "helm upgrade --install app-server ./helm -f ./helm/values-local.yaml --wait --timeout=5m",
+    "deploy:helm:prod": "helm upgrade --install app-server ./helm -f ./helm/values-prod.yaml --wait --timeout=5m",
     "clean:docker": "docker rmi localhost:5000/app-server:latest || true",
     "start": "NODE_OPTIONS='--experimental-wasm-modules' node dist/index.js",
     "format": "biome format --write ."

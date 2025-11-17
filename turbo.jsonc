@@ -27,6 +27,10 @@
       "dependsOn": ["build:docker:local"],
       "cache": false
     },
+    "deploy:helm:prod": {
+      "dependsOn": ["build:docker:prod"],
+      "cache": false
+    },
     "clean:docker": {
       "cache": false
     }

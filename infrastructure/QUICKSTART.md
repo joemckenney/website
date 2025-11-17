@@ -1,6 +1,17 @@
 # Quick Start Guide
 
-Choose your environment and follow the appropriate guide.
+## Production Deployment to Vultr (30 Minutes)
+
+For the complete detailed guide, see [DEPLOYMENT.md](./DEPLOYMENT.md).
+
+This quick start gets you from zero to production HTTPS websites in ~30 minutes.
+
+### Prerequisites
+
+- [ ] Vultr account
+- [ ] Docker Hub account
+- [ ] kubectl & helm installed locally
+- [ ] Docker Desktop running
 
 ## Local Development (Minikube)
 
