@@ -23,7 +23,7 @@ export function compareWeather(
     visibility?: number;
     uvIndex?: number;
     cape?: number;
-  } = {}
+  } = {},
 ): WeatherChange[] {
   const changes: WeatherChange[] = [];
 
@@ -47,9 +47,10 @@ export function compareWeather(
       parameter: "temperature",
       oldValue: `${previous.temperature.toFixed(1)}°F`,
       newValue: `${current.temperature.toFixed(1)}°F`,
-      description: tempDiff > 0
-        ? `Temperature increased from ${previous.temperature.toFixed(1)}°F to ${current.temperature.toFixed(1)}°F`
-        : `Temperature decreased from ${previous.temperature.toFixed(1)}°F to ${current.temperature.toFixed(1)}°F`,
+      description:
+        tempDiff > 0
+          ? `Temperature increased from ${previous.temperature.toFixed(1)}°F to ${current.temperature.toFixed(1)}°F`
+          : `Temperature decreased from ${previous.temperature.toFixed(1)}°F to ${current.temperature.toFixed(1)}°F`,
     });
   }
 
@@ -70,9 +71,10 @@ export function compareWeather(
       parameter: "windSpeed",
       oldValue: `${previous.windSpeed.toFixed(1)} mph`,
       newValue: `${current.windSpeed.toFixed(1)} mph`,
-      description: windSpeedDiff > 0
-        ? `Wind speed increased from ${previous.windSpeed.toFixed(1)} mph to ${current.windSpeed.toFixed(1)} mph`
-        : `Wind speed decreased from ${previous.windSpeed.toFixed(1)} mph to ${current.windSpeed.toFixed(1)} mph`,
+      description:
+        windSpeedDiff > 0
+          ? `Wind speed increased from ${previous.windSpeed.toFixed(1)} mph to ${current.windSpeed.toFixed(1)} mph`
+          : `Wind speed decreased from ${previous.windSpeed.toFixed(1)} mph to ${current.windSpeed.toFixed(1)} mph`,
     });
   }
 
@@ -96,9 +98,10 @@ export function compareWeather(
       parameter: "windGusts",
       oldValue: `${previous.windGusts.toFixed(1)} mph`,
       newValue: `${current.windGusts.toFixed(1)} mph`,
-      description: gustDiff > 0
-        ? `Wind gusts increased from ${previous.windGusts.toFixed(1)} mph to ${current.windGusts.toFixed(1)} mph`
-        : `Wind gusts decreased from ${previous.windGusts.toFixed(1)} mph to ${current.windGusts.toFixed(1)} mph`,
+      description:
+        gustDiff > 0
+          ? `Wind gusts increased from ${previous.windGusts.toFixed(1)} mph to ${current.windGusts.toFixed(1)} mph`
+          : `Wind gusts decreased from ${previous.windGusts.toFixed(1)} mph to ${current.windGusts.toFixed(1)} mph`,
     });
   }
 
@@ -109,9 +112,10 @@ export function compareWeather(
       parameter: "humidity",
       oldValue: `${previous.humidity.toFixed(0)}%`,
       newValue: `${current.humidity.toFixed(0)}%`,
-      description: humidityDiff > 0
-        ? `Humidity increased from ${previous.humidity.toFixed(0)}% to ${current.humidity.toFixed(0)}%`
-        : `Humidity decreased from ${previous.humidity.toFixed(0)}% to ${current.humidity.toFixed(0)}%`,
+      description:
+        humidityDiff > 0
+          ? `Humidity increased from ${previous.humidity.toFixed(0)}% to ${current.humidity.toFixed(0)}%`
+          : `Humidity decreased from ${previous.humidity.toFixed(0)}% to ${current.humidity.toFixed(0)}%`,
     });
   }
 
@@ -122,9 +126,10 @@ export function compareWeather(
       parameter: "cloudCover",
       oldValue: `${previous.cloudCover.toFixed(0)}%`,
       newValue: `${current.cloudCover.toFixed(0)}%`,
-      description: cloudDiff > 0
-        ? `Cloud cover increased from ${previous.cloudCover.toFixed(0)}% to ${current.cloudCover.toFixed(0)}%`
-        : `Cloud cover decreased from ${previous.cloudCover.toFixed(0)}% to ${current.cloudCover.toFixed(0)}%`,
+      description:
+        cloudDiff > 0
+          ? `Cloud cover increased from ${previous.cloudCover.toFixed(0)}% to ${current.cloudCover.toFixed(0)}%`
+          : `Cloud cover decreased from ${previous.cloudCover.toFixed(0)}% to ${current.cloudCover.toFixed(0)}%`,
     });
   }
 
@@ -135,9 +140,10 @@ export function compareWeather(
       parameter: "visibility",
       oldValue: `${(previous.visibility / 1000).toFixed(1)} km`,
       newValue: `${(current.visibility / 1000).toFixed(1)} km`,
-      description: visibilityDiff > 0
-        ? `Visibility improved from ${(previous.visibility / 1000).toFixed(1)} km to ${(current.visibility / 1000).toFixed(1)} km`
-        : `Visibility decreased from ${(previous.visibility / 1000).toFixed(1)} km to ${(current.visibility / 1000).toFixed(1)} km`,
+      description:
+        visibilityDiff > 0
+          ? `Visibility improved from ${(previous.visibility / 1000).toFixed(1)} km to ${(current.visibility / 1000).toFixed(1)} km`
+          : `Visibility decreased from ${(previous.visibility / 1000).toFixed(1)} km to ${(current.visibility / 1000).toFixed(1)} km`,
     });
   }
 
@@ -148,9 +154,10 @@ export function compareWeather(
       parameter: "uvIndex",
       oldValue: `${previous.uvIndex.toFixed(1)}`,
       newValue: `${current.uvIndex.toFixed(1)}`,
-      description: uvDiff > 0
-        ? `UV index increased from ${previous.uvIndex.toFixed(1)} to ${current.uvIndex.toFixed(1)}`
-        : `UV index decreased from ${previous.uvIndex.toFixed(1)} to ${current.uvIndex.toFixed(1)}`,
+      description:
+        uvDiff > 0
+          ? `UV index increased from ${previous.uvIndex.toFixed(1)} to ${current.uvIndex.toFixed(1)}`
+          : `UV index decreased from ${previous.uvIndex.toFixed(1)} to ${current.uvIndex.toFixed(1)}`,
     });
   }
 
@@ -161,9 +168,10 @@ export function compareWeather(
       parameter: "pressure",
       oldValue: `${previous.pressure.toFixed(1)} hPa`,
       newValue: `${current.pressure.toFixed(1)} hPa`,
-      description: pressureDiff > 0
-        ? `Atmospheric pressure increased from ${previous.pressure.toFixed(1)} hPa to ${current.pressure.toFixed(1)} hPa`
-        : `Atmospheric pressure decreased from ${previous.pressure.toFixed(1)} hPa to ${current.pressure.toFixed(1)} hPa`,
+      description:
+        pressureDiff > 0
+          ? `Atmospheric pressure increased from ${previous.pressure.toFixed(1)} hPa to ${current.pressure.toFixed(1)} hPa`
+          : `Atmospheric pressure decreased from ${previous.pressure.toFixed(1)} hPa to ${current.pressure.toFixed(1)} hPa`,
     });
   }
 
@@ -174,9 +182,10 @@ export function compareWeather(
       parameter: "cape",
       oldValue: `${previous.cape.toFixed(0)} J/kg`,
       newValue: `${current.cape.toFixed(0)} J/kg`,
-      description: capeDiff > 0
-        ? `Atmospheric instability (CAPE) increased from ${previous.cape.toFixed(0)} J/kg to ${current.cape.toFixed(0)} J/kg`
-        : `Atmospheric instability (CAPE) decreased from ${previous.cape.toFixed(0)} J/kg to ${current.cape.toFixed(0)} J/kg`,
+      description:
+        capeDiff > 0
+          ? `Atmospheric instability (CAPE) increased from ${previous.cape.toFixed(0)} J/kg to ${current.cape.toFixed(0)} J/kg`
+          : `Atmospheric instability (CAPE) decreased from ${previous.cape.toFixed(0)} J/kg to ${current.cape.toFixed(0)} J/kg`,
     });
   }
 
@@ -199,7 +208,24 @@ export function compareWeather(
  * Convert wind direction in degrees to compass direction
  */
 function getCompassDirection(degrees: number): string {
-  const directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+  const directions = [
+    "N",
+    "NNE",
+    "NE",
+    "ENE",
+    "E",
+    "ESE",
+    "SE",
+    "SSE",
+    "S",
+    "SSW",
+    "SW",
+    "WSW",
+    "W",
+    "WNW",
+    "NW",
+    "NNW",
+  ];
   const index = Math.round(degrees / 22.5) % 16;
   return directions[index];
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import * as styles from "./frequency-visualizer.css";
 import type { AudioSynthesizer } from "../lib/audio-synthesizer";
+import * as styles from "./frequency-visualizer.css";
 
 interface FrequencyVisualizerProps {
   synthesizer: AudioSynthesizer | null;
@@ -57,7 +57,7 @@ export function FrequencyVisualizer({ synthesizer }: FrequencyVisualizerProps) {
 
         // Normalize to 0-1 range with boosted sensitivity for low values
         const normalized = value / 255;
-        const boosted = Math.pow(normalized, 0.7); // Power curve for better visibility
+        const boosted = normalized ** 0.7; // Power curve for better visibility
 
         // Calculate bar height with minimum threshold
         const barHeight = Math.max(minBarHeight, boosted * height * 0.95);

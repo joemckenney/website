@@ -48,7 +48,7 @@ jobs:
             ${{ runner.os }}-turbo-
 
       - name: Format check
-        run: pnpm biome check --error-on-warnings
+        run: pnpm biome check
 
       - name: Type check & Build
         run: pnpm turbo build

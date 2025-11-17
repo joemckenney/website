@@ -1,6 +1,6 @@
-import type { FastifyPluginAsync } from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import { squared } from "@website/squared";
+import type { FastifyPluginAsync } from "fastify";
 import { Type } from "typebox";
 import { authenticateRequest } from "./middleware/auth.js";
 

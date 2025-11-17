@@ -1,6 +1,6 @@
-import type { FastifyInstance } from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
-import { Google, generateState, generateCodeVerifier } from "arctic";
+import { Google, generateCodeVerifier, generateState } from "arctic";
+import type { FastifyInstance } from "fastify";
 import { config } from "../config.js";
 import {
   generateAccessToken,
@@ -8,10 +8,10 @@ import {
   verifyRefreshToken,
 } from "../lib/jwt.js";
 import {
-  RefreshTokenResponse,
+  ErrorResponse,
   LogoutResponse,
   MeResponse,
-  ErrorResponse,
+  RefreshTokenResponse,
 } from "../schemas.js";
 
 const google = new Google(
@@ -41,12 +41,12 @@ setInterval(
 );
 
 export async function registerAuthRoutes(
-  fastify: FastifyInstance & { withTypeProvider: <T>() => FastifyInstance },
+  fastify: FastifyInstance & { withTypeProvider: <_T>() => FastifyInstance },
 ) {
   const app = fastify.withTypeProvider<TypeBoxTypeProvider>();
 
   // Initiate Google OAuth flow
-  app.get("/auth/google", async (request, reply) => {
+  app.get("/auth/google", async (_request, reply) => {
     const state = generateState();
     const codeVerifier = generateCodeVerifier();
 
@@ -140,7 +140,8 @@ export async function registerAuthRoutes(
     "/auth/refresh",
     {
       schema: {
-        description: "Refresh access token using httpOnly cookie with token rotation",
+        description:
+          "Refresh access token using httpOnly cookie with token rotation",
         tags: ["auth"],
         response: {
           200: RefreshTokenResponse,
@@ -185,7 +186,7 @@ export async function registerAuthRoutes(
         });
 
         return reply.send({ access_token: accessToken });
-      } catch (error) {
+      } catch (_error) {
         // Clear invalid refresh token cookie
         const isHttps = request.protocol === "https";
         reply.clearCookie("refresh_token", {
@@ -257,7 +258,7 @@ export async function registerAuthRoutes(
           }
 
           request.user = { email: payload.email };
-        } catch (error) {
+        } catch (_error) {
           return reply.status(401).send({ error: "Invalid or expired token" });
         }
       },

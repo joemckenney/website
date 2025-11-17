@@ -1,15 +1,15 @@
-import jwt from 'jsonwebtoken';
-import { config } from '../config.js';
+import jwt from "jsonwebtoken";
+import { config } from "../config.js";
 
 export interface TokenPayload {
   email: string;
-  type: 'access' | 'refresh';
+  type: "access" | "refresh";
 }
 
 export function generateAccessToken(email: string): string {
   const payload: TokenPayload = {
     email,
-    type: 'access',
+    type: "access",
   };
 
   return jwt.sign(payload, config.jwt.accessSecret, {
@@ -20,7 +20,7 @@ export function generateAccessToken(email: string): string {
 export function generateRefreshToken(email: string): string {
   const payload: TokenPayload = {
     email,
-    type: 'refresh',
+    type: "refresh",
   };
 
   return jwt.sign(payload, config.jwt.refreshSecret, {

@@ -1,7 +1,7 @@
 import type { AudioParameters, WeatherData } from "../types/weather";
+import { generateAudioParameters } from "./gemini";
 import type { Coordinates } from "./geolocation";
 import { fetchWeatherData } from "./weather";
-import { generateAudioParameters } from "./gemini";
 import { compareWeather, type WeatherChange } from "./weather-diff";
 
 export interface EvolutionConfig {
@@ -29,7 +29,11 @@ export class AudioEvolutionEngine {
     coordinates: Coordinates,
     initialWeather: WeatherData,
     initialParams: AudioParameters,
-    onEvolution: (params: AudioParameters, weather: WeatherData, changes: WeatherChange[]) => Promise<void>,
+    onEvolution: (
+      params: AudioParameters,
+      weather: WeatherData,
+      changes: WeatherChange[],
+    ) => Promise<void>,
     log?: (
       text: string,
       type?: "info" | "success" | "warning" | "error" | "output",
@@ -73,7 +77,11 @@ export class AudioEvolutionEngine {
   }
 
   private scheduleNextEvolution(
-    onEvolution: (params: AudioParameters, weather: WeatherData, changes: WeatherChange[]) => Promise<void>,
+    onEvolution: (
+      params: AudioParameters,
+      weather: WeatherData,
+      changes: WeatherChange[],
+    ) => Promise<void>,
     log?: (
       text: string,
       type?: "info" | "success" | "warning" | "error" | "output",
@@ -93,7 +101,11 @@ export class AudioEvolutionEngine {
   }
 
   private async generateEvolution(
-    onEvolution: (params: AudioParameters, weather: WeatherData, changes: WeatherChange[]) => Promise<void>,
+    onEvolution: (
+      params: AudioParameters,
+      weather: WeatherData,
+      changes: WeatherChange[],
+    ) => Promise<void>,
     log?: (
       text: string,
       type?: "info" | "success" | "warning" | "error" | "output",
@@ -126,14 +138,22 @@ export class AudioEvolutionEngine {
 
       // Weather has changed - remove the detecting line and log what changed
       removeLog?.();
-      log?.(`Weather changed (${changes.length} parameter${changes.length > 1 ? 's' : ''})`, "info");
+      log?.(
+        `Weather changed (${changes.length} parameter${changes.length > 1 ? "s" : ""})`,
+        "info",
+      );
       for (const change of changes) {
         log?.(change.description, "output");
       }
 
       // Generate new audio parameters from updated weather, evolving from current state
       log?.(`Updating soundscape...`, "info");
-      const newParams = await generateAudioParameters(newWeather, this.currentParams, undefined, log);
+      const newParams = await generateAudioParameters(
+        newWeather,
+        this.currentParams,
+        undefined,
+        log,
+      );
 
       // Update current state
       this.currentParams = newParams;
@@ -155,7 +175,6 @@ export class AudioEvolutionEngine {
       log?.("Detecting changes in weather.", "info");
     }
   }
-
 
   getIsRunning(): boolean {
     return this.isRunning;

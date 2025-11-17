@@ -12,7 +12,7 @@ const colors = {
 
 const font = {
   mono: '"Courier New", Courier, monospace',
-  sans: '-apple-system, system-ui, sans-serif',
+  sans: "-apple-system, system-ui, sans-serif",
 };
 
 export const page = style({

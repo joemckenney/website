@@ -1,15 +1,16 @@
-import {useState, useEffect} from "react";
-import {postSquared, getPing, getAuthMe} from "@api/sdk";
+import { getAuthMe, getPing, postSquared } from "@api/sdk";
+import { useEffect, useState } from "react";
+
 import * as styles from "./app.css";
+import { DebugInfo } from "./components/debug-info";
+import { setupApiClient } from "./lib/api-client";
 import {
   getAccessToken,
-  setAccessToken,
   isAuthenticated,
   logout,
+  setAccessToken,
 } from "./lib/auth";
-import {decodeJWT, getTimeUntilExpiry} from "./lib/jwt-utils";
-import {setupApiClient} from "./lib/api-client";
-import {DebugInfo} from "./components/debug-info";
+import { decodeJWT, getTimeUntilExpiry } from "./lib/jwt-utils";
 
 // Use environment variable or default to localhost for local dev
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -44,7 +45,7 @@ function App() {
     } else if (authenticated) {
       fetchUserInfo();
     }
-  }, []);
+  }, [authenticated, fetchUserInfo]);
 
   // Update token expiry every second
   useEffect(() => {
@@ -96,12 +97,11 @@ function App() {
   const handleSquaredSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const num = parseFloat(squaredInput);
-    if (isNaN(num)) return;
-
+    if (Number.isNaN(num)) return;
 
     try {
       const response = await postSquared({
-        body: {number: num},
+        body: { number: num },
       });
 
       if (response.data) {
@@ -136,10 +136,7 @@ function App() {
           <p className={styles.unauthText}>
             Please sign in with Google to access this application.
           </p>
-          <button
-            onClick={handleLogin}
-            className={styles.primaryButton}
-          >
+          <button onClick={handleLogin} className={styles.primaryButton}>
             Login with Google
           </button>
         </div>
@@ -176,10 +173,7 @@ function App() {
         <div className={styles.endpointsGrid}>
           <div className={styles.endpointBox}>
             <h3 className={styles.subsectionTitle}>Ping Endpoint</h3>
-            <button
-              onClick={handlePing}
-              className={styles.button}
-            >
+            <button onClick={handlePing} className={styles.button}>
               {"Ping Server"}
             </button>
           </div>
@@ -194,10 +188,7 @@ function App() {
                 placeholder="Enter a number"
                 className={styles.input}
               />
-              <button
-                type="submit"
-                className={styles.button}
-              >
+              <button type="submit" className={styles.button}>
                 {"Calculate"}
               </button>
             </form>

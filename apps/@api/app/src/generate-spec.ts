@@ -1,10 +1,10 @@
 import "dotenv/config";
-import Fastify from "fastify";
+import { mkdir, writeFile } from "node:fs/promises";
 import swagger from "@fastify/swagger";
-import {writeFile, mkdir} from "node:fs/promises";
-import {registerRoutes} from "./routes.js";
-import {registerAuthRoutes} from "./routes/auth.js";
-import {TypeBoxTypeProvider} from "@fastify/type-provider-typebox";
+import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
+import Fastify from "fastify";
+import { registerAuthRoutes } from "./routes/auth.js";
+import { registerRoutes } from "./routes.js";
 
 const fastify = Fastify({
   logger: false, // Disable logging for spec generation
@@ -44,7 +44,7 @@ await registerRoutes(fastify, {});
 await fastify.ready();
 
 // Generate OpenAPI spec to dist folder
-await mkdir("./dist", {recursive: true});
+await mkdir("./dist", { recursive: true });
 const spec = fastify.swagger();
 await writeFile("./dist/openapi.json", JSON.stringify(spec, null, 2));
 

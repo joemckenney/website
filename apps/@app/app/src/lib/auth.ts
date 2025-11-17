@@ -1,20 +1,22 @@
-import { postAuthRefresh, postAuthLogout } from '@api/sdk';
+import { postAuthLogout, postAuthRefresh } from "@api/sdk";
 
-const ACCESS_TOKEN_KEY = 'access_token';
+const ACCESS_TOKEN_KEY = "access_token";
 
-function decodeToken(token: string): { exp?: number; email?: string; type?: string } | null {
+function decodeToken(
+  token: string,
+): { exp?: number; email?: string; type?: string } | null {
   try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
     const jsonPayload = decodeURIComponent(
       atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
+        .split("")
+        .map((c) => `%${(`00${c.charCodeAt(0).toString(16)}`).slice(-2)}`)
+        .join(""),
     );
     return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error('Failed to decode token:', error);
+    console.error("Failed to decode token:", error);
     return null;
   }
 }
@@ -66,7 +68,7 @@ export async function refreshAccessToken(): Promise<boolean> {
     try {
       const response = await postAuthRefresh({
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
@@ -82,7 +84,7 @@ export async function refreshAccessToken(): Promise<boolean> {
 
       return false;
     } catch (error) {
-      console.error('Failed to refresh token:', error);
+      console.error("Failed to refresh token:", error);
       clearTokens();
       return false;
     } finally {
@@ -122,7 +124,7 @@ export async function logout(): Promise<void> {
       });
     }
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error("Logout error:", error);
   } finally {
     clearTokens();
   }

@@ -25,7 +25,7 @@ export async function performSystemCheck(): Promise<SystemCheckResult> {
   const chromeMatch = userAgent.match(/Chrome\/(\d+)/);
   const isChrome = chromeMatch !== null;
   const version = chromeMatch ? chromeMatch[1] : null;
-  const meetsMinimumVersion = version ? parseInt(version) >= 127 : false;
+  const meetsMinimumVersion = version ? parseInt(version, 10) >= 127 : false;
 
   // Check Chrome AI API
   const languageModel =
