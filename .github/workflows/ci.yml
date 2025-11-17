@@ -1,0 +1,235 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  quality-checks:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read Node version
+        id: node-version
+        run: echo "version=$(cat .nvmrc)" >> $GITHUB_OUTPUT
+
+      - name: Read pnpm version
+        id: pnpm-version
+        run: echo "version=$(cat package.json | jq -r .packageManager | sed 's/pnpm@//' | sed 's/\"//g')" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ steps.pnpm-version.outputs.version }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
+      - name: Format check
+        run: pnpm biome check --error-on-warnings
+
+      - name: Type check & Build
+        run: pnpm turbo build
+
+  docker-build:
+    name: Docker Build Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: quality-checks
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build www-app
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/@www/app/Dockerfile
+          push: false
+          tags: localhost:5000/www-app:test
+          build-args: |
+            VITE_API_URL=http://api.local.com
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build app-client
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/@app/app/Dockerfile
+          push: false
+          tags: localhost:5000/app-client:test
+          build-args: |
+            VITE_API_URL=http://api.local.com
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build app-server
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/@api/app/Dockerfile
+          push: false
+          tags: localhost:5000/app-server:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  integration-test:
+    name: Integration Tests (Minikube)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: docker-build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read Node version
+        id: node-version
+        run: echo "version=$(cat .nvmrc)" >> $GITHUB_OUTPUT
+
+      - name: Read pnpm version
+        id: pnpm-version
+        run: echo "version=$(cat package.json | jq -r .packageManager | sed 's/pnpm@//' | sed 's/\"//g')" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ steps.pnpm-version.outputs.version }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Start minikube
+        uses: medyagh/setup-minikube@latest
+        with:
+          cpus: 2
+          memory: 4096
+          kubernetes-version: v1.28.0
+          driver: docker
+
+      - name: Enable minikube addons
+        run: |
+          minikube addons enable ingress
+          minikube addons enable registry
+
+      - name: Setup local registry
+        run: |
+          kubectl port-forward --namespace kube-system service/registry 5000:80 &
+          sleep 5
+
+      - name: Configure /etc/hosts
+        run: |
+          echo "$(minikube ip) www.local.com app.local.com api.local.com" | sudo tee -a /etc/hosts
+
+      - name: Build Docker images in minikube
+        run: |
+          eval $(minikube docker-env)
+          docker build -t localhost:5000/www-app:latest --build-arg VITE_API_URL=http://api.local.com -f apps/@www/app/Dockerfile .
+          docker build -t localhost:5000/app-client:latest --build-arg VITE_API_URL=http://api.local.com -f apps/@app/app/Dockerfile .
+          docker build -t localhost:5000/app-server:latest -f apps/@api/app/Dockerfile .
+
+      - name: Push images to local registry
+        run: |
+          docker push localhost:5000/www-app:latest
+          docker push localhost:5000/app-client:latest
+          docker push localhost:5000/app-server:latest
+
+      - name: Deploy apps with Helm
+        run: |
+          # Deploy www-app
+          helm install www-app apps/@www/app/helm -f apps/@www/app/helm/values-local.yaml --wait --timeout=3m
+
+          # Deploy app-client
+          helm install app-client apps/@app/app/helm -f apps/@app/app/helm/values-local.yaml --wait --timeout=3m
+
+          # Deploy app-server
+          helm install app-server apps/@api/app/helm -f apps/@api/app/helm/values-local.yaml --wait --timeout=3m
+
+      - name: Wait for pods to be ready
+        run: |
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=www-app --timeout=120s
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=app-client --timeout=120s
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=app-server --timeout=120s
+
+      - name: Run smoke tests
+        run: |
+          pnpm run test:smoke
+
+      - name: Debug on failure
+        if: failure()
+        run: |
+          echo "=== Pods ==="
+          kubectl get pods -o wide
+          echo "=== Services ==="
+          kubectl get svc
+          echo "=== Ingress ==="
+          kubectl get ingress
+          echo "=== Pod Logs (www-app) ==="
+          kubectl logs -l app.kubernetes.io/name=www-app --tail=50
+          echo "=== Pod Logs (app-client) ==="
+          kubectl logs -l app.kubernetes.io/name=app-client --tail=50
+          echo "=== Pod Logs (app-server) ==="
+          kubectl logs -l app.kubernetes.io/name=app-server --tail=50
+
+      - name: Cleanup
+        if: always()
+        run: |
+          minikube delete
+
+  ci-success:
+    name: CI Success
+    runs-on: ubuntu-latest
+    needs: [quality-checks, docker-build, integration-test]
+    if: always()
+
+    steps:
+      - name: Check CI status
+        run: |
+          if [ "${{ needs.quality-checks.result }}" != "success" ] || \
+             [ "${{ needs.docker-build.result }}" != "success" ] || \
+             [ "${{ needs.integration-test.result }}" != "success" ]; then
+            echo "❌ CI failed"
+            exit 1
+          fi
+          echo "✅ All CI checks passed!"

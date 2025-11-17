@@ -9,7 +9,9 @@
   "scripts": {
     "build": "turbo run build",
     "format": "turbo run format",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "format:check": "biome check --error-on-warnings",
+    "test": "echo \"No unit tests yet\" && exit 0",
+    "test:smoke": "./scripts/smoke-test.sh"
   },
   "devDependencies": {
     "@anthropic-ai/claude-code": "^2.0.21",
