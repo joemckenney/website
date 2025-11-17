@@ -3,7 +3,7 @@ replicaCount: 1
 
 image:
   repository: crowprose/www-app
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   tag: "latest"
 
 imagePullSecrets: []
@@ -11,7 +11,7 @@ imagePullSecrets: []
 service:
   type: ClusterIP
   port: 80
-  targetPort: 80
+  targetPort: 8080
 
 ingress:
   enabled: true
@@ -19,8 +19,13 @@ ingress:
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
   hosts:
     - host: www.joemckenney.com
+      paths:
+        - path: /
+          pathType: Prefix
+    - host: joemckenney.com
       paths:
         - path: /
           pathType: Prefix
@@ -28,13 +33,14 @@ ingress:
     - secretName: www-app-tls
       hosts:
         - www.joemckenney.com
+        - joemckenney.com
 
 resources:
   limits:
-    cpu: 200m
+    cpu: 100m
     memory: 128Mi
   requests:
-    cpu: 100m
+    cpu: 50m
     memory: 64Mi
 
 nodeSelector: {}

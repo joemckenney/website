@@ -3,7 +3,7 @@ replicaCount: 1
 
 image:
   repository: crowprose/app-client
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   tag: "latest"
 
 imagePullSecrets: []
@@ -11,7 +11,7 @@ imagePullSecrets: []
 service:
   type: ClusterIP
   port: 80
-  targetPort: 80
+  targetPort: 8080
 
 ingress:
   enabled: true
@@ -31,10 +31,10 @@ ingress:
 
 resources:
   limits:
-    cpu: 200m
+    cpu: 100m
     memory: 128Mi
   requests:
-    cpu: 100m
+    cpu: 50m
     memory: 64Mi
 
 nodeSelector: {}

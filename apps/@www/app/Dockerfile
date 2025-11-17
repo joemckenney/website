@@ -48,6 +48,10 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 # Copy source files from pruned output
 COPY --from=workspace-pruner /app/out/full/ .
 
+# Accept API URL as build argument
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
+
 # Build using turbo (builds all dependencies including devDependencies)
 RUN pnpm turbo build --filter=@www/app...
 
