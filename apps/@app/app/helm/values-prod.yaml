@@ -2,7 +2,7 @@
 replicaCount: 1
 
 image:
-  repository: YOUR_DOCKERHUB_USERNAME/app-client
+  repository: crowprose/app-client
   pullPolicy: IfNotPresent
   tag: "latest"
 
