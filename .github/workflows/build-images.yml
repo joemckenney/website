@@ -1,0 +1,158 @@
+name: Build Docker Images
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment (ci or production)'
+        required: true
+        type: string
+      api_url:
+        description: 'API URL for frontend builds'
+        required: true
+        type: string
+      tag_suffix:
+        description: 'Tag suffix (e.g., pr-123 or commit SHA)'
+        required: true
+        type: string
+    outputs:
+      image_tag:
+        description: 'The image tag that was built'
+        value: ${{ jobs.build.outputs.image_tag }}
+
+env:
+  DOCKERHUB_USERNAME: crowprose
+  REGISTRY: docker.io
+
+jobs:
+  build:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read Node version
+        id: node-version
+        run: echo "version=$(cat .nvmrc)" >> $GITHUB_OUTPUT
+
+      - name: Read pnpm version
+        id: pnpm-version
+        run: echo "version=$(cat package.json | jq -r .packageManager | sed 's/pnpm@//' | sed 's/\"//g')" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ steps.pnpm-version.outputs.version }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Rust for WASM
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          cache: true
+          cache-workspaces: packages/@website/squared
+
+      - name: Cache wasm-pack
+        id: cache-wasm-pack
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/wasm-pack
+          key: ${{ runner.os }}-wasm-pack-0.13.1
+
+      - name: Install wasm-pack
+        if: steps.cache-wasm-pack.outputs.cache-hit != 'true'
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Setup Go for topoftree
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache-dependency-path: packages/@website/topoftree/go.sum
+
+      - name: Format check
+        run: pnpm biome check
+
+      - name: Type check & Build
+        run: pnpm turbo build
+
+      - name: Generate image metadata
+        id: meta
+        run: |
+          TAG="${{ inputs.tag_suffix }}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push www-app
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/@www/app/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/www-app:${{ steps.meta.outputs.tag }}
+          build-args: |
+            VITE_API_URL=${{ inputs.api_url }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build and push app-client
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/@app/app/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/app-client:${{ steps.meta.outputs.tag }}
+          build-args: |
+            VITE_API_URL=${{ inputs.api_url }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build and push app-server
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/@api/app/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/app-server:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
