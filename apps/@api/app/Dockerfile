@@ -52,6 +52,12 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 # Copy source files from pruned output
 COPY --from=workspace-pruner /app/out/full/ .
 
+# Accept Turbo remote cache build arguments
+ARG TURBO_TOKEN
+ARG TURBO_TEAM
+ENV TURBO_TOKEN=${TURBO_TOKEN}
+ENV TURBO_TEAM=${TURBO_TEAM}
+
 # Build using turbo (builds all dependencies including devDependencies)
 RUN pnpm turbo build --filter=@api/app...
 
