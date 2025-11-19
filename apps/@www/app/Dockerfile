@@ -24,7 +24,7 @@ FROM rust:1.83-alpine AS builder
 
 WORKDIR /app
 
-# Install Node.js, pnpm, Go, and build dependencies
+# Install Node.js, Go, and build dependencies
 RUN apk add --no-cache \
     nodejs \
     npm \
@@ -32,8 +32,8 @@ RUN apk add --no-cache \
     gcc \
     musl-dev
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+# Install pnpm globally
+RUN npm install -g pnpm@9.15.4
 
 # Install wasm32 target and wasm-pack (cache mounts avoid re-downloading)
 RUN --mount=type=cache,target=/root/.cargo/registry \
