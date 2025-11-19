@@ -20,7 +20,7 @@ COPY . .
 RUN turbo prune @www/app --docker
 
 # Build stage - use Rust base image with Node added
-FROM rust:1.83-alpine3.22 AS builder
+FROM rust:1.83-alpine AS builder
 
 WORKDIR /app
 
