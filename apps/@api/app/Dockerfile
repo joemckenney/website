@@ -19,27 +19,30 @@ COPY . .
 # Prune workspace to only include @api/app and its dependencies
 RUN turbo prune @api/app --docker
 
-# Build stage - use Rust base image with Node added
-FROM rust:1.83-alpine AS builder
+# Rust toolchain stage - install WASM build tools
+FROM rust:1.83-alpine AS rust-toolchain
 
-WORKDIR /app
-
-# Install Node.js, Go, and build dependencies
-RUN apk add --no-cache \
-    nodejs \
-    npm \
-    go \
-    gcc \
-    musl-dev
-
-# Install pnpm globally
-RUN npm install -g pnpm@9.15.4
+# Install build dependencies for Rust compilation
+RUN apk add --no-cache gcc musl-dev
 
 # Install wasm32 target and wasm-pack (cache mounts avoid re-downloading)
 RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
     rustup target add wasm32-unknown-unknown && \
     cargo install wasm-pack
+
+# Build stage - use Node base and copy Rust toolchain
+FROM node:24-alpine AS builder
+
+WORKDIR /app
+
+# Copy Rust toolchain from dedicated stage
+COPY --from=rust-toolchain /root/.cargo /root/.cargo
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# Install Go, pnpm, and build dependencies
+RUN apk add --no-cache go npm gcc musl-dev && \
+    npm install -g pnpm@9.15.4
 
 # Copy workspace configs and lockfile from pruned output
 COPY --from=workspace-pruner /app/out/json/ .
