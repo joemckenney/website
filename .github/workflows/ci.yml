@@ -176,15 +176,12 @@ jobs:
         run: |
           echo "$(minikube ip) www.local.com app.local.com api.local.com" | sudo tee -a /etc/hosts
 
-      - name: Build Docker images in minikube
+      - name: Build and push Docker images
         run: |
           eval $(minikube docker-env)
           docker build -t localhost:5000/www-app:latest --build-arg VITE_API_URL=http://api.local.com -f apps/@www/app/Dockerfile .
           docker build -t localhost:5000/app-client:latest --build-arg VITE_API_URL=http://api.local.com -f apps/@app/app/Dockerfile .
           docker build -t localhost:5000/app-server:latest -f apps/@api/app/Dockerfile .
-
-      - name: Push images to local registry
-        run: |
           docker push localhost:5000/www-app:latest
           docker push localhost:5000/app-client:latest
           docker push localhost:5000/app-server:latest
