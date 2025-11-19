@@ -5,8 +5,8 @@ FROM node:24-alpine AS workspace-pruner
 
 WORKDIR /app
 
-# Install pnpm and turbo
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm and turbo (pin pnpm version for cache stability)
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 # Set up pnpm global bin directory
 ENV PNPM_HOME="/pnpm"
@@ -28,17 +28,21 @@ ENV VITE_API_URL=${VITE_API_URL}
 
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Install build dependencies for all workspace packages
+# Install build dependencies for all workspace packages (do this FIRST, before pnpm)
 # WASM: Rust + wasm-pack (for @website/squared)
 # Go: Go toolchain (for @website/topoftree)
 RUN apk add --no-cache curl gcc musl-dev go && \
     curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH="/root/.cargo/bin:$PATH"
-RUN rustup target add wasm32-unknown-unknown && \
+
+# Use cache mounts for cargo operations to avoid re-downloading/compiling
+RUN --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/root/.cargo/git \
+    rustup target add wasm32-unknown-unknown && \
     cargo install wasm-pack
+
+# Install pnpm (do this AFTER Rust setup so pnpm version changes don't invalidate Rust layers)
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 # Copy workspace configs and lockfile from pruned output
 COPY --from=workspace-pruner /app/out/json/ .
