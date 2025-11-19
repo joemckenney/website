@@ -23,6 +23,8 @@ on:
 env:
   DOCKERHUB_USERNAME: crowprose
   REGISTRY: docker.io
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
 jobs:
   build:
