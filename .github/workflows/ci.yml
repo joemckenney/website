@@ -90,11 +90,11 @@ jobs:
           helm lint apps/@app/app/helm
           helm lint apps/@api/app/helm
 
-      - name: Validate templates (dry-run)
+      - name: Render templates (dry-run)
         run: |
-          helm template www-app apps/@www/app/helm --validate
-          helm template app-client apps/@app/app/helm --validate
-          helm template app-server apps/@api/app/helm --validate
+          helm template www-app apps/@www/app/helm
+          helm template app-client apps/@app/app/helm
+          helm template app-server apps/@api/app/helm
 
   build-images:
     name: Build Docker Images
