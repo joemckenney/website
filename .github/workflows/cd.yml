@@ -6,21 +6,76 @@ on:
       - main
   workflow_dispatch:  # Allow manual triggers
 
+env:
+  DOCKERHUB_USERNAME: crowprose
+
 jobs:
-  build-images:
-    name: Build Docker Images
-    uses: ./.github/workflows/build-images.yml
-    secrets: inherit
-    with:
-      environment: production
-      api_url: https://api.joemckenney.com
-      tag_suffix: latest
+  retag-images:
+    name: Retag Images as Latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract PR number from merge commit
+        id: pr
+        run: |
+          # Get commit message
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Commit message: $COMMIT_MSG"
+
+          # Extract PR number from "Merge pull request #123" or "... (#123)"
+          PR_NUM=$(echo "$COMMIT_MSG" | grep -oP '(?<=#)\d+' | head -1)
+
+          if [ -z "$PR_NUM" ]; then
+            echo "⚠️  No PR number found in commit message"
+            echo "This might be a direct push to main - will use SHA instead"
+            TAG="sha-$(echo ${{ github.sha }} | cut -c1-8)"
+          else
+            echo "Found PR #$PR_NUM"
+            TAG="pr-${PR_NUM}"
+          fi
+
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Using tag: ${TAG}"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Retag and push images
+        run: |
+          TAG="${{ steps.pr.outputs.tag }}"
+
+          echo "Pulling images tagged as ${TAG}..."
+          # Pull the PR-tagged images that were built in CI
+          docker pull ${{ env.DOCKERHUB_USERNAME }}/www-app:${TAG}
+          docker pull ${{ env.DOCKERHUB_USERNAME }}/app-client:${TAG}
+          docker pull ${{ env.DOCKERHUB_USERNAME }}/app-server:${TAG}
+
+          echo "Retagging as 'latest'..."
+          # Retag as 'latest'
+          docker tag ${{ env.DOCKERHUB_USERNAME }}/www-app:${TAG} ${{ env.DOCKERHUB_USERNAME }}/www-app:latest
+          docker tag ${{ env.DOCKERHUB_USERNAME }}/app-client:${TAG} ${{ env.DOCKERHUB_USERNAME }}/app-client:latest
+          docker tag ${{ env.DOCKERHUB_USERNAME }}/app-server:${TAG} ${{ env.DOCKERHUB_USERNAME }}/app-server:latest
+
+          echo "Pushing 'latest' tags..."
+          # Push 'latest' tags
+          docker push ${{ env.DOCKERHUB_USERNAME }}/www-app:latest
+          docker push ${{ env.DOCKERHUB_USERNAME }}/app-client:latest
+          docker push ${{ env.DOCKERHUB_USERNAME }}/app-server:latest
+
+          echo "✅ Promoted ${TAG} to latest"
 
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: build-images
+    needs: retag-images
     environment:
       name: production
       url: https://www.joemckenney.com

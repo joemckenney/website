@@ -13,7 +13,8 @@ jobs:
     with:
       environment: ci
       api_url: http://api.local.com
-      tag_suffix: pr-${{ github.event.pull_request.number }}-${{ github.sha }}
+      # Tag with PR number so CD can find these images after merge
+      tag_suffix: pr-${{ github.event.pull_request.number }}
 
   integration-test:
     name: Integration Tests (Minikube)
@@ -23,7 +24,7 @@ jobs:
 
     env:
       DOCKERHUB_USERNAME: crowprose
-      IMAGE_TAG: pr-${{ github.event.pull_request.number }}-${{ github.sha }}
+      IMAGE_TAG: pr-${{ github.event.pull_request.number }}
 
     steps:
       - name: Checkout code
