@@ -19,26 +19,27 @@ COPY . .
 # Prune workspace to only include @www/app and its dependencies
 RUN turbo prune @www/app --docker
 
-# Build stage (includes all build tooling for workspace packages)
-FROM node:24-alpine AS builder
+# Build stage - use Rust base image with Node added
+FROM rust:1.83-alpine3.22 AS builder
 
 WORKDIR /app
 
-# Install build dependencies for all workspace packages (do this FIRST, before pnpm)
-# WASM: Rust + wasm-pack (for @website/squared)
-# Go: Go toolchain (for @website/topoftree)
-RUN apk add --no-cache curl gcc musl-dev go && \
-    curl https://sh.rustup.rs -sSf | sh -s -- -y
-ENV PATH="/root/.cargo/bin:$PATH"
+# Install Node.js, pnpm, Go, and build dependencies
+RUN apk add --no-cache \
+    nodejs \
+    npm \
+    go \
+    gcc \
+    musl-dev
 
-# Use cache mounts for cargo operations to avoid re-downloading/compiling
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+
+# Install wasm32 target and wasm-pack (cache mounts avoid re-downloading)
 RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
     rustup target add wasm32-unknown-unknown && \
     cargo install wasm-pack
-
-# Install pnpm (do this AFTER Rust setup so pnpm version changes don't invalidate Rust layers)
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 # Copy workspace configs and lockfile from pruned output
 COPY --from=workspace-pruner /app/out/json/ .
