@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, useCallback, KeyboardEvent } from "react";
+import {
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import * as styles from "./terminal.css";
 
 export interface TerminalLine {
@@ -29,7 +35,7 @@ export function Terminal({
   useEffect(() => {
     // Auto-scroll to bottom when new lines are added
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [lines]);
+  }, []);
 
   useEffect(() => {
     // Auto-focus input when terminal becomes active

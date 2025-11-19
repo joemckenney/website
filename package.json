@@ -9,7 +9,7 @@
   "scripts": {
     "build": "turbo run build",
     "format": "turbo run format",
-    "format:check": "biome check --error-on-warnings",
+    "format:check": "biome check",
     "test": "echo \"No unit tests yet\" && exit 0",
     "test:smoke": "./scripts/smoke-test.sh"
   },

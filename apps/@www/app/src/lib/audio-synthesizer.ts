@@ -99,17 +99,18 @@ export class AudioSynthesizer {
 
       // Connect LFO based on target
       switch (lfoConfig.target) {
-        case 'frequency': {
+        case "frequency": {
           const targetIndex = lfoConfig.targetIndex ?? 0;
           if (targetIndex < oscillators.length) {
             // Modulate frequency (depth controls range in Hz)
-            lfoGain.gain.value = oscillators[targetIndex].frequency.value * lfoConfig.depth * 0.1;
+            lfoGain.gain.value =
+              oscillators[targetIndex].frequency.value * lfoConfig.depth * 0.1;
             lfo.connect(lfoGain);
             lfoGain.connect(oscillators[targetIndex].frequency);
           }
           break;
         }
-        case 'detune': {
+        case "detune": {
           const targetIndex = lfoConfig.targetIndex ?? 0;
           if (targetIndex < oscillators.length) {
             // Modulate detune (depth controls range in cents)
@@ -119,21 +120,23 @@ export class AudioSynthesizer {
           }
           break;
         }
-        case 'gain': {
+        case "gain": {
           const targetIndex = lfoConfig.targetIndex ?? 0;
           if (targetIndex < gainNodes.length) {
             // Modulate gain (depth controls amplitude)
-            lfoGain.gain.value = gainNodes[targetIndex].gain.value * lfoConfig.depth * 0.5;
+            lfoGain.gain.value =
+              gainNodes[targetIndex].gain.value * lfoConfig.depth * 0.5;
             lfo.connect(lfoGain);
             lfoGain.connect(gainNodes[targetIndex].gain);
           }
           break;
         }
-        case 'filter': {
+        case "filter": {
           const targetIndex = lfoConfig.targetIndex ?? 0;
           if (targetIndex < filterNodes.length) {
             // Modulate filter frequency
-            lfoGain.gain.value = filterNodes[targetIndex].frequency.value * lfoConfig.depth * 0.3;
+            lfoGain.gain.value =
+              filterNodes[targetIndex].frequency.value * lfoConfig.depth * 0.3;
             lfo.connect(lfoGain);
             lfoGain.connect(filterNodes[targetIndex].frequency);
           }
@@ -201,7 +204,7 @@ export class AudioSynthesizer {
         gain.gain.cancelScheduledValues(ctx.currentTime);
         gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
         gain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
-      } catch (e) {
+      } catch (_e) {
         // Ignore
       }
     }
@@ -223,14 +226,14 @@ export class AudioSynthesizer {
           try {
             osc.stop();
             osc.disconnect();
-          } catch (e) {
+          } catch (_e) {
             // Ignore
           }
         }
         for (const gain of oldGainNodes) {
           try {
             gain.disconnect();
-          } catch (e) {
+          } catch (_e) {
             // Ignore
           }
         }
@@ -238,14 +241,14 @@ export class AudioSynthesizer {
           try {
             lfo.stop();
             lfo.disconnect();
-          } catch (e) {
+          } catch (_e) {
             // Ignore
           }
         }
         for (const lfoGain of oldLfoGainNodes) {
           try {
             lfoGain.disconnect();
-          } catch (e) {
+          } catch (_e) {
             // Ignore
           }
         }
@@ -268,7 +271,7 @@ export class AudioSynthesizer {
           ctx.currentTime,
         );
         this.masterGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1);
-      } catch (e) {
+      } catch (_e) {
         // Ignore if already stopped
       }
     }
@@ -279,7 +282,7 @@ export class AudioSynthesizer {
         try {
           osc.stop();
           osc.disconnect();
-        } catch (e) {
+        } catch (_e) {
           // Ignore if already stopped
         }
       }
@@ -287,7 +290,7 @@ export class AudioSynthesizer {
       for (const gain of this.gainNodes) {
         try {
           gain.disconnect();
-        } catch (e) {
+        } catch (_e) {
           // Ignore if already disconnected
         }
       }
@@ -295,7 +298,7 @@ export class AudioSynthesizer {
       for (const filter of this.filterNodes) {
         try {
           filter.disconnect();
-        } catch (e) {
+        } catch (_e) {
           // Ignore if already disconnected
         }
       }
@@ -303,35 +306,35 @@ export class AudioSynthesizer {
       if (this.delayNode) {
         try {
           this.delayNode.disconnect();
-        } catch (e) {
+        } catch (_e) {
           // Ignore
         }
       }
       if (this.delayFeedback) {
         try {
           this.delayFeedback.disconnect();
-        } catch (e) {
+        } catch (_e) {
           // Ignore
         }
       }
       if (this.delayMix) {
         try {
           this.delayMix.disconnect();
-        } catch (e) {
+        } catch (_e) {
           // Ignore
         }
       }
       if (this.reverbNode) {
         try {
           this.reverbNode.disconnect();
-        } catch (e) {
+        } catch (_e) {
           // Ignore
         }
       }
       if (this.reverbMix) {
         try {
           this.reverbMix.disconnect();
-        } catch (e) {
+        } catch (_e) {
           // Ignore
         }
       }
@@ -341,14 +344,14 @@ export class AudioSynthesizer {
         try {
           lfo.stop();
           lfo.disconnect();
-        } catch (e) {
+        } catch (_e) {
           // Ignore
         }
       }
       for (const lfoGain of this.lfoGainNodes) {
         try {
           lfoGain.disconnect();
-        } catch (e) {
+        } catch (_e) {
           // Ignore
         }
       }
@@ -390,24 +393,5 @@ export class AudioSynthesizer {
     const dataArray = new Uint8Array(this.analyserNode.frequencyBinCount);
     this.analyserNode.getByteFrequencyData(dataArray);
     return dataArray;
-  }
-
-  private createReverbImpulse(decay: number): AudioBuffer {
-    if (!this.audioContext) {
-      throw new Error("AudioContext not initialized");
-    }
-
-    const ctx = this.audioContext;
-    const length = ctx.sampleRate * decay;
-    const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
-
-    for (let channel = 0; channel < 2; channel++) {
-      const channelData = impulse.getChannelData(channel);
-      for (let i = 0; i < length; i++) {
-        channelData[i] = (Math.random() * 2 - 1) * Math.exp((-3 * i) / length);
-      }
-    }
-
-    return impulse;
   }
 }

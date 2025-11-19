@@ -1,4 +1,4 @@
-import { Type, Static } from "typebox";
+import { type Static, Type } from "typebox";
 
 /*
  * /ping

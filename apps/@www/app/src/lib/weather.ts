@@ -69,37 +69,37 @@ export async function fetchWeatherData(
 ): Promise<WeatherData> {
   // Expanded parameter list for richer audio synthesis
   const currentParams = [
-    'temperature_2m',
-    'relative_humidity_2m',
-    'apparent_temperature',
-    'dew_point_2m',
-    'wind_speed_10m',
-    'wind_direction_10m',
-    'wind_gusts_10m',
-    'surface_pressure',
-    'cloud_cover',
-    'cloud_cover_low',
-    'cloud_cover_mid',
-    'cloud_cover_high',
-    'visibility',
-    'weather_code',
-    'shortwave_radiation',
-    'uv_index',
-    'uv_index_clear_sky',
-    'is_day',
-    'cape'
-  ].join(',');
+    "temperature_2m",
+    "relative_humidity_2m",
+    "apparent_temperature",
+    "dew_point_2m",
+    "wind_speed_10m",
+    "wind_direction_10m",
+    "wind_gusts_10m",
+    "surface_pressure",
+    "cloud_cover",
+    "cloud_cover_low",
+    "cloud_cover_mid",
+    "cloud_cover_high",
+    "visibility",
+    "weather_code",
+    "shortwave_radiation",
+    "uv_index",
+    "uv_index_clear_sky",
+    "is_day",
+    "cape",
+  ].join(",");
 
   const hourlyParams = [
-    'temperature_2m',
-    'precipitation_probability',
-    'wind_speed_10m',
-    'wind_direction_10m',
-    'cloud_cover',
-    'uv_index',
-    'dew_point_2m',
-    'cape'
-  ].join(',');
+    "temperature_2m",
+    "precipitation_probability",
+    "wind_speed_10m",
+    "wind_direction_10m",
+    "cloud_cover",
+    "uv_index",
+    "dew_point_2m",
+    "cape",
+  ].join(",");
 
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}&current=${currentParams}&hourly=${hourlyParams}&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=1`;
 
@@ -118,7 +118,10 @@ export async function fetchWeatherData(
   // Get next 12 hours of forecast data
   const next12Hours = {
     temperature: data.hourly.temperature_2m.slice(0, 12),
-    precipitationProbability: data.hourly.precipitation_probability.slice(0, 12),
+    precipitationProbability: data.hourly.precipitation_probability.slice(
+      0,
+      12,
+    ),
     windSpeed: data.hourly.wind_speed_10m.slice(0, 12),
     cloudCover: data.hourly.cloud_cover.slice(0, 12),
     uvIndex: data.hourly.uv_index.slice(0, 12),

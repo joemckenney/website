@@ -18,7 +18,8 @@ out/
 .parcel-cache/
 
 # Turbo
-.turbo/
+.turbo/*
+!.turbo/config.json
 
 # Rust
 target/

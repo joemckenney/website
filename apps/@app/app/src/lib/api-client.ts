@@ -1,5 +1,10 @@
-import {client} from '@api/sdk';
-import {ensureValidToken, refreshAccessToken, getAccessToken, clearTokens} from './auth';
+import { client } from "@api/sdk";
+import {
+  clearTokens,
+  ensureValidToken,
+  getAccessToken,
+  refreshAccessToken,
+} from "./auth";
 
 // Track if we're currently refreshing to prevent loops
 let isRefreshing = false;
@@ -18,13 +23,16 @@ function addRefreshSubscriber(callback: (token: string | null) => void) {
 export function setupApiClient(baseUrl: string) {
   client.setConfig({
     baseUrl,
-    credentials: 'include', // Send cookies for refresh token
+    credentials: "include", // Send cookies for refresh token
   });
 
   // Request interceptor - Add auth token to every request (with proactive refresh)
   client.interceptors.request.use(async (request, options) => {
     // Check if endpoint requires authentication based on OpenAPI security metadata
-    const requiresAuth = options?.security && Array.isArray(options.security) && options.security.length > 0;
+    const requiresAuth =
+      options?.security &&
+      Array.isArray(options.security) &&
+      options.security.length > 0;
 
     if (!requiresAuth) {
       return request;
@@ -33,7 +41,7 @@ export function setupApiClient(baseUrl: string) {
     const token = await ensureValidToken();
 
     if (token) {
-      request.headers.set('Authorization', `Bearer ${token}`);
+      request.headers.set("Authorization", `Bearer ${token}`);
     }
 
     return request;
@@ -46,7 +54,10 @@ export function setupApiClient(baseUrl: string) {
     }
 
     // Only retry for endpoints that require authentication (based on OpenAPI security metadata)
-    const requiresAuth = options?.security && Array.isArray(options.security) && options.security.length > 0;
+    const requiresAuth =
+      options?.security &&
+      Array.isArray(options.security) &&
+      options.security.length > 0;
     if (!requiresAuth) {
       return response;
     }
@@ -56,7 +67,7 @@ export function setupApiClient(baseUrl: string) {
       return new Promise((resolve, reject) => {
         addRefreshSubscriber(async (token) => {
           if (token) {
-            request.headers.set('Authorization', `Bearer ${token}`);
+            request.headers.set("Authorization", `Bearer ${token}`);
             try {
               const retryResponse = await fetch(request);
               resolve(retryResponse);
@@ -82,21 +93,21 @@ export function setupApiClient(baseUrl: string) {
         onRefreshed(newToken);
 
         if (newToken) {
-          request.headers.set('Authorization', `Bearer ${newToken}`);
+          request.headers.set("Authorization", `Bearer ${newToken}`);
           return await fetch(request);
         }
       } else {
         isRefreshing = false;
         onRefreshed(null);
         clearTokens();
-        window.location.href = '/';
+        window.location.href = "/";
         return response;
       }
-    } catch (error) {
+    } catch (_error) {
       isRefreshing = false;
       onRefreshed(null);
       clearTokens();
-      window.location.href = '/';
+      window.location.href = "/";
       return response;
     }
 

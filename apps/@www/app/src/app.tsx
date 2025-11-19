@@ -1,38 +1,40 @@
-import {useState, useEffect, useRef, useCallback} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./styles/global.css";
 import * as styles from "./app.css";
-import {LoginButton} from "./components/login-button";
-import {Terminal, type TerminalLine} from "./components/terminal";
-import {FrequencyVisualizer} from "./components/frequency-visualizer";
-import {getUserLocation} from "./lib/geolocation";
-import {fetchWeatherData} from "./lib/weather";
+import { FrequencyVisualizer } from "./components/frequency-visualizer";
+import { LoginButton } from "./components/login-button";
+import { Terminal, type TerminalLine } from "./components/terminal";
+import { AudioEvolutionEngine } from "./lib/audio-evolution-engine";
+import { AudioSynthesizer } from "./lib/audio-synthesizer";
 import {
+  type AvailabilityStatus,
   checkGeminiAvailability,
   generateAudioParameters,
-  type AvailabilityStatus,
 } from "./lib/gemini";
-import {AudioSynthesizer} from "./lib/audio-synthesizer";
-import {AudioEvolutionEngine} from "./lib/audio-evolution-engine";
-import {performSystemCheck, getSetupInstructions} from "./lib/system-check";
-import type {WeatherData} from "./types/weather";
+import { getUserLocation } from "./lib/geolocation";
+import { getSetupInstructions, performSystemCheck } from "./lib/system-check";
+import { fetchWeatherData } from "./lib/weather";
+import type { WeatherData } from "./types/weather";
 
 function App() {
   const [terminalLines, setTerminalLines] = useState<TerminalLine[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isEvolving, setIsEvolving] = useState(false);
-  const [aiStatus, setAiStatus] = useState<AvailabilityStatus | null>(null);
+  const [_isEvolving, setIsEvolving] = useState(false);
+  const [_aiStatus, setAiStatus] = useState<AvailabilityStatus | null>(null);
   const synthRef = useRef<AudioSynthesizer | null>(null);
   const evolutionEngineRef = useRef<AudioEvolutionEngine | null>(null);
   const weatherDataRef = useRef<WeatherData | null>(null);
-  const coordinatesRef = useRef<{latitude: number; longitude: number} | null>(null);
-  const detectingLineIndexRef = useRef<number | null>(null);
-  const dotCountRef = useRef<number>(0);
+  const coordinatesRef = useRef<{ latitude: number; longitude: number } | null>(
+    null,
+  );
+  const _detectingLineIndexRef = useRef<number | null>(null);
+  const _dotCountRef = useRef<number>(0);
 
   const addLog = useCallback(
     (text: string, type: TerminalLine["type"] = "output") => {
       setTerminalLines((prev) => [
         ...prev,
-        {text, type, timestamp: Date.now()},
+        { text, type, timestamp: Date.now() },
       ]);
     },
     [],
@@ -43,7 +45,7 @@ function App() {
       setTerminalLines((prev) => {
         if (prev.length === 0) return prev;
         const newLines = [...prev];
-        newLines[newLines.length - 1] = {text, type, timestamp: Date.now()};
+        newLines[newLines.length - 1] = { text, type, timestamp: Date.now() };
         return newLines;
       });
     },
@@ -135,7 +137,7 @@ function App() {
       synthRef.current?.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [addLog]);
 
   const handleCommand = (command: string) => {
     addLog(command, "prompt");
@@ -145,7 +147,10 @@ function App() {
     if (cmd === "help") {
       addLog("Available commands:", "info");
       addLog("  start [lat,long] - Begin weather station", "output");
-      addLog("                     Optional: Provide coordinates (e.g., start 40.7128,-74.0060)", "output");
+      addLog(
+        "                     Optional: Provide coordinates (e.g., start 40.7128,-74.0060)",
+        "output",
+      );
       addLog("  stop  - Stop weather station", "output");
       addLog("  setup - Show Chrome AI setup instructions", "output");
       addLog("  clear - Clear terminal output", "output");
@@ -169,10 +174,20 @@ function App() {
             const lat = parseFloat(coordParts[0].trim());
             const long = parseFloat(coordParts[1].trim());
 
-            if (!isNaN(lat) && !isNaN(long) && lat >= -90 && lat <= 90 && long >= -180 && long <= 180) {
+            if (
+              !Number.isNaN(lat) &&
+              !Number.isNaN(long) &&
+              lat >= -90 &&
+              lat <= 90 &&
+              long >= -180 &&
+              long <= 180
+            ) {
               handleStart({ latitude: lat, longitude: long });
             } else {
-              addLog("Invalid coordinates. Latitude must be -90 to 90, longitude -180 to 180.", "error");
+              addLog(
+                "Invalid coordinates. Latitude must be -90 to 90, longitude -180 to 180.",
+                "error",
+              );
               addLog("Example: start 40.7128,-74.0060", "output");
             }
           } else {
@@ -327,7 +342,7 @@ function App() {
               ? "error"
               : "warning";
         addLog(`  Permission: ${permIcon} ${geoPermission.state}`, permType);
-      } catch (err) {
+      } catch (_err) {
         addLog(`  Permission: Error checking`, "warning");
       }
     }
@@ -336,7 +351,10 @@ function App() {
     addLog("=== End Debug Information ===", "info");
   };
 
-  const handleStart = async (providedCoords?: { latitude: number; longitude: number }) => {
+  const handleStart = async (providedCoords?: {
+    latitude: number;
+    longitude: number;
+  }) => {
     try {
       // Use provided coordinates or get user location
       let coords: { latitude: number; longitude: number };
@@ -409,7 +427,7 @@ function App() {
           coords,
           weatherData,
           audioParams,
-          async (newParams, newWeather, changes) => {
+          async (newParams, newWeather, _changes) => {
             // Crossfade callback with updated weather
             if (synthRef.current) {
               await synthRef.current.crossfade(newParams, 8);

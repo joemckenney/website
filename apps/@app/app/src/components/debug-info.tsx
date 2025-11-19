@@ -1,14 +1,19 @@
 import * as styles from "../app.css";
-import {formatTimestamp} from "../lib/jwt-utils";
+import { formatTimestamp } from "../lib/jwt-utils";
 
 interface DebugInfoProps {
   userEmail: string | null;
   accessToken: string | null;
-  decodedToken: {exp: number; iat: number; type?: string} | null;
+  decodedToken: { exp: number; iat: number; type?: string } | null;
   tokenExpiry: string;
 }
 
-export function DebugInfo({userEmail, accessToken, decodedToken, tokenExpiry}: DebugInfoProps) {
+export function DebugInfo({
+  userEmail,
+  accessToken,
+  decodedToken,
+  tokenExpiry,
+}: DebugInfoProps) {
   return (
     <section className={styles.section}>
       <h2 className={styles.sectionTitle}>Debug Information</h2>
@@ -22,9 +27,7 @@ export function DebugInfo({userEmail, accessToken, decodedToken, tokenExpiry}: D
         </div>
 
         <div className={styles.debugLabel}>Token Type:</div>
-        <div className={styles.debugValue}>
-          {decodedToken?.type || "—"}
-        </div>
+        <div className={styles.debugValue}>{decodedToken?.type || "—"}</div>
 
         <div className={styles.debugLabel}>Issued At:</div>
         <div className={styles.debugValue}>

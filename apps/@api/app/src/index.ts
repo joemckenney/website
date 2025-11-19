@@ -1,13 +1,13 @@
 import "dotenv/config";
-import Fastify from "fastify";
-import cors from "@fastify/cors";
+import { mkdir, writeFile } from "node:fs/promises";
 import cookie from "@fastify/cookie";
+import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
-import {writeFile, mkdir} from "node:fs/promises";
-import {registerRoutes} from "./routes.js";
-import {registerAuthRoutes} from "./routes/auth.js";
-import {TypeBoxTypeProvider} from "@fastify/type-provider-typebox";
+import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
+import Fastify from "fastify";
+import { registerAuthRoutes } from "./routes/auth.js";
+import { registerRoutes } from "./routes.js";
 
 const fastify = Fastify({
   logger:
@@ -69,11 +69,11 @@ await registerRoutes(fastify, {});
 // Start server
 const start = async () => {
   try {
-    await fastify.listen({port: 3000, host: "0.0.0.0"});
+    await fastify.listen({ port: 3000, host: "0.0.0.0" });
 
     // Generate OpenAPI spec to dist folder (development only)
     if (process.env.NODE_ENV !== "production") {
-      await mkdir("./dist", {recursive: true});
+      await mkdir("./dist", { recursive: true });
       const spec = fastify.swagger();
       await writeFile("./dist/openapi.json", JSON.stringify(spec, null, 2));
       console.log("OpenAPI spec written to dist/openapi.json");
