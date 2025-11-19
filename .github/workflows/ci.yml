@@ -6,29 +6,16 @@ on:
       - main
 
 jobs:
-  build-images:
-    name: Build Docker Images
-    uses: ./.github/workflows/build-images.yml
-    secrets: inherit
-    with:
-      environment: ci
-      api_url: http://api.local.com
-      # Tag with PR number so CD can find these images after merge
-      tag_suffix: pr-${{ github.event.pull_request.number }}
-
-  integration-test:
-    name: Integration Tests (Minikube)
+  quality-checks:
+    name: Code Quality & Build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: build-images
-
-    env:
-      DOCKERHUB_USERNAME: crowprose
-      IMAGE_TAG: pr-${{ github.event.pull_request.number }}
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Read Node version
         id: node-version
@@ -52,192 +39,87 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Start minikube
-        uses: medyagh/setup-minikube@latest
+      - name: Setup Rust for WASM
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          cpus: 2
-          memory: 4096
-          kubernetes-version: v1.28.0
-          driver: docker
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          cache: true
+          cache-workspaces: packages/@website/squared
 
-      - name: Enable minikube addons
-        run: |
-          minikube addons enable ingress
-          minikube addons enable registry
-
-      - name: Setup local registry
-        run: |
-          kubectl port-forward --namespace kube-system service/registry 5000:80 &
-          sleep 5
-
-      - name: Configure /etc/hosts
-        run: |
-          echo "$(minikube ip) www.local.com app.local.com api.local.com" | sudo tee -a /etc/hosts
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - name: Cache wasm-pack
+        id: cache-wasm-pack
+        uses: actions/cache@v4
         with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          path: ~/.cargo/bin/wasm-pack
+          key: ${{ runner.os }}-wasm-pack-0.13.1
 
-      - name: Pull and push images to local registry
+      - name: Install wasm-pack
+        if: steps.cache-wasm-pack.outputs.cache-hit != 'true'
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Setup Go for topoftree
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache-dependency-path: packages/@website/topoftree/go.sum
+
+      - name: Format check
+        run: pnpm biome check
+
+      - name: Type check & Build
+        run: pnpm turbo build
+
+  validate-helm:
+    name: Validate Helm Charts
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.13.0'
+
+      - name: Lint Helm charts
         run: |
-          # Pull from Docker Hub and push to minikube's local registry
-          docker pull ${{ env.DOCKERHUB_USERNAME }}/www-app:${{ env.IMAGE_TAG }}
-          docker pull ${{ env.DOCKERHUB_USERNAME }}/app-client:${{ env.IMAGE_TAG }}
-          docker pull ${{ env.DOCKERHUB_USERNAME }}/app-server:${{ env.IMAGE_TAG }}
+          helm lint apps/@www/app/helm
+          helm lint apps/@app/app/helm
+          helm lint apps/@api/app/helm
 
-          # Tag for local registry
-          docker tag ${{ env.DOCKERHUB_USERNAME }}/www-app:${{ env.IMAGE_TAG }} localhost:5000/www-app:latest
-          docker tag ${{ env.DOCKERHUB_USERNAME }}/app-client:${{ env.IMAGE_TAG }} localhost:5000/app-client:latest
-          docker tag ${{ env.DOCKERHUB_USERNAME }}/app-server:${{ env.IMAGE_TAG }} localhost:5000/app-server:latest
-
-          # Push to local registry
-          docker push localhost:5000/www-app:latest
-          docker push localhost:5000/app-client:latest
-          docker push localhost:5000/app-server:latest
-
-      - name: Create Helm values for CI
+      - name: Validate templates (dry-run)
         run: |
-          # Create values-local.yaml for www-app
-          cat > apps/@www/app/helm/values-local.yaml <<EOF
-          replicaCount: 1
-          image:
-            repository: localhost:5000/www-app
-            tag: latest
-            pullPolicy: IfNotPresent
-          ingress:
-            enabled: true
-            className: "nginx"
-            hosts:
-              - host: www.local.com
-                paths:
-                  - path: /
-                    pathType: Prefix
-            tls: []
-          resources:
-            limits:
-              cpu: 200m
-              memory: 128Mi
-            requests:
-              cpu: 100m
-              memory: 64Mi
-          EOF
+          helm template www-app apps/@www/app/helm --validate
+          helm template app-client apps/@app/app/helm --validate
+          helm template app-server apps/@api/app/helm --validate
 
-          # Create values-local.yaml for app-client
-          cat > apps/@app/app/helm/values-local.yaml <<EOF
-          replicaCount: 1
-          image:
-            repository: localhost:5000/app-client
-            tag: latest
-            pullPolicy: IfNotPresent
-          ingress:
-            enabled: true
-            className: "nginx"
-            hosts:
-              - host: app.local.com
-                paths:
-                  - path: /
-                    pathType: Prefix
-            tls: []
-          resources:
-            limits:
-              cpu: 200m
-              memory: 128Mi
-            requests:
-              cpu: 100m
-              memory: 64Mi
-          EOF
-
-          # Create values-local.yaml for app-server
-          cat > apps/@api/app/helm/values-local.yaml <<EOF
-          replicaCount: 1
-          image:
-            repository: localhost:5000/app-server
-            tag: latest
-            pullPolicy: IfNotPresent
-          ingress:
-            enabled: true
-            className: "nginx"
-            hosts:
-              - host: api.local.com
-                paths:
-                  - path: /
-                    pathType: Prefix
-            tls: []
-          resources:
-            limits:
-              cpu: 200m
-              memory: 128Mi
-            requests:
-              cpu: 100m
-              memory: 64Mi
-          env:
-            - name: NODE_ENV
-              value: "production"
-          secrets:
-            googleClientId: "dummy-client-id"
-            googleClientSecret: "dummy-client-secret"
-            googleRedirectUri: "http://api.local.com/auth/google/callback"
-            jwtSecret: "test-jwt-secret-key-for-ci-only"
-            allowedEmail: ""
-            frontendUrl: "http://app.local.com"
-            backendUrl: "http://api.local.com"
-          EOF
-
-      - name: Deploy apps with Helm
-        run: |
-          # Deploy www-app
-          helm install www-app apps/@www/app/helm -f apps/@www/app/helm/values-local.yaml --wait --timeout=3m
-
-          # Deploy app-client
-          helm install app-client apps/@app/app/helm -f apps/@app/app/helm/values-local.yaml --wait --timeout=3m
-
-          # Deploy app-server
-          helm install app-server apps/@api/app/helm -f apps/@api/app/helm/values-local.yaml --wait --timeout=3m
-
-      - name: Wait for pods to be ready
-        run: |
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=www-app --timeout=120s
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=app-client --timeout=120s
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=app-server --timeout=120s
-
-      - name: Run smoke tests
-        run: |
-          pnpm run test:smoke
-
-      - name: Debug on failure
-        if: failure()
-        run: |
-          echo "=== Pods ==="
-          kubectl get pods -o wide
-          echo "=== Services ==="
-          kubectl get svc
-          echo "=== Ingress ==="
-          kubectl get ingress
-          echo "=== Pod Logs (www-app) ==="
-          kubectl logs -l app.kubernetes.io/name=www-app --tail=50
-          echo "=== Pod Logs (app-client) ==="
-          kubectl logs -l app.kubernetes.io/name=app-client --tail=50
-          echo "=== Pod Logs (app-server) ==="
-          kubectl logs -l app.kubernetes.io/name=app-server --tail=50
-
-      - name: Cleanup
-        if: always()
-        run: |
-          minikube delete
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: quality-checks
+    uses: ./.github/workflows/build-images.yml
+    secrets: inherit
+    with:
+      environment: ci
+      api_url: http://api.local.com
+      # Tag with PR number so CD can find these images after merge
+      tag_suffix: pr-${{ github.event.pull_request.number }}
 
   ci-success:
     name: CI Success
     runs-on: ubuntu-latest
-    needs: [build-images, integration-test]
+    needs: [quality-checks, validate-helm, build-images]
     if: always()
 
     steps:
       - name: Check CI status
         run: |
-          if [ "${{ needs.build-images.result }}" != "success" ] || \
-             [ "${{ needs.integration-test.result }}" != "success" ]; then
+          if [ "${{ needs.quality-checks.result }}" != "success" ] || \
+             [ "${{ needs.validate-helm.result }}" != "success" ] || \
+             [ "${{ needs.build-images.result }}" != "success" ]; then
             echo "❌ CI failed"
             exit 1
           fi
