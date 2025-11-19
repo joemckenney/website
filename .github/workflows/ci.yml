@@ -173,13 +173,16 @@ jobs:
               cpu: 100m
               memory: 64Mi
           env:
-            NODE_ENV: production
-            GOOGLE_CLIENT_ID: dummy-client-id
-            GOOGLE_CLIENT_SECRET: dummy-client-secret
-            GOOGLE_REDIRECT_URI: http://api.local.com/auth/google/callback
-            JWT_ACCESS_SECRET: test-access-secret-key-for-ci-only
-            JWT_REFRESH_SECRET: test-refresh-secret-key-for-ci-only
-            FRONTEND_URL: http://app.local.com
+            - name: NODE_ENV
+              value: "production"
+          secrets:
+            googleClientId: "dummy-client-id"
+            googleClientSecret: "dummy-client-secret"
+            googleRedirectUri: "http://api.local.com/auth/google/callback"
+            jwtSecret: "test-jwt-secret-key-for-ci-only"
+            allowedEmail: ""
+            frontendUrl: "http://app.local.com"
+            backendUrl: "http://api.local.com"
           EOF
 
       - name: Deploy apps with Helm
