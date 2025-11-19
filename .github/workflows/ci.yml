@@ -186,6 +186,91 @@ jobs:
           docker push localhost:5000/app-client:latest
           docker push localhost:5000/app-server:latest
 
+      - name: Create Helm values for CI
+        run: |
+          # Create values-local.yaml for www-app
+          cat > apps/@www/app/helm/values-local.yaml <<EOF
+          replicaCount: 1
+          image:
+            repository: localhost:5000/www-app
+            tag: latest
+            pullPolicy: IfNotPresent
+          ingress:
+            enabled: true
+            className: "nginx"
+            hosts:
+              - host: www.local.com
+                paths:
+                  - path: /
+                    pathType: Prefix
+            tls: []
+          resources:
+            limits:
+              cpu: 200m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 64Mi
+          EOF
+
+          # Create values-local.yaml for app-client
+          cat > apps/@app/app/helm/values-local.yaml <<EOF
+          replicaCount: 1
+          image:
+            repository: localhost:5000/app-client
+            tag: latest
+            pullPolicy: IfNotPresent
+          ingress:
+            enabled: true
+            className: "nginx"
+            hosts:
+              - host: app.local.com
+                paths:
+                  - path: /
+                    pathType: Prefix
+            tls: []
+          resources:
+            limits:
+              cpu: 200m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 64Mi
+          EOF
+
+          # Create values-local.yaml for app-server
+          cat > apps/@api/app/helm/values-local.yaml <<EOF
+          replicaCount: 1
+          image:
+            repository: localhost:5000/app-server
+            tag: latest
+            pullPolicy: IfNotPresent
+          ingress:
+            enabled: true
+            className: "nginx"
+            hosts:
+              - host: api.local.com
+                paths:
+                  - path: /
+                    pathType: Prefix
+            tls: []
+          resources:
+            limits:
+              cpu: 200m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 64Mi
+          env:
+            NODE_ENV: production
+            GOOGLE_CLIENT_ID: dummy-client-id
+            GOOGLE_CLIENT_SECRET: dummy-client-secret
+            GOOGLE_REDIRECT_URI: http://api.local.com/auth/google/callback
+            JWT_ACCESS_SECRET: test-access-secret-key-for-ci-only
+            JWT_REFRESH_SECRET: test-refresh-secret-key-for-ci-only
+            FRONTEND_URL: http://app.local.com
+          EOF
+
       - name: Deploy apps with Helm
         run: |
           # Deploy www-app
