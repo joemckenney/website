@@ -44,8 +44,18 @@ jobs:
         with:
           toolchain: stable
           target: wasm32-unknown-unknown
+          cache: true
+          cache-workspaces: packages/@website/squared
+
+      - name: Cache wasm-pack
+        id: cache-wasm-pack
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/wasm-pack
+          key: ${{ runner.os }}-wasm-pack-0.13.1
 
       - name: Install wasm-pack
+        if: steps.cache-wasm-pack.outputs.cache-hit != 'true'
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
       - name: Setup Go for topoftree
