@@ -47,9 +47,9 @@ spec:
           httpGet:
             path: /ping
             port: http
-          initialDelaySeconds: 15
+          initialDelaySeconds: 25
           periodSeconds: 5
-          failureThreshold: 3
+          failureThreshold: 6
         env:
         {{- range .Values.env }}
         - name: {{ .name }}
