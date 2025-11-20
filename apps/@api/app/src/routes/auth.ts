@@ -13,6 +13,7 @@ import {
   MeResponse,
   RefreshTokenResponse,
 } from "../schemas.js";
+import { Type } from "typebox";
 
 const google = new Google(
   config.google.clientId,
@@ -46,95 +47,133 @@ export async function registerAuthRoutes(
   const app = fastify.withTypeProvider<TypeBoxTypeProvider>();
 
   // Initiate Google OAuth flow
-  app.get("/auth/google", async (_request, reply) => {
-    const state = generateState();
-    const codeVerifier = generateCodeVerifier();
-
-    // Store state and code verifier for verification
-    oauthStore.set(state, {
-      codeVerifier,
-      timestamp: Date.now(),
-    });
-
-    const url = google.createAuthorizationURL(state, codeVerifier, [
-      "openid",
-      "email",
-      "profile",
-    ]);
-
-    return reply.redirect(url.toString());
-  });
-
-  // Google OAuth callback
-  app.get("/auth/google/callback", async (request, reply) => {
-    const { code, state } = request.query as { code?: string; state?: string };
-
-    if (!code || !state) {
-      return reply
-        .status(400)
-        .send({ error: "Missing code or state parameter" });
-    }
-
-    const storedData = oauthStore.get(state);
-    if (!storedData) {
-      return reply.status(400).send({ error: "Invalid state parameter" });
-    }
-
-    // Clean up used state
-    oauthStore.delete(state);
-
-    try {
-      // Exchange code for tokens
-      const tokens = await google.validateAuthorizationCode(
-        code,
-        storedData.codeVerifier,
-      );
-
-      // Fetch user info from Google
-      const response = await fetch(
-        "https://www.googleapis.com/oauth2/v2/userinfo",
-        {
-          headers: {
-            Authorization: `Bearer ${tokens.accessToken()}`,
+  app.get(
+    "/auth/google",
+    {
+      schema: {
+        description: "Initiate Google OAuth 2.0 authentication flow",
+        tags: ["auth"],
+        response: {
+          302: {
+            description: "Redirect to Google OAuth authorization page",
+            type: "null",
           },
         },
-      );
+      },
+    },
+    async (_request, reply) => {
+      const state = generateState();
+      const codeVerifier = generateCodeVerifier();
 
-      const userInfo = (await response.json()) as {
-        email: string;
-        name: string;
-      };
-
-      // Check if email is allowed
-      if (userInfo.email !== config.allowedEmail) {
-        return reply.redirect(`${config.frontendUrl}?error=unauthorized`);
-      }
-
-      // Generate JWT tokens
-      const accessToken = generateAccessToken(userInfo.email);
-      const refreshToken = generateRefreshToken(userInfo.email);
-
-      // Set refresh token as httpOnly cookie
-      // Use secure flag only when request is over HTTPS (not based on NODE_ENV)
-      const isHttps = request.protocol === "https";
-      reply.setCookie("refresh_token", refreshToken, {
-        httpOnly: true,
-        secure: isHttps, // Only send over HTTPS if request came via HTTPS
-        sameSite: "lax",
-        path: "/",
-        maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+      // Store state and code verifier for verification
+      oauthStore.set(state, {
+        codeVerifier,
+        timestamp: Date.now(),
       });
 
-      // Redirect to frontend with only access token (not refresh token)
-      const redirectUrl = new URL(config.frontendUrl);
-      redirectUrl.searchParams.set("access_token", accessToken);
+      const url = google.createAuthorizationURL(state, codeVerifier, [
+        "openid",
+        "email",
+        "profile",
+      ]);
 
-      return reply.redirect(redirectUrl.toString());
-    } catch (error) {
-      fastify.log.error(error);
-      return reply.redirect(`${config.frontendUrl}?error=auth_failed`);
-    }
-  });
+      return reply.redirect(url.toString());
+    },
+  );
+
+  // Google OAuth callback
+  app.get(
+    "/auth/google/callback",
+    {
+      schema: {
+        description: "Handle Google OAuth 2.0 callback and authenticate user",
+        tags: ["auth"],
+        querystring: Type.Object({
+          code: Type.String({ description: "Authorization code from Google" }),
+          state: Type.String({
+            description: "State parameter for CSRF protection",
+          }),
+        }),
+        response: {
+          302: {
+            description:
+              "Redirect to frontend with access token or error parameter",
+            type: "null",
+          },
+          400: ErrorResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { code, state } = request.query;
+
+      if (!code || !state) {
+        return reply
+          .status(400)
+          .send({ error: "Missing code or state parameter" });
+      }
+
+      const storedData = oauthStore.get(state);
+      if (!storedData) {
+        return reply.status(400).send({ error: "Invalid state parameter" });
+      }
+
+      // Clean up used state
+      oauthStore.delete(state);
+
+      try {
+        // Exchange code for tokens
+        const tokens = await google.validateAuthorizationCode(
+          code,
+          storedData.codeVerifier,
+        );
+
+        // Fetch user info from Google
+        const response = await fetch(
+          "https://www.googleapis.com/oauth2/v2/userinfo",
+          {
+            headers: {
+              Authorization: `Bearer ${tokens.accessToken()}`,
+            },
+          },
+        );
+
+        const userInfo = (await response.json()) as {
+          email: string;
+          name: string;
+        };
+
+        // Check if email is allowed
+        if (userInfo.email !== config.allowedEmail) {
+          return reply.redirect(`${config.frontendUrl}?error=unauthorized`);
+        }
+
+        // Generate JWT tokens
+        const accessToken = generateAccessToken(userInfo.email);
+        const refreshToken = generateRefreshToken(userInfo.email);
+
+        // Set refresh token as httpOnly cookie
+        // Use secure flag only when request is over HTTPS (not based on NODE_ENV)
+        const isHttps = request.protocol === "https";
+        reply.setCookie("refresh_token", refreshToken, {
+          httpOnly: true,
+          secure: isHttps, // Only send over HTTPS if request came via HTTPS
+          sameSite: "lax",
+          path: "/",
+          maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+        });
+
+        // Redirect to frontend with only access token (not refresh token)
+        const redirectUrl = new URL(config.frontendUrl);
+        redirectUrl.searchParams.set("access_token", accessToken);
+
+        return reply.redirect(redirectUrl.toString());
+      } catch (error) {
+        fastify.log.error(error);
+        return reply.redirect(`${config.frontendUrl}?error=auth_failed`);
+      }
+    },
+  );
 
   app.post(
     "/auth/refresh",
