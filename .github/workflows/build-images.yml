@@ -65,6 +65,8 @@ jobs:
             ${{ env.DOCKERHUB_USERNAME }}/www-app:${{ steps.meta.outputs.tag }}
           build-args: |
             VITE_API_URL=${{ inputs.api_url }}
+            VITE_PUBLIC_POSTHOG_KEY=${{ secrets.POSTHOG_KEY }}
+            VITE_PUBLIC_POSTHOG_HOST=${{ secrets.POSTHOG_HOST }}
             TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
             TURBO_TEAM=${{ secrets.TURBO_TEAM }}
           cache-from: type=gha
