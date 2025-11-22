@@ -70,5 +70,3 @@ infrastructure/helm/values/*-local.yaml
 infrastructure/helm/values/local.yaml
 **/helm/values-local.yaml
 **/helm/*-local.yaml
-# Production secrets for api app
-apps/@api/app/helm/values-prod.yaml

@@ -74,6 +74,9 @@ jobs:
           helm upgrade --install app-server apps/@api/app/helm \
             -f apps/@api/app/helm/values-prod.yaml \
             --set image.tag=sha-${{ github.sha }} \
+            --set secrets.googleClientId="${{ secrets.GOOGLE_CLIENT_ID }}" \
+            --set secrets.googleClientSecret="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
+            --set secrets.jwtSecret="${{ secrets.JWT_SECRET }}" \
             --wait \
             --timeout=5m
 

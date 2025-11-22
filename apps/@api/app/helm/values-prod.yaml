@@ -1,0 +1,54 @@
+# Production values for app-server (api.joemckenney.com)
+# Secrets are injected via GitHub Actions using --set flags
+replicaCount: 1
+
+image:
+  repository: crowprose/app-server
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+
+service:
+  type: ClusterIP
+  port: 3000
+  targetPort: 3000
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: api.joemckenney.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: app-server-tls
+      hosts:
+        - api.joemckenney.com
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Secrets - injected via GHA secrets (see cd.yml)
+# These are placeholder values that get overridden by --set flags
+secrets:
+  googleClientId: ""
+  googleClientSecret: ""
+  googleRedirectUri: "https://api.joemckenney.com/auth/google/callback"
+  jwtSecret: ""
+  allowedEmail: "j.mckenney00@gmail.com"
+  frontendUrl: "https://app.joemckenney.com"
+  backendUrl: "https://api.joemckenney.com"
