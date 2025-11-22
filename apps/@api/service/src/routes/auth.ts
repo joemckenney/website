@@ -1,6 +1,7 @@
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import { Google, generateCodeVerifier, generateState } from "arctic";
 import type { FastifyInstance } from "fastify";
+import { Type } from "typebox";
 import { config } from "../config.js";
 import {
   generateAccessToken,
@@ -13,7 +14,6 @@ import {
   MeResponse,
   RefreshTokenResponse,
 } from "../schemas.js";
-import { Type } from "typebox";
 
 const google = new Google(
   config.google.clientId,

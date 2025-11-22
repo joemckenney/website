@@ -1,7 +1,7 @@
-replicaCount: 1
+replicaCount: 2
 
 image:
-  repository: www-app
+  repository: api-service
   pullPolicy: IfNotPresent
   tag: "latest"
 
@@ -18,8 +18,8 @@ podAnnotations: {}
 
 podSecurityContext:
   runAsNonRoot: true
-  runAsUser: 101  # nginx user
-  fsGroup: 101
+  runAsUser: 1000
+  fsGroup: 1000
 
 securityContext:
   allowPrivilegeEscalation: false
@@ -30,8 +30,8 @@ securityContext:
 
 service:
   type: ClusterIP
-  port: 80
-  targetPort: 80
+  port: 3000
+  targetPort: 3000
 
 ingress:
   enabled: true
@@ -39,27 +39,27 @@ ingress:
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: www.example.com
+    - host: api.example.com
       paths:
         - path: /
           pathType: Prefix
   tls:
-    - secretName: www-app-tls
+    - secretName: api-service-tls
       hosts:
-        - www.example.com
+        - api.example.com
 
 resources:
   limits:
-    cpu: 200m
-    memory: 128Mi
+    cpu: 500m
+    memory: 512Mi
   requests:
-    cpu: 100m
-    memory: 64Mi
+    cpu: 250m
+    memory: 256Mi
 
 autoscaling:
   enabled: false
-  minReplicas: 1
-  maxReplicas: 5
+  minReplicas: 2
+  maxReplicas: 10
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
 
@@ -68,3 +68,17 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+env:
+  - name: NODE_ENV
+    value: "production"
+  - name: PORT
+    value: "3000"
+
+secrets:
+  googleClientId: ""
+  googleClientSecret: ""
+  jwtSecret: ""
+  allowedEmail: ""
+  frontendUrl: ""
+  backendUrl: ""

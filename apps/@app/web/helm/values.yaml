@@ -1,7 +1,7 @@
 replicaCount: 2
 
 image:
-  repository: app-server
+  repository: app-web
   pullPolicy: IfNotPresent
   tag: "latest"
 
@@ -18,8 +18,8 @@ podAnnotations: {}
 
 podSecurityContext:
   runAsNonRoot: true
-  runAsUser: 1000
-  fsGroup: 1000
+  runAsUser: 101  # nginx user
+  fsGroup: 101
 
 securityContext:
   allowPrivilegeEscalation: false
@@ -30,8 +30,8 @@ securityContext:
 
 service:
   type: ClusterIP
-  port: 3000
-  targetPort: 3000
+  port: 80
+  targetPort: 80
 
 ingress:
   enabled: true
@@ -39,22 +39,22 @@ ingress:
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: api.example.com
+    - host: client.example.com
       paths:
         - path: /
           pathType: Prefix
   tls:
-    - secretName: app-server-tls
+    - secretName: app-web-tls
       hosts:
-        - api.example.com
+        - client.example.com
 
 resources:
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 200m
+    memory: 128Mi
   requests:
-    cpu: 250m
-    memory: 256Mi
+    cpu: 100m
+    memory: 64Mi
 
 autoscaling:
   enabled: false
@@ -68,17 +68,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-
-env:
-  - name: NODE_ENV
-    value: "production"
-  - name: PORT
-    value: "3000"
-
-secrets:
-  googleClientId: ""
-  googleClientSecret: ""
-  jwtSecret: ""
-  allowedEmail: ""
-  frontendUrl: ""
-  backendUrl: ""

@@ -53,26 +53,26 @@ jobs:
           kubectl cluster-info
           kubectl get nodes
 
-      - name: Deploy www-app
+      - name: Deploy www-web
         run: |
-          helm upgrade --install www-app apps/@www/app/helm \
-            -f apps/@www/app/helm/values-prod.yaml \
+          helm upgrade --install www-web apps/@www/web/helm \
+            -f apps/@www/web/helm/values-prod.yaml \
             --set image.tag=sha-${{ github.sha }} \
             --wait \
             --timeout=5m
 
-      - name: Deploy app-client
+      - name: Deploy app-web
         run: |
-          helm upgrade --install app-client apps/@app/app/helm \
-            -f apps/@app/app/helm/values-prod.yaml \
+          helm upgrade --install app-web apps/@app/web/helm \
+            -f apps/@app/web/helm/values-prod.yaml \
             --set image.tag=sha-${{ github.sha }} \
             --wait \
             --timeout=5m
 
-      - name: Deploy app-server
+      - name: Deploy api-service
         run: |
-          helm upgrade --install app-server apps/@api/app/helm \
-            -f apps/@api/app/helm/values-prod.yaml \
+          helm upgrade --install api-service apps/@api/service/helm \
+            -f apps/@api/service/helm/values-prod.yaml \
             --set image.tag=sha-${{ github.sha }} \
             --set secrets.googleClientId="${{ secrets.GOOGLE_CLIENT_ID }}" \
             --set secrets.googleClientSecret="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
@@ -82,9 +82,9 @@ jobs:
 
       - name: Wait for rollout
         run: |
-          kubectl rollout status deployment/www-app --timeout=3m
-          kubectl rollout status deployment/app-client --timeout=3m
-          kubectl rollout status deployment/app-server --timeout=3m
+          kubectl rollout status deployment/www-web --timeout=3m
+          kubectl rollout status deployment/app-web --timeout=3m
+          kubectl rollout status deployment/api-service --timeout=3m
 
       - name: Run production smoke tests
         run: |
@@ -109,9 +109,9 @@ jobs:
         if: failure()
         run: |
           echo "⚠️ Deployment failed, rolling back..."
-          helm rollback www-app 0 --wait || true
-          helm rollback app-client 0 --wait || true
-          helm rollback app-server 0 --wait || true
+          helm rollback www-web 0 --wait || true
+          helm rollback app-web 0 --wait || true
+          helm rollback api-service 0 --wait || true
 
       - name: Get deployment status
         if: always()

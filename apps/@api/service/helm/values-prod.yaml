@@ -1,9 +1,9 @@
-# Production values for app-server (api.joemckenney.com)
+# Production values for api-service (api.joemckenney.com)
 # Secrets are injected via GitHub Actions using --set flags
 replicaCount: 1
 
 image:
-  repository: crowprose/app-server
+  repository: crowprose/api-service
   pullPolicy: IfNotPresent
   tag: "latest"
 
@@ -26,7 +26,7 @@ ingress:
         - path: /
           pathType: Prefix
   tls:
-    - secretName: app-server-tls
+    - secretName: api-service-tls
       hosts:
         - api.joemckenney.com
 
