@@ -20,7 +20,7 @@
     "format": "biome format --write ."
   },
   "devDependencies": {
-    "@api/app": "workspace:*",
+    "@api/service": "workspace:*",
     "@hey-api/client-fetch": "^0.7.1",
     "@hey-api/openapi-ts": "^0.87.2",
     "@website/tsconfig": "workspace:*",

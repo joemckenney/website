@@ -90,15 +90,15 @@ jobs:
 
       - name: Lint Helm charts
         run: |
-          helm lint apps/@www/app/helm
-          helm lint apps/@app/app/helm
-          helm lint apps/@api/app/helm
+          helm lint apps/@www/web/helm
+          helm lint apps/@app/web/helm
+          helm lint apps/@api/service/helm
 
       - name: Render templates (dry-run)
         run: |
-          helm template www-app apps/@www/app/helm
-          helm template app-client apps/@app/app/helm
-          helm template app-server apps/@api/app/helm
+          helm template www-web apps/@www/web/helm
+          helm template app-web apps/@app/web/helm
+          helm template api-service apps/@api/service/helm
 
   build-images:
     name: Build Docker Images

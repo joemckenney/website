@@ -1,5 +1,5 @@
 apiVersion: v2
-name: app-client
+name: app-web
 description: React client application served with nginx
 type: application
 version: 0.1.0

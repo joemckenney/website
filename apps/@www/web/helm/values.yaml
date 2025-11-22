@@ -1,7 +1,7 @@
-replicaCount: 2
+replicaCount: 1
 
 image:
-  repository: app-client
+  repository: www-web
   pullPolicy: IfNotPresent
   tag: "latest"
 
@@ -39,14 +39,14 @@ ingress:
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: client.example.com
+    - host: www.example.com
       paths:
         - path: /
           pathType: Prefix
   tls:
-    - secretName: app-client-tls
+    - secretName: www-web-tls
       hosts:
-        - client.example.com
+        - www.example.com
 
 resources:
   limits:
@@ -58,8 +58,8 @@ resources:
 
 autoscaling:
   enabled: false
-  minReplicas: 2
-  maxReplicas: 10
+  minReplicas: 1
+  maxReplicas: 5
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
 

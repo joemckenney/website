@@ -1,5 +1,5 @@
 apiVersion: v2
-name: app-server
+name: api-service
 description: Fastify API server with authentication
 type: application
 version: 0.1.0

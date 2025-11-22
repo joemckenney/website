@@ -87,7 +87,10 @@ export async function checkGeminiAvailability(
       // Both "downloading" and "unavailable" may mean the model needs to be downloaded
       // Chrome returns "downloading" when flags are enabled but download hasn't started
       // Calling create() is what actually triggers/continues the download
-      log?.("ℹ️  Chrome AI model not ready, initiating download (~1.7GB)...", "info");
+      log?.(
+        "ℹ️  Chrome AI model not ready, initiating download (~1.7GB)...",
+        "info",
+      );
 
       try {
         const session = await languageModel.create({

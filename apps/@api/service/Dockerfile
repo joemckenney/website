@@ -16,8 +16,8 @@ RUN pnpm add -g turbo
 # Copy entire monorepo
 COPY . .
 
-# Prune workspace to only include @api/app and its dependencies
-RUN turbo prune @api/app --docker
+# Prune workspace to only include @api/service and its dependencies
+RUN turbo prune @api/service --docker
 
 # Rust toolchain stage - install WASM build tools
 FROM rust:1.83-alpine AS rust-toolchain
@@ -70,7 +70,7 @@ ENV TURBO_TOKEN=${TURBO_TOKEN}
 ENV TURBO_TEAM=${TURBO_TEAM}
 
 # Build using turbo (builds all dependencies including devDependencies)
-RUN pnpm turbo build --filter=@api/app...
+RUN pnpm turbo build --filter=@api/service...
 
 # Deploy stage - creates production deployment
 FROM builder AS deployer
@@ -79,7 +79,7 @@ ENV NODE_ENV=production
 
 # Deploy production-ready output to /app/pruned with only prod dependencies
 # Modern pnpm deploy properly handles workspace dependencies and their files
-RUN pnpm --filter=@api/app --prod deploy /app/pruned
+RUN pnpm --filter=@api/service --prod deploy /app/pruned
 
 # Production stage
 FROM node:24-alpine

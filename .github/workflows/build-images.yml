@@ -55,14 +55,14 @@ jobs:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push www-app
+      - name: Build and push www-web
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: apps/@www/app/Dockerfile
+          file: apps/@www/web/Dockerfile
           push: true
           tags: |
-            ${{ env.DOCKERHUB_USERNAME }}/www-app:${{ steps.meta.outputs.tag }}
+            ${{ env.DOCKERHUB_USERNAME }}/www-web:${{ steps.meta.outputs.tag }}
           build-args: |
             VITE_API_URL=${{ inputs.api_url }}
             VITE_PUBLIC_POSTHOG_KEY=${{ secrets.POSTHOG_KEY }}
@@ -76,14 +76,14 @@ jobs:
             org.opencontainers.image.created=${{ steps.meta.outputs.date }}
             org.opencontainers.image.revision=${{ github.sha }}
 
-      - name: Build and push app-client
+      - name: Build and push app-web
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: apps/@app/app/Dockerfile
+          file: apps/@app/web/Dockerfile
           push: true
           tags: |
-            ${{ env.DOCKERHUB_USERNAME }}/app-client:${{ steps.meta.outputs.tag }}
+            ${{ env.DOCKERHUB_USERNAME }}/app-web:${{ steps.meta.outputs.tag }}
           build-args: |
             VITE_API_URL=${{ inputs.api_url }}
             TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
@@ -95,14 +95,14 @@ jobs:
             org.opencontainers.image.created=${{ steps.meta.outputs.date }}
             org.opencontainers.image.revision=${{ github.sha }}
 
-      - name: Build and push app-server
+      - name: Build and push api-service
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: apps/@api/app/Dockerfile
+          file: apps/@api/service/Dockerfile
           push: true
           tags: |
-            ${{ env.DOCKERHUB_USERNAME }}/app-server:${{ steps.meta.outputs.tag }}
+            ${{ env.DOCKERHUB_USERNAME }}/api-service:${{ steps.meta.outputs.tag }}
           build-args: |
             TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
             TURBO_TEAM=${{ secrets.TURBO_TEAM }}

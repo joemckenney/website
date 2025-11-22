@@ -19,7 +19,25 @@ importers:
         specifier: ^2.5.8
         version: 2.5.8
 
-  apps/@api/app:
+  apps/@api/sdk:
+    devDependencies:
+      '@api/service':
+        specifier: workspace:*
+        version: link:../service
+      '@hey-api/client-fetch':
+        specifier: ^0.7.1
+        version: 0.7.3
+      '@hey-api/openapi-ts':
+        specifier: ^0.87.2
+        version: 0.87.2(typescript@5.9.3)
+      '@website/tsconfig':
+        specifier: workspace:*
+        version: link:../../../packages/@website/tsconfig
+      typescript:
+        specifier: ^5.5.3
+        version: 5.9.3
+
+  apps/@api/service:
     dependencies:
       '@fastify/cookie':
         specifier: ^11.0.2
@@ -80,25 +98,7 @@ importers:
         specifier: ^5.5.3
         version: 5.9.3
 
-  apps/@api/sdk:
-    devDependencies:
-      '@api/app':
-        specifier: workspace:*
-        version: link:../app
-      '@hey-api/client-fetch':
-        specifier: ^0.7.1
-        version: 0.7.3
-      '@hey-api/openapi-ts':
-        specifier: ^0.87.2
-        version: 0.87.2(typescript@5.9.3)
-      '@website/tsconfig':
-        specifier: workspace:*
-        version: link:../../../packages/@website/tsconfig
-      typescript:
-        specifier: ^5.5.3
-        version: 5.9.3
-
-  apps/@app/app:
+  apps/@app/web:
     dependencies:
       '@api/sdk':
         specifier: workspace:*
@@ -138,7 +138,7 @@ importers:
         specifier: ^6.0.7
         version: 6.4.0(@types/node@24.8.1)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.8.1)
 
-  apps/@www/app:
+  apps/@www/web:
     dependencies:
       posthog-js:
         specifier: ^1.297.2

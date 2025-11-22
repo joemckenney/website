@@ -1,8 +1,8 @@
-# Production values for www-app (www.joemckenney.com)
+# Production values for app-web (app.joemckenney.com)
 replicaCount: 1
 
 image:
-  repository: crowprose/www-app
+  repository: crowprose/app-web
   pullPolicy: Always
   tag: "latest"
 
@@ -19,21 +19,15 @@ ingress:
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
   hosts:
-    - host: www.joemckenney.com
-      paths:
-        - path: /
-          pathType: Prefix
-    - host: joemckenney.com
+    - host: app.joemckenney.com
       paths:
         - path: /
           pathType: Prefix
   tls:
-    - secretName: www-app-tls
+    - secretName: app-web-tls
       hosts:
-        - www.joemckenney.com
-        - joemckenney.com
+        - app.joemckenney.com
 
 resources:
   limits:
