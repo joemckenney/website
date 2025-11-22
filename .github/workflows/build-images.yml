@@ -15,10 +15,29 @@ on:
         description: 'Tag suffix (e.g., pr-123 or commit SHA)'
         required: true
         type: string
+      base_ref:
+        description: 'Base git ref for change detection (e.g., origin/main or HEAD~1)'
+        required: false
+        type: string
+        default: ''
+      force_build:
+        description: 'Force build all images regardless of changes'
+        required: false
+        type: boolean
+        default: false
     outputs:
       image_tag:
         description: 'The image tag that was built'
         value: ${{ jobs.build.outputs.image_tag }}
+      www_web_built:
+        description: 'Whether www-web was built'
+        value: ${{ jobs.build.outputs.www_web_built }}
+      app_web_built:
+        description: 'Whether app-web was built'
+        value: ${{ jobs.build.outputs.app_web_built }}
+      api_service_built:
+        description: 'Whether api-service was built'
+        value: ${{ jobs.build.outputs.api_service_built }}
 
 env:
   DOCKERHUB_USERNAME: crowprose
@@ -27,13 +46,109 @@ env:
   TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
 jobs:
+  detect-changes:
+    name: Detect Changed Packages
+    runs-on: ubuntu-latest
+    outputs:
+      www_web: ${{ steps.changes.outputs.www_web }}
+      app_web: ${{ steps.changes.outputs.app_web }}
+      api_service: ${{ steps.changes.outputs.api_service }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read pnpm version
+        id: pnpm-version
+        run: echo "version=$(cat package.json | jq -r .packageManager | sed 's/pnpm@//' | sed 's/\"//g')" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ steps.pnpm-version.outputs.version }}
+
+      - name: Read Node version
+        id: node-version
+        run: echo "version=$(cat .nvmrc)" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Detect affected packages
+        id: changes
+        run: |
+          BASE_REF="${{ inputs.base_ref }}"
+          FORCE_BUILD="${{ inputs.force_build }}"
+
+          # If force_build is true, mark all as changed
+          if [ "$FORCE_BUILD" = "true" ]; then
+            echo "Force build enabled - all packages marked as changed"
+            echo "www_web=true" >> $GITHUB_OUTPUT
+            echo "app_web=true" >> $GITHUB_OUTPUT
+            echo "api_service=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # If no base_ref provided, build all
+          if [ -z "$BASE_REF" ]; then
+            echo "No base_ref provided - building all images"
+            echo "www_web=true" >> $GITHUB_OUTPUT
+            echo "app_web=true" >> $GITHUB_OUTPUT
+            echo "api_service=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Detecting changes against: $BASE_REF"
+
+          # Check if @www/web or its dependencies changed
+          WWW_PACKAGES=$(pnpm turbo run build --filter='@www/web...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
+          if [ -n "$WWW_PACKAGES" ]; then
+            echo "www_web=true" >> $GITHUB_OUTPUT
+            echo "@www/web affected packages: $WWW_PACKAGES"
+          else
+            echo "www_web=false" >> $GITHUB_OUTPUT
+            echo "@www/web: no changes"
+          fi
+
+          # Check if @app/web or its dependencies changed
+          APP_PACKAGES=$(pnpm turbo run build --filter='@app/web...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
+          if [ -n "$APP_PACKAGES" ]; then
+            echo "app_web=true" >> $GITHUB_OUTPUT
+            echo "@app/web affected packages: $APP_PACKAGES"
+          else
+            echo "app_web=false" >> $GITHUB_OUTPUT
+            echo "@app/web: no changes"
+          fi
+
+          # Check if @api/service or its dependencies changed
+          API_PACKAGES=$(pnpm turbo run build --filter='@api/service...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
+          if [ -n "$API_PACKAGES" ]; then
+            echo "api_service=true" >> $GITHUB_OUTPUT
+            echo "@api/service affected packages: $API_PACKAGES"
+          else
+            echo "api_service=false" >> $GITHUB_OUTPUT
+            echo "@api/service: no changes"
+          fi
+
   build:
     name: Build & Push Images
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    needs: detect-changes
 
     outputs:
       image_tag: ${{ steps.meta.outputs.tag }}
+      www_web_built: ${{ steps.build-www-web.outcome == 'success' }}
+      app_web_built: ${{ steps.build-app-web.outcome == 'success' }}
+      api_service_built: ${{ steps.build-api-service.outcome == 'success' }}
 
     steps:
       - name: Checkout code
@@ -56,6 +171,8 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push www-web
+        id: build-www-web
+        if: needs.detect-changes.outputs.www_web == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -76,7 +193,13 @@ jobs:
             org.opencontainers.image.created=${{ steps.meta.outputs.date }}
             org.opencontainers.image.revision=${{ github.sha }}
 
+      - name: Skip www-web (no changes)
+        if: needs.detect-changes.outputs.www_web != 'true'
+        run: echo "Skipping www-web build - no changes detected"
+
       - name: Build and push app-web
+        id: build-app-web
+        if: needs.detect-changes.outputs.app_web == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -95,7 +218,13 @@ jobs:
             org.opencontainers.image.created=${{ steps.meta.outputs.date }}
             org.opencontainers.image.revision=${{ github.sha }}
 
+      - name: Skip app-web (no changes)
+        if: needs.detect-changes.outputs.app_web != 'true'
+        run: echo "Skipping app-web build - no changes detected"
+
       - name: Build and push api-service
+        id: build-api-service
+        if: needs.detect-changes.outputs.api_service == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -112,3 +241,17 @@ jobs:
             org.opencontainers.image.source=${{ github.repositoryUrl }}
             org.opencontainers.image.created=${{ steps.meta.outputs.date }}
             org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Skip api-service (no changes)
+        if: needs.detect-changes.outputs.api_service != 'true'
+        run: echo "Skipping api-service build - no changes detected"
+
+      - name: Summary
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| www-web | ${{ needs.detect-changes.outputs.www_web == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| app-web | ${{ needs.detect-changes.outputs.app_web == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| api-service | ${{ needs.detect-changes.outputs.api_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
