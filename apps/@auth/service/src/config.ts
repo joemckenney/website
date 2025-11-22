@@ -19,5 +19,5 @@ export const config = {
     accessTokenExpiry: "15m" as const, // 15 minutes
     refreshTokenExpiry: "7d" as const, // 7 days
   },
-  frontendUrl: process.env.FRONTEND_URL || "http://localhost:3001",
+  frontendUrl: process.env.FRONTEND_URL || "http://localhost:5001",
 };
