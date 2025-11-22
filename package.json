@@ -10,8 +10,7 @@
     "build": "turbo run build",
     "format": "turbo run format",
     "format:check": "biome check",
-    "test": "echo \"No unit tests yet\" && exit 0",
-    "test:smoke": "./scripts/smoke-test.sh"
+    "test": "echo \"No unit tests yet\" && exit 0"
   },
   "devDependencies": {
     "@anthropic-ai/claude-code": "^2.0.21",
