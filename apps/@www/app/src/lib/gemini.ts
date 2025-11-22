@@ -83,20 +83,13 @@ export async function checkGeminiAvailability(
 
     if (status === "available") {
       log?.("✓ Chrome AI is ready", "success");
-    } else if (status === "downloading") {
-      log?.(
-        "ℹ️  Chrome AI model downloading (this may take a few minutes)",
-        "warning",
-      );
-      log?.("   First request will use rule-based generation", "info");
-    } else {
-      // Status is "unavailable" - trigger the download by calling create()
-      log?.("ℹ️  Chrome AI model not yet downloaded", "warning");
-      log?.("   Initiating download (~1.7GB)...", "info");
+    } else if (status === "downloading" || status === "unavailable") {
+      // Both "downloading" and "unavailable" may mean the model needs to be downloaded
+      // Chrome returns "downloading" when flags are enabled but download hasn't started
+      // Calling create() is what actually triggers/continues the download
+      log?.("ℹ️  Chrome AI model not ready, initiating download (~1.7GB)...", "info");
 
       try {
-        // Call create() to trigger the download
-        // Per Chrome docs: calling create() is what actually initiates the download
         const session = await languageModel.create({
           monitor: (m) => {
             m.addEventListener("downloadprogress", (e) => {
@@ -110,7 +103,8 @@ export async function checkGeminiAvailability(
         session.destroy();
 
         log?.("✓ Download initiated successfully", "success");
-        log?.("   Use 'debug' command to check download status", "info");
+        log?.("   Model will download in background (~1.7GB)", "info");
+        log?.("   Check progress at chrome://components/", "info");
       } catch (downloadError) {
         const errorMsg =
           downloadError instanceof Error
@@ -119,6 +113,9 @@ export async function checkGeminiAvailability(
         log?.(`Failed to initiate download: ${errorMsg}`, "error");
         log?.("   Check chrome://flags settings and try again", "warning");
       }
+    } else {
+      // Unknown status
+      log?.(`Chrome AI status: ${status}`, "warning");
     }
 
     return {
