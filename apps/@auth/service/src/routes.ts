@@ -2,18 +2,19 @@ import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import { Google, generateCodeVerifier, generateState } from "arctic";
 import type { FastifyInstance } from "fastify";
 import { Type } from "typebox";
-import { config } from "../config.js";
+import { config } from "./config.js";
 import {
   generateAccessToken,
   generateRefreshToken,
+  verifyAccessToken,
   verifyRefreshToken,
-} from "../lib/jwt.js";
+} from "./lib/jwt.js";
 import {
   ErrorResponse,
   LogoutResponse,
   MeResponse,
   RefreshTokenResponse,
-} from "../schemas.js";
+} from "./schemas.js";
 
 const google = new Google(
   config.google.clientId,
@@ -41,14 +42,14 @@ setInterval(
   5 * 60 * 1000,
 );
 
-export async function registerAuthRoutes(
+export async function registerRoutes(
   fastify: FastifyInstance & { withTypeProvider: <_T>() => FastifyInstance },
 ) {
   const app = fastify.withTypeProvider<TypeBoxTypeProvider>();
 
   // Initiate Google OAuth flow
   app.get(
-    "/auth/google",
+    "/google",
     {
       schema: {
         description: "Initiate Google OAuth 2.0 authentication flow",
@@ -83,7 +84,7 @@ export async function registerAuthRoutes(
 
   // Google OAuth callback
   app.get(
-    "/auth/google/callback",
+    "/google/callback",
     {
       schema: {
         description: "Handle Google OAuth 2.0 callback and authenticate user",
@@ -176,7 +177,7 @@ export async function registerAuthRoutes(
   );
 
   app.post(
-    "/auth/refresh",
+    "/refresh",
     {
       schema: {
         description:
@@ -243,7 +244,7 @@ export async function registerAuthRoutes(
   );
 
   app.post(
-    "/auth/logout",
+    "/logout",
     {
       schema: {
         description: "Logout and clear refresh token cookie",
@@ -267,7 +268,7 @@ export async function registerAuthRoutes(
   );
 
   app.get(
-    "/auth/me",
+    "/me",
     {
       schema: {
         description: "Get current authenticated user information",
@@ -289,7 +290,6 @@ export async function registerAuthRoutes(
 
         const token = authHeader.substring(7);
         try {
-          const { verifyAccessToken } = await import("../lib/jwt.js");
           const payload = verifyAccessToken(token);
 
           if (payload.email !== config.allowedEmail) {
@@ -306,4 +306,13 @@ export async function registerAuthRoutes(
       return reply.send({ email: request.user?.email as string });
     },
   );
+}
+
+// Extend FastifyRequest for user property
+declare module "fastify" {
+  interface FastifyRequest {
+    user?: {
+      email: string;
+    };
+  }
 }

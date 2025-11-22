@@ -17,6 +17,7 @@ jobs:
     with:
       environment: production
       api_url: https://api.joemckenney.com
+      auth_url: https://auth.joemckenney.com
       tag_suffix: sha-${{ github.sha }}
       # Detect changes against the previous commit on main
       # Use HEAD~1 to compare against the parent commit
@@ -98,6 +99,22 @@ jobs:
         if: needs.build-production-images.outputs.api_service_built != 'true'
         run: echo "Skipping api-service deployment - no changes detected"
 
+      - name: Deploy auth-service
+        if: needs.build-production-images.outputs.auth_service_built == 'true'
+        run: |
+          helm upgrade --install auth-service apps/@auth/service/helm \
+            -f apps/@auth/service/helm/values-prod.yaml \
+            --set image.tag=sha-${{ github.sha }} \
+            --set secrets.googleClientId="${{ secrets.GOOGLE_CLIENT_ID }}" \
+            --set secrets.googleClientSecret="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
+            --set secrets.jwtSecret="${{ secrets.JWT_SECRET }}" \
+            --wait \
+            --timeout=5m
+
+      - name: Skip auth-service deployment (no changes)
+        if: needs.build-production-images.outputs.auth_service_built != 'true'
+        run: echo "Skipping auth-service deployment - no changes detected"
+
       - name: Wait for rollout
         run: |
           # Only wait for deployments that were updated
@@ -110,23 +127,30 @@ jobs:
           if [ "${{ needs.build-production-images.outputs.api_service_built }}" == "true" ]; then
             kubectl rollout status deployment/api-service --timeout=3m
           fi
+          if [ "${{ needs.build-production-images.outputs.auth_service_built }}" == "true" ]; then
+            kubectl rollout status deployment/auth-service --timeout=3m
+          fi
 
       - name: Run production smoke tests
         run: |
           # Wait for ingress to update
           sleep 30
 
-          # Test www-app
+          # Test www-web
           echo "Testing www.joemckenney.com..."
           curl -f -s -o /dev/null -w "%{http_code}" https://www.joemckenney.com | grep -q "200" || exit 1
 
-          # Test app-client
+          # Test app-web
           echo "Testing app.joemckenney.com..."
           curl -f -s -o /dev/null -w "%{http_code}" https://app.joemckenney.com | grep -q "200" || exit 1
 
-          # Test app-server
+          # Test api-service
           echo "Testing api.joemckenney.com/ping..."
           curl -f -s https://api.joemckenney.com/ping | grep -q "pong" || exit 1
+
+          # Test auth-service
+          echo "Testing auth.joemckenney.com/docs..."
+          curl -f -s -o /dev/null -w "%{http_code}" https://auth.joemckenney.com/docs | grep -q "200" || exit 1
 
           echo "✅ All smoke tests passed!"
 
@@ -143,6 +167,9 @@ jobs:
           fi
           if [ "${{ needs.build-production-images.outputs.api_service_built }}" == "true" ]; then
             helm rollback api-service 0 --wait || true
+          fi
+          if [ "${{ needs.build-production-images.outputs.auth_service_built }}" == "true" ]; then
+            helm rollback auth-service 0 --wait || true
           fi
 
       - name: Get deployment status
@@ -170,6 +197,7 @@ jobs:
           echo "| www-web | ${{ needs.build-production-images.outputs.www_web_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| app-web | ${{ needs.build-production-images.outputs.app_web_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| api-service | ${{ needs.build-production-images.outputs.api_service_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| auth-service | ${{ needs.build-production-images.outputs.auth_service_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
 
   deployment-notification:
     name: Deployment Notification

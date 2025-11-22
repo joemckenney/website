@@ -1,4 +1,4 @@
-import { postAuthLogout, postAuthRefresh } from "@api/sdk";
+import { postLogout, postRefresh } from "@auth/sdk";
 
 const ACCESS_TOKEN_KEY = "access_token";
 
@@ -66,7 +66,7 @@ export async function refreshAccessToken(): Promise<boolean> {
 
   refreshPromise = (async () => {
     try {
-      const response = await postAuthRefresh({
+      const response = await postRefresh({
         headers: {
           "Content-Type": "application/json",
         },
@@ -117,7 +117,7 @@ export async function logout(): Promise<void> {
   try {
     const token = getAccessToken();
     if (token) {
-      await postAuthLogout({
+      await postLogout({
         headers: {
           Authorization: `Bearer ${token}`,
         },

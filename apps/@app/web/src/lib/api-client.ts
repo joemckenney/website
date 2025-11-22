@@ -1,4 +1,5 @@
-import { client } from "@api/sdk";
+import { client as apiClient } from "@api/sdk";
+import { client as authClient } from "@auth/sdk";
 import {
   clearTokens,
   ensureValidToken,
@@ -19,15 +20,22 @@ function addRefreshSubscriber(callback: (token: string | null) => void) {
   refreshSubscribers.push(callback);
 }
 
-// Configure the SDK client with interceptors
-export function setupApiClient(baseUrl: string) {
-  client.setConfig({
-    baseUrl,
+// Configure both SDK clients with interceptors
+export function setupApiClients(apiUrl: string, authUrl: string) {
+  // Configure Auth client
+  authClient.setConfig({
+    baseUrl: authUrl,
     credentials: "include", // Send cookies for refresh token
   });
 
-  // Request interceptor - Add auth token to every request (with proactive refresh)
-  client.interceptors.request.use(async (request, options) => {
+  // Configure API client
+  apiClient.setConfig({
+    baseUrl: apiUrl,
+    credentials: "include", // Send cookies if needed
+  });
+
+  // Request interceptor for API client - Add auth token to every request (with proactive refresh)
+  apiClient.interceptors.request.use(async (request, options) => {
     // Check if endpoint requires authentication based on OpenAPI security metadata
     const requiresAuth =
       options?.security &&
@@ -47,8 +55,8 @@ export function setupApiClient(baseUrl: string) {
     return request;
   });
 
-  // Response interceptor - Handle 401s automatically with token refresh and retry
-  client.interceptors.response.use(async (response, request, options) => {
+  // Response interceptor for API client - Handle 401s automatically with token refresh and retry
+  apiClient.interceptors.response.use(async (response, request, options) => {
     if (response.status !== 401) {
       return response;
     }

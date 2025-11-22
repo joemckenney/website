@@ -24,30 +24,6 @@ export const SquaredResponse = Type.Object({
 export type SquaredResponseType = Static<typeof SquaredResponse>;
 
 /*
- * /auth/refresh
- */
-export const RefreshTokenResponse = Type.Object({
-  access_token: Type.String({ description: "New access token" }),
-});
-export type RefreshTokenResponseType = Static<typeof RefreshTokenResponse>;
-
-/*
- * /auth/logout
- */
-export const LogoutResponse = Type.Object({
-  message: Type.String({ description: "Logout confirmation message" }),
-});
-export type LogoutResponseType = Static<typeof LogoutResponse>;
-
-/*
- * /auth/me
- */
-export const MeResponse = Type.Object({
-  email: Type.String({ description: "User email address" }),
-});
-export type MeResponseType = Static<typeof MeResponse>;
-
-/*
  * misc
  */
 export const ErrorResponse = Type.Object({

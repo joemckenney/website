@@ -93,12 +93,14 @@ jobs:
           helm lint apps/@www/web/helm
           helm lint apps/@app/web/helm
           helm lint apps/@api/service/helm
+          helm lint apps/@auth/service/helm
 
       - name: Render templates (dry-run)
         run: |
           helm template www-web apps/@www/web/helm
           helm template app-web apps/@app/web/helm
           helm template api-service apps/@api/service/helm
+          helm template auth-service apps/@auth/service/helm
 
   build-images:
     name: Build Docker Images
@@ -108,6 +110,7 @@ jobs:
     with:
       environment: ci
       api_url: http://api.local.com
+      auth_url: http://auth.local.com
       # Tag with PR number so CD can find these images after merge
       tag_suffix: pr-${{ github.event.pull_request.number }}
       # Detect changes against the PR base branch

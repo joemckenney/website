@@ -11,6 +11,10 @@ on:
         description: 'API URL for frontend builds'
         required: true
         type: string
+      auth_url:
+        description: 'Auth URL for frontend builds'
+        required: true
+        type: string
       tag_suffix:
         description: 'Tag suffix (e.g., pr-123 or commit SHA)'
         required: true
@@ -38,6 +42,9 @@ on:
       api_service_built:
         description: 'Whether api-service was built'
         value: ${{ jobs.build.outputs.api_service_built }}
+      auth_service_built:
+        description: 'Whether auth-service was built'
+        value: ${{ jobs.build.outputs.auth_service_built }}
 
 env:
   DOCKERHUB_USERNAME: crowprose
@@ -53,6 +60,7 @@ jobs:
       www_web: ${{ steps.changes.outputs.www_web }}
       app_web: ${{ steps.changes.outputs.app_web }}
       api_service: ${{ steps.changes.outputs.api_service }}
+      auth_service: ${{ steps.changes.outputs.auth_service }}
 
     steps:
       - name: Checkout code
@@ -94,6 +102,7 @@ jobs:
             echo "www_web=true" >> $GITHUB_OUTPUT
             echo "app_web=true" >> $GITHUB_OUTPUT
             echo "api_service=true" >> $GITHUB_OUTPUT
+            echo "auth_service=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -103,6 +112,7 @@ jobs:
             echo "www_web=true" >> $GITHUB_OUTPUT
             echo "app_web=true" >> $GITHUB_OUTPUT
             echo "api_service=true" >> $GITHUB_OUTPUT
+            echo "auth_service=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -138,6 +148,16 @@ jobs:
             echo "@api/service: no changes"
           fi
 
+          # Check if @auth/service or its dependencies changed
+          AUTH_PACKAGES=$(pnpm turbo run build --filter='@auth/service...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
+          if [ -n "$AUTH_PACKAGES" ]; then
+            echo "auth_service=true" >> $GITHUB_OUTPUT
+            echo "@auth/service affected packages: $AUTH_PACKAGES"
+          else
+            echo "auth_service=false" >> $GITHUB_OUTPUT
+            echo "@auth/service: no changes"
+          fi
+
   build:
     name: Build & Push Images
     runs-on: ubuntu-latest
@@ -149,6 +169,7 @@ jobs:
       www_web_built: ${{ steps.build-www-web.outcome == 'success' }}
       app_web_built: ${{ steps.build-app-web.outcome == 'success' }}
       api_service_built: ${{ steps.build-api-service.outcome == 'success' }}
+      auth_service_built: ${{ steps.build-auth-service.outcome == 'success' }}
 
     steps:
       - name: Checkout code
@@ -209,6 +230,7 @@ jobs:
             ${{ env.DOCKERHUB_USERNAME }}/app-web:${{ steps.meta.outputs.tag }}
           build-args: |
             VITE_API_URL=${{ inputs.api_url }}
+            VITE_AUTH_URL=${{ inputs.auth_url }}
             TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
             TURBO_TEAM=${{ secrets.TURBO_TEAM }}
           cache-from: type=gha
@@ -246,6 +268,30 @@ jobs:
         if: needs.detect-changes.outputs.api_service != 'true'
         run: echo "Skipping api-service build - no changes detected"
 
+      - name: Build and push auth-service
+        id: build-auth-service
+        if: needs.detect-changes.outputs.auth_service == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/@auth/service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/auth-service:${{ steps.meta.outputs.tag }}
+          build-args: |
+            TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
+            TURBO_TEAM=${{ secrets.TURBO_TEAM }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Skip auth-service (no changes)
+        if: needs.detect-changes.outputs.auth_service != 'true'
+        run: echo "Skipping auth-service build - no changes detected"
+
       - name: Summary
         run: |
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
@@ -255,3 +301,4 @@ jobs:
           echo "| www-web | ${{ needs.detect-changes.outputs.www_web == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| app-web | ${{ needs.detect-changes.outputs.app_web == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| api-service | ${{ needs.detect-changes.outputs.api_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| auth-service | ${{ needs.detect-changes.outputs.auth_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY

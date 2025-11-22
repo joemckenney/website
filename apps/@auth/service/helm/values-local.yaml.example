@@ -1,0 +1,41 @@
+# Local development values for auth-service
+# Copy to values-local.yaml and fill in your values
+replicaCount: 1
+
+image:
+  repository: localhost:5000/auth-service
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 3001
+  targetPort: 3001
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: auth.local.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+secrets:
+  googleClientId: "your-google-client-id"
+  googleClientSecret: "your-google-client-secret"
+  googleRedirectUri: "http://auth.local.com/google/callback"
+  jwtAccessSecret: "your-jwt-access-secret"
+  jwtRefreshSecret: "your-jwt-refresh-secret"
+  allowedEmail: "your-email@example.com"
+  frontendUrl: "http://app.local.com"

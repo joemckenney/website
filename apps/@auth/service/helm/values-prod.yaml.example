@@ -1,0 +1,53 @@
+# Production values example for auth-service
+# Actual secrets should be injected via CI/CD --set flags
+replicaCount: 1
+
+image:
+  repository: crowprose/auth-service
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+
+service:
+  type: ClusterIP
+  port: 3001
+  targetPort: 3001
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: auth.yourdomain.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: auth-service-tls
+      hosts:
+        - auth.yourdomain.com
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Secrets - inject via --set flags in CI/CD
+secrets:
+  googleClientId: ""
+  googleClientSecret: ""
+  googleRedirectUri: "https://auth.yourdomain.com/google/callback"
+  jwtAccessSecret: ""
+  jwtRefreshSecret: ""
+  allowedEmail: "your-email@example.com"
+  frontendUrl: "https://app.yourdomain.com"

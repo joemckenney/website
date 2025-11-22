@@ -12,13 +12,13 @@ const fastify = Fastify({
 await fastify.register(swagger, {
   openapi: {
     info: {
-      title: "API Service",
-      description: "API with ping and squared endpoints using WASM",
+      title: "Auth Service API",
+      description: "Authentication service with Google OAuth 2.0 and JWT",
       version: "1.0.0",
     },
     servers: [
       {
-        url: "http://localhost:3000",
+        url: "http://localhost:3001",
         description: "Development server",
       },
     ],
@@ -28,7 +28,7 @@ await fastify.register(swagger, {
           type: "http",
           scheme: "bearer",
           bearerFormat: "JWT",
-          description: "JWT access token obtained from auth service",
+          description: "JWT access token obtained from /google flow",
         },
       },
     },
@@ -36,7 +36,7 @@ await fastify.register(swagger, {
 });
 
 // Register routes (but don't start server)
-await registerRoutes(fastify, {});
+await registerRoutes(fastify);
 
 // Ready the server (generates the OpenAPI spec)
 await fastify.ready();

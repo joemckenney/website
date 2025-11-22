@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
+import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
@@ -24,6 +25,8 @@ const fastify = Fastify({
         },
 }).withTypeProvider<TypeBoxTypeProvider>();
 
+await fastify.register(cookie);
+
 await fastify.register(cors, {
   origin: true, // Allow all origins in development
   credentials: true, // Allow cookies to be sent
@@ -32,13 +35,13 @@ await fastify.register(cors, {
 await fastify.register(swagger, {
   openapi: {
     info: {
-      title: "API Service",
-      description: "API with ping and squared endpoints using WASM",
+      title: "Auth Service API",
+      description: "Authentication service with Google OAuth 2.0 and JWT",
       version: "1.0.0",
     },
     servers: [
       {
-        url: "http://localhost:3000",
+        url: "http://localhost:3001",
         description: "Development server",
       },
     ],
@@ -48,7 +51,7 @@ await fastify.register(swagger, {
           type: "http",
           scheme: "bearer",
           bearerFormat: "JWT",
-          description: "JWT access token obtained from auth service",
+          description: "JWT access token obtained from /google flow",
         },
       },
     },
@@ -59,12 +62,12 @@ await fastify.register(swaggerUi, {
   routePrefix: "/docs",
 });
 
-await registerRoutes(fastify, {});
+await registerRoutes(fastify);
 
 // Start server
 const start = async () => {
   try {
-    await fastify.listen({ port: 3000, host: "0.0.0.0" });
+    await fastify.listen({ port: 3001, host: "0.0.0.0" });
 
     // Generate OpenAPI spec to dist folder (development only)
     if (process.env.NODE_ENV !== "production") {
@@ -74,8 +77,8 @@ const start = async () => {
       console.log("OpenAPI spec written to dist/openapi.json");
     }
 
-    console.log("Server listening on http://localhost:3000");
-    console.log("OpenAPI docs available at http://localhost:3000/docs");
+    console.log("Server listening on http://localhost:3001");
+    console.log("OpenAPI docs available at http://localhost:3001/docs");
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

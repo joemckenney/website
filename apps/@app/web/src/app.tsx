@@ -1,9 +1,10 @@
-import { getAuthMe, getPing, postSquared } from "@api/sdk";
+import { getPing, postSquared } from "@api/sdk";
+import { getMe } from "@auth/sdk";
 import { useCallback, useEffect, useState } from "react";
 
 import * as styles from "./app.css";
 import { DebugInfo } from "./components/debug-info";
-import { setupApiClient } from "./lib/api-client";
+import { setupApiClients } from "./lib/api-client";
 import {
   getAccessToken,
   isAuthenticated,
@@ -12,9 +13,10 @@ import {
 } from "./lib/auth";
 import { decodeJWT, getTimeUntilExpiry } from "./lib/jwt-utils";
 
-// Use environment variable or default to localhost for local dev
+// Use environment variables or defaults for local dev
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-setupApiClient(API_URL);
+const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://localhost:3001";
+setupApiClients(API_URL, AUTH_URL);
 
 function App() {
   const [authenticated, setAuthenticated] = useState(isAuthenticated());
@@ -37,7 +39,11 @@ function App() {
     if (!token) return;
 
     try {
-      const response = await getAuthMe();
+      const response = await getMe({
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (response.data) {
         setUserEmail(response.data.email);
@@ -90,8 +96,8 @@ function App() {
   }, [authenticated]);
 
   const handleLogin = () => {
-    // Redirect to the API's Google OAuth endpoint
-    window.location.href = `${API_URL}/auth/google`;
+    // Redirect to the Auth service's Google OAuth endpoint
+    window.location.href = `${AUTH_URL}/google`;
   };
 
   const handleSquaredSubmit = async (e: React.FormEvent) => {
