@@ -18,6 +18,9 @@ jobs:
       environment: production
       api_url: https://api.joemckenney.com
       tag_suffix: sha-${{ github.sha }}
+      # Detect changes against the previous commit on main
+      # Use HEAD~1 to compare against the parent commit
+      base_ref: HEAD~1
 
   deploy-production:
     name: Deploy to Production
@@ -54,6 +57,7 @@ jobs:
           kubectl get nodes
 
       - name: Deploy www-web
+        if: needs.build-production-images.outputs.www_web_built == 'true'
         run: |
           helm upgrade --install www-web apps/@www/web/helm \
             -f apps/@www/web/helm/values-prod.yaml \
@@ -61,7 +65,12 @@ jobs:
             --wait \
             --timeout=5m
 
+      - name: Skip www-web deployment (no changes)
+        if: needs.build-production-images.outputs.www_web_built != 'true'
+        run: echo "Skipping www-web deployment - no changes detected"
+
       - name: Deploy app-web
+        if: needs.build-production-images.outputs.app_web_built == 'true'
         run: |
           helm upgrade --install app-web apps/@app/web/helm \
             -f apps/@app/web/helm/values-prod.yaml \
@@ -69,7 +78,12 @@ jobs:
             --wait \
             --timeout=5m
 
+      - name: Skip app-web deployment (no changes)
+        if: needs.build-production-images.outputs.app_web_built != 'true'
+        run: echo "Skipping app-web deployment - no changes detected"
+
       - name: Deploy api-service
+        if: needs.build-production-images.outputs.api_service_built == 'true'
         run: |
           helm upgrade --install api-service apps/@api/service/helm \
             -f apps/@api/service/helm/values-prod.yaml \
@@ -80,11 +94,22 @@ jobs:
             --wait \
             --timeout=5m
 
+      - name: Skip api-service deployment (no changes)
+        if: needs.build-production-images.outputs.api_service_built != 'true'
+        run: echo "Skipping api-service deployment - no changes detected"
+
       - name: Wait for rollout
         run: |
-          kubectl rollout status deployment/www-web --timeout=3m
-          kubectl rollout status deployment/app-web --timeout=3m
-          kubectl rollout status deployment/api-service --timeout=3m
+          # Only wait for deployments that were updated
+          if [ "${{ needs.build-production-images.outputs.www_web_built }}" == "true" ]; then
+            kubectl rollout status deployment/www-web --timeout=3m
+          fi
+          if [ "${{ needs.build-production-images.outputs.app_web_built }}" == "true" ]; then
+            kubectl rollout status deployment/app-web --timeout=3m
+          fi
+          if [ "${{ needs.build-production-images.outputs.api_service_built }}" == "true" ]; then
+            kubectl rollout status deployment/api-service --timeout=3m
+          fi
 
       - name: Run production smoke tests
         run: |
@@ -109,9 +134,16 @@ jobs:
         if: failure()
         run: |
           echo "⚠️ Deployment failed, rolling back..."
-          helm rollback www-web 0 --wait || true
-          helm rollback app-web 0 --wait || true
-          helm rollback api-service 0 --wait || true
+          # Only rollback services that were deployed
+          if [ "${{ needs.build-production-images.outputs.www_web_built }}" == "true" ]; then
+            helm rollback www-web 0 --wait || true
+          fi
+          if [ "${{ needs.build-production-images.outputs.app_web_built }}" == "true" ]; then
+            helm rollback app-web 0 --wait || true
+          fi
+          if [ "${{ needs.build-production-images.outputs.api_service_built }}" == "true" ]; then
+            helm rollback api-service 0 --wait || true
+          fi
 
       - name: Get deployment status
         if: always()
@@ -127,6 +159,17 @@ jobs:
           echo ""
           echo "=== Certificates ==="
           kubectl get certificate
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| www-web | ${{ needs.build-production-images.outputs.www_web_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| app-web | ${{ needs.build-production-images.outputs.app_web_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| api-service | ${{ needs.build-production-images.outputs.api_service_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
 
   deployment-notification:
     name: Deployment Notification

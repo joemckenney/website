@@ -110,6 +110,8 @@ jobs:
       api_url: http://api.local.com
       # Tag with PR number so CD can find these images after merge
       tag_suffix: pr-${{ github.event.pull_request.number }}
+      # Detect changes against the PR base branch
+      base_ref: origin/${{ github.event.pull_request.base.ref }}
 
   ci-success:
     name: CI Success
