@@ -7,7 +7,7 @@
     "dist"
   ],
   "scripts": {
-    "dev": "NODE_OPTIONS='--experimental-wasm-modules' tsx watch src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "build": "tsc && node dist/generate-spec.js",
     "build:docker": "REPO_ROOT=$(pnpm exec topoftree) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/api-service:latest -f Dockerfile $REPO_ROOT",
     "build:docker:local": "REPO_ROOT=$(pnpm exec topoftree) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/api-service:latest -f Dockerfile $REPO_ROOT",
@@ -15,7 +15,7 @@
     "deploy:helm:local": "helm upgrade --install api-service ./helm -f ./helm/values-local.yaml --wait --timeout=5m",
     "deploy:helm:prod": "helm upgrade --install api-service ./helm -f ./helm/values-prod.yaml --wait --timeout=5m",
     "clean:docker": "docker rmi localhost:5000/api-service:latest || true",
-    "start": "NODE_OPTIONS='--experimental-wasm-modules' node dist/index.js",
+    "start": "node dist/index.js",
     "format": "biome format --write ."
   },
   "dependencies": {
@@ -26,7 +26,6 @@
     "@fastify/swagger-ui": "^5.2.3",
     "@fastify/type-provider-typebox": "^6.1.0",
     "typebox": "^1.0.13",
-    "@website/squared": "workspace:*",
     "arctic": "^3.7.0",
     "dotenv": "^17.2.3",
     "fastify": "^5.6.2",

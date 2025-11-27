@@ -1,4 +1,4 @@
-import { getAuthMe, getPing, postSquared } from "@api/sdk";
+import { getAuthMe, getPing } from "@api/sdk";
 import { useCallback, useEffect, useState } from "react";
 
 import * as styles from "./app.css";
@@ -19,8 +19,6 @@ setupApiClient(API_URL);
 function App() {
   const [authenticated, setAuthenticated] = useState(isAuthenticated());
   const [userEmail, setUserEmail] = useState<string | null>(null);
-
-  const [squaredInput, setSquaredInput] = useState("");
 
   // Debug state
   const [tokenExpiry, setTokenExpiry] = useState<string>("");
@@ -94,27 +92,6 @@ function App() {
     window.location.href = `${API_URL}/auth/google`;
   };
 
-  const handleSquaredSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const num = parseFloat(squaredInput);
-    if (Number.isNaN(num)) return;
-
-    try {
-      const response = await postSquared({
-        body: { number: num },
-      });
-
-      if (response.data) {
-        console.log(response.data.result);
-      } else if (response.error) {
-        alert("Failed to calculate. Please try again.");
-      }
-    } catch (error: any) {
-      console.error("API error:", error);
-      alert("Failed to calculate. Please try again.");
-    }
-  };
-
   const handlePing = async () => {
     try {
       const response = await getPing();
@@ -176,22 +153,6 @@ function App() {
             <button onClick={handlePing} className={styles.button}>
               {"Ping Server"}
             </button>
-          </div>
-
-          <div className={styles.endpointBox}>
-            <h3 className={styles.subsectionTitle}>Squared Endpoint</h3>
-            <form onSubmit={handleSquaredSubmit} className={styles.form}>
-              <input
-                type="number"
-                value={squaredInput}
-                onChange={(e) => setSquaredInput(e.target.value)}
-                placeholder="Enter a number"
-                className={styles.input}
-              />
-              <button type="submit" className={styles.button}>
-                {"Calculate"}
-              </button>
-            </form>
           </div>
         </div>
       </section>

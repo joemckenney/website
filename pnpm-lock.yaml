@@ -57,9 +57,6 @@ importers:
       '@fastify/type-provider-typebox':
         specifier: ^6.1.0
         version: 6.1.0(typebox@1.0.51)
-      '@website/squared':
-        specifier: workspace:*
-        version: link:../../../packages/@website/squared
       arctic:
         specifier: ^3.7.0
         version: 3.7.0
