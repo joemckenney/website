@@ -270,6 +270,7 @@ export async function registerAuthRoutes(
     "/auth/me",
     {
       schema: {
+        operationId: "whoami",
         description: "Get current authenticated user information",
         tags: ["auth"],
         security: [{ bearerAuth: [] }],

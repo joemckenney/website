@@ -9,6 +9,7 @@ export const registerRoutes: FastifyPluginAsync = async (fastify) => {
     "/ping",
     {
       schema: {
+        operationId: "ping",
         description: "Health check endpoint",
         tags: ["health"],
         response: {

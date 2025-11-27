@@ -1,4 +1,4 @@
-import { getAuthMe, getPing } from "@api/sdk";
+import { gateway } from "@api/sdk";
 import { useCallback, useEffect, useState } from "react";
 
 import * as styles from "./app.css";
@@ -35,7 +35,7 @@ function App() {
     if (!token) return;
 
     try {
-      const response = await getAuthMe();
+      const response = await gateway.whoami();
 
       if (response.data) {
         setUserEmail(response.data.email);
@@ -94,7 +94,7 @@ function App() {
 
   const handlePing = async () => {
     try {
-      const response = await getPing();
+      const response = await gateway.ping();
 
       if (response.data) {
         console.log(response.data.message);
