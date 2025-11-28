@@ -179,6 +179,7 @@ export async function registerAuthRoutes(
     "/auth/refresh",
     {
       schema: {
+        operationId: "refreshToken",
         description:
           "Refresh access token using httpOnly cookie with token rotation",
         tags: ["auth"],
@@ -246,6 +247,7 @@ export async function registerAuthRoutes(
     "/auth/logout",
     {
       schema: {
+        operationId: "logout",
         description: "Logout and clear refresh token cookie",
         tags: ["auth"],
         response: {
