@@ -1,0 +1,42 @@
+{
+  "name": "@user/service",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsgo && node dist/generate-spec.js",
+    "start": "node dist/index.js",
+    "format": "biome format --write .",
+    "db:port-forward": "kubectl port-forward svc/user-service-postgres 5432:5432",
+    "deploy:postgres:local": "DATABASE_URL=placeholder helm dependency update infrastructure/postgres/helm && helm upgrade --install user-service-postgres infrastructure/postgres/helm -f infrastructure/postgres/helm/values-local.yaml --wait --timeout=5m",
+    "deploy:postgres:prod": "DATABASE_URL=placeholder helm dependency update infrastructure/postgres/helm && helm upgrade --install user-service-postgres infrastructure/postgres/helm -f infrastructure/postgres/helm/values-prod.yaml --wait --timeout=5m",
+    "build:docker": "REPO_ROOT=$(pnpm exec topoftree) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/user-service:latest -f Dockerfile $REPO_ROOT",
+    "build:docker:local": "REPO_ROOT=$(pnpm exec topoftree) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/user-service:latest -f Dockerfile $REPO_ROOT",
+    "build:docker:prod": "REPO_ROOT=$(pnpm exec topoftree) && docker build -t ${DOCKERHUB_USERNAME}/user-service:${TAG:-latest} -f Dockerfile $REPO_ROOT",
+    "deploy:helm:local": "helm upgrade --install user-service ./helm -f ./helm/values-local.yaml --wait --timeout=5m",
+    "deploy:helm:prod": "helm upgrade --install user-service ./helm -f ./helm/values-prod.yaml --wait --timeout=5m",
+    "clean:docker": "docker rmi localhost:5000/user-service:latest || true"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.1.0",
+    "@fastify/swagger": "^9.6.0",
+    "@fastify/swagger-ui": "^5.2.3",
+    "@fastify/type-provider-typebox": "^6.1.0",
+    "@user/orm": "workspace:*",
+    "dotenv": "^17.2.3",
+    "fastify": "^5.6.2",
+    "typebox": "^1.0.13"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@typescript/native-preview": "7.0.0-dev.20251017.1",
+    "@website/topoftree": "workspace:*",
+    "@website/tsconfig": "workspace:*",
+    "pino-pretty": "^13.1.2",
+    "tsx": "^4.16.2"
+  }
+}

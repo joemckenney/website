@@ -10,10 +10,15 @@
     "build": "turbo run build",
     "format": "turbo run format",
     "format:check": "biome check",
-    "test": "echo \"No unit tests yet\" && exit 0"
+    "test": "echo \"No unit tests yet\" && exit 0",
+    "cluster:setup": "./infrastructure/scripts/setup-local-cluster.sh",
+    "cluster:teardown": "./infrastructure/scripts/teardown-local-cluster.sh",
+    "cluster:deploy": "./infrastructure/scripts/deploy-all-local.sh",
+    "cluster:port-forward": "./infrastructure/scripts/port-forward-databases.sh",
+    "cluster:status": "kubectl get pods,svc,ingress"
   },
   "devDependencies": {
-    "@anthropic-ai/claude-code": "^2.0.21",
+    "@anthropic-ai/claude-code": "^2.0.69",
     "@biomejs/biome": "2.2.6",
     "turbo": "^2.5.8"
   },

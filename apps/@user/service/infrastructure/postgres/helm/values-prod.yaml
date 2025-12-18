@@ -1,0 +1,26 @@
+postgresql:
+  fullnameOverride: user-service-postgres
+  auth:
+    username: users
+    password: "" # Set via --set flag or use existingSecret
+    database: users
+  primary:
+    persistence:
+      enabled: true
+      size: 100Gi
+      storageClass: "" # Use default storage class
+    resources:
+      limits:
+        memory: 1Gi
+      requests:
+        memory: 512Mi
+        cpu: 250m
+    podSecurityContext:
+      enabled: true
+      fsGroup: 1001
+    containerSecurityContext:
+      enabled: true
+      runAsUser: 1001
+      runAsNonRoot: true
+  metrics:
+    enabled: true

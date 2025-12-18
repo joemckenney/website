@@ -1,0 +1,26 @@
+{
+  "name": "@user/orm",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "prisma generate && tsgo",
+    "dev": "tsgo --watch",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.2.1",
+    "prisma": "^6.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@typescript/native-preview": "7.0.0-dev.20251017.1",
+    "@website/tsconfig": "workspace:*"
+  }
+}
