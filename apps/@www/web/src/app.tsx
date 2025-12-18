@@ -263,15 +263,18 @@ function App() {
     );
     addLog(`  Playing: ${isPlaying ? "Yes" : "No"}`, "output");
 
-    if (synthRef.current && (synthRef.current as any).audioContext) {
-      const ctx = (synthRef.current as any).audioContext;
+    if (
+      synthRef.current &&
+      "audioContext" in synthRef.current &&
+      synthRef.current.audioContext
+    ) {
+      const ctx = synthRef.current.audioContext as AudioContext;
       addLog(`  AudioContext State: ${ctx.state}`, "output");
       addLog(`  Sample Rate: ${ctx.sampleRate}Hz`, "output");
     }
 
     const audioApiSupported =
-      typeof AudioContext !== "undefined" ||
-      typeof (window as any).webkitAudioContext !== "undefined";
+      typeof AudioContext !== "undefined" || "webkitAudioContext" in window;
     addLog(
       `  Web Audio API: ${audioApiSupported ? "✓ Supported" : "✗ Not supported"}`,
       audioApiSupported ? "success" : "error",
@@ -281,8 +284,11 @@ function App() {
     // Chrome AI Section
     addLog("CHROME AI (GEMINI NANO)", "info");
     const hasLanguageModel =
-      typeof (window as any).LanguageModel !== "undefined" ||
-      typeof (window as any).ai?.languageModel !== "undefined";
+      "LanguageModel" in window ||
+      ("ai" in window &&
+        window.ai &&
+        typeof window.ai === "object" &&
+        "languageModel" in window.ai);
     addLog(
       `  API Available: ${hasLanguageModel ? "✓ Yes" : "✗ No"}`,
       hasLanguageModel ? "success" : "error",
@@ -291,7 +297,14 @@ function App() {
     if (hasLanguageModel) {
       try {
         const languageModel =
-          (window as any).LanguageModel || (window as any).ai?.languageModel;
+          "LanguageModel" in window
+            ? window.LanguageModel
+            : "ai" in window &&
+                window.ai &&
+                typeof window.ai === "object" &&
+                "languageModel" in window.ai
+              ? window.ai.languageModel
+              : null;
         if (languageModel) {
           const availability = await languageModel.availability();
           const statusIcon =

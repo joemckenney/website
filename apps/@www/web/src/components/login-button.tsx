@@ -9,7 +9,7 @@ export function LoginButton() {
   };
 
   return (
-    <button className={styles.loginButton} onClick={handleLogin}>
+    <button type="button" className={styles.loginButton} onClick={handleLogin}>
       Login with Google
     </button>
   );

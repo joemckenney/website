@@ -55,7 +55,7 @@ fastify.get("/health", async () => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     return { status: "healthy", database: "connected" };
-  } catch (error) {
+  } catch (_error) {
     return { status: "unhealthy", database: "disconnected" };
   }
 });

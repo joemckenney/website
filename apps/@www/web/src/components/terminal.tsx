@@ -143,10 +143,12 @@ export function Terminal({
   };
 
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: Terminal has keyboard-accessible input field; click is UX enhancement
+    // biome-ignore lint/a11y/noStaticElementInteractions: Terminal has keyboard-accessible input field; click is UX enhancement
     <div className={styles.terminal} onClick={handleTerminalClick}>
       <div className={styles.body}>
         {lines.map((line, index) => (
-          <div key={index} className={styles.line}>
+          <div key={`${line.timestamp || 0}-${index}`} className={styles.line}>
             {line.type === "prompt" ? (
               <>
                 <span className={styles.prompt}>&gt;</span>{" "}

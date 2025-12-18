@@ -29,7 +29,13 @@ export async function performSystemCheck(): Promise<SystemCheckResult> {
 
   // Check Chrome AI API
   const languageModel =
-    window.LanguageModel || (window as any).ai?.languageModel;
+    window.LanguageModel ||
+    ("ai" in window &&
+    window.ai &&
+    typeof window.ai === "object" &&
+    "languageModel" in window.ai
+      ? window.ai.languageModel
+      : undefined);
   const apiAvailable = !!languageModel;
   let aiStatus: "unavailable" | "downloading" | "available" | "unknown" =
     "unknown";
@@ -48,8 +54,7 @@ export async function performSystemCheck(): Promise<SystemCheckResult> {
 
   // Check Web Audio API
   const webAudioSupported =
-    typeof AudioContext !== "undefined" ||
-    typeof (window as any).webkitAudioContext !== "undefined";
+    typeof AudioContext !== "undefined" || "webkitAudioContext" in window;
 
   // Check Geolocation
   const geoSupported = "geolocation" in navigator;

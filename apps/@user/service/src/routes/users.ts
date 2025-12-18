@@ -31,13 +31,13 @@ export const registerUserRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const user = await prisma.user.findUnique({
-        where: { email: request.user!.email },
+        where: { email: request.user?.email },
       });
 
       if (!user) {
         return reply.status(404).send({
           error: "User not found",
-          message: `No user found with email ${request.user!.email}`,
+          message: `No user found with email ${request.user?.email}`,
         });
       }
 
@@ -112,8 +112,13 @@ export const registerUserRoutes: FastifyPluginAsync = async (fastify) => {
         });
 
         return reply.status(201).send(user);
-      } catch (error: any) {
-        if (error.code === "P2002") {
+      } catch (error: unknown) {
+        if (
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "P2002"
+        ) {
           // Unique constraint violation
           return reply.status(409).send({
             error: "User already exists",
@@ -159,8 +164,13 @@ export const registerUserRoutes: FastifyPluginAsync = async (fastify) => {
         });
 
         return user;
-      } catch (error: any) {
-        if (error.code === "P2025") {
+      } catch (error: unknown) {
+        if (
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "P2025"
+        ) {
           // Record not found
           return reply.status(404).send({
             error: "User not found",
@@ -199,8 +209,13 @@ export const registerUserRoutes: FastifyPluginAsync = async (fastify) => {
         });
 
         return reply.status(204).send();
-      } catch (error: any) {
-        if (error.code === "P2025") {
+      } catch (error: unknown) {
+        if (
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "P2025"
+        ) {
           return reply.status(404).send({
             error: "User not found",
           });
