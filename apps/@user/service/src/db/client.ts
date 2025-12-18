@@ -14,13 +14,13 @@ const extendedPrisma = basePrisma.$extends({
     user: {
       createdAt: {
         needs: { createdAt: true },
-        compute(user) {
+        compute(user: { createdAt: Date }) {
           return user.createdAt.toISOString();
         },
       },
       updatedAt: {
         needs: { updatedAt: true },
-        compute(user) {
+        compute(user: { updatedAt: Date }) {
           return user.updatedAt.toISOString();
         },
       },
