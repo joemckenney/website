@@ -263,14 +263,10 @@ function App() {
     );
     addLog(`  Playing: ${isPlaying ? "Yes" : "No"}`, "output");
 
-    if (
-      synthRef.current &&
-      "audioContext" in synthRef.current &&
-      synthRef.current.audioContext
-    ) {
-      const ctx = synthRef.current.audioContext as AudioContext;
-      addLog(`  AudioContext State: ${ctx.state}`, "output");
-      addLog(`  Sample Rate: ${ctx.sampleRate}Hz`, "output");
+    const audioContext = synthRef.current?.getAudioContext();
+    if (audioContext) {
+      addLog(`  AudioContext State: ${audioContext.state}`, "output");
+      addLog(`  Sample Rate: ${audioContext.sampleRate}Hz`, "output");
     }
 
     const audioApiSupported =
