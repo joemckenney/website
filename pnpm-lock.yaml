@@ -175,8 +175,6 @@ importers:
         specifier: ^6.0.7
         version: 6.4.0(@types/node@24.8.1)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.8.1)
 
-  packages/@website/squared: {}
-
   packages/@website/topoftree: {}
 
   packages/@website/tsconfig: {}

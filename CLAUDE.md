@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a monorepo exploring modern full-stack development with TypeScript, Rust WASM, and type-safe API generation. The main application (`@www/app`) is an experimental weather sonification web app that uses Chrome's built-in AI (Gemini Nano) to generate evolving ambient soundscapes based on real-time weather data.
+This is a monorepo exploring modern full-stack development with TypeScript and type-safe API generation. The main application (`@www/app`) is an experimental weather sonification web app that uses Chrome's built-in AI (Gemini Nano) to generate evolving ambient soundscapes based on real-time weather data.
 
 ## Repository Structure
 
@@ -19,7 +19,6 @@ apps/
 
 packages/
   @website/
-    squared/         - Rust WASM module (mathematical operations)
     topoftree/       - Go CLI tool (finds git repository root)
     tsconfig/        - Shared TypeScript configurations
     utils/           - TypeScript utility library
@@ -52,10 +51,6 @@ pnpm --filter @api/app build
 # Run dev server for main app
 cd apps/@www/app
 pnpm run dev
-
-# Build WASM package (requires Rust + wasm-pack)
-cd packages/@website/squared
-pnpm run build  # Runs: wasm-pack build --target bundler --out-dir dist
 
 # Build Go CLI tool
 cd packages/@website/topoftree
@@ -159,27 +154,6 @@ pnpm run dev  # Vite dev server
 
 **Important**: The server must start at least once to generate `dist/openapi.json` before SDK can build.
 
-## WASM Integration
-
-**Location**: `packages/@website/squared/`
-
-Rust code compiled to WebAssembly using `wasm-pack`:
-
-```bash
-cd packages/@website/squared
-pnpm run build  # Requires: cargo, wasm-pack
-```
-
-Produces a bundler-compatible WASM module with TypeScript definitions. Currently demonstrates a simple `squared(n)` function but can be extended for performance-critical operations.
-
-**Usage**:
-```typescript
-import { squared } from '@website/squared';
-const result = squared(5);  // 25
-```
-
-**Note**: Server's WASM import is currently commented out (`apps/@api/app/src/index.ts:7`) but can be re-enabled. Requires `NODE_OPTIONS='--experimental-wasm-modules'`.
-
 ## Styling
 
 **Framework**: Vanilla Extract (type-safe CSS-in-JS)
@@ -205,20 +179,12 @@ Workspace dependencies use `workspace:*` protocol:
 ```json
 {
   "dependencies": {
-    "@website/squared": "workspace:*"
+    "@website/utils": "workspace:*"
   }
 }
 ```
 
 Turbo automatically builds dependencies before dependents.
-
-### WASM Requirements
-
-Building `@website/squared` requires:
-```bash
-cargo install wasm-pack
-rustup update
-```
 
 ### Go Requirements
 
