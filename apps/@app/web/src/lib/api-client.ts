@@ -11,7 +11,9 @@ let isRefreshing = false;
 let refreshSubscribers: Array<(token: string | null) => void> = [];
 
 function onRefreshed(token: string | null) {
-  refreshSubscribers.forEach((callback) => callback(token));
+  for (const callback of refreshSubscribers) {
+    callback(token);
+  }
   refreshSubscribers = [];
 }
 

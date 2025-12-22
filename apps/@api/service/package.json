@@ -17,6 +17,7 @@
     "clean": "rm -rf dist",
     "clean:docker": "docker rmi localhost:5000/api-service:latest || true",
     "start": "node dist/index.js",
+    "lint": "biome check --write .",
     "format": "biome format --write ."
   },
   "dependencies": {

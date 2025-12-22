@@ -143,10 +143,21 @@ export function Terminal({
   };
 
   return (
-    <div className={styles.terminal} onClick={handleTerminalClick}>
+    // biome-ignore lint/a11y/useSemanticElements: Terminal container needs complex content structure
+    <div
+      className={styles.terminal}
+      onClick={handleTerminalClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          handleTerminalClick();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+    >
       <div className={styles.body}>
-        {lines.map((line, index) => (
-          <div key={index} className={styles.line}>
+        {lines.map((line) => (
+          <div key={`${line.timestamp}-${line.text}`} className={styles.line}>
             {line.type === "prompt" ? (
               <>
                 <span className={styles.prompt}>&gt;</span>{" "}

@@ -14,6 +14,7 @@
     "clean": "rm -rf dist",
     "clean:docker": "docker rmi localhost:5000/www-web:latest || true",
     "preview": "vite preview",
+    "lint": "biome check --write .",
     "format": "biome format --write ."
   },
   "dependencies": {

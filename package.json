@@ -9,6 +9,7 @@
   "scripts": {
     "build": "turbo run build",
     "clean": "turbo run clean",
+    "lint": "turbo run lint",
     "format": "turbo run format",
     "format:check": "biome check",
     "test": "echo \"No unit tests yet\" && exit 0"

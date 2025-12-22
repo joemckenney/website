@@ -29,6 +29,7 @@ export async function performSystemCheck(): Promise<SystemCheckResult> {
 
   // Check Chrome AI API
   const languageModel =
+    // biome-ignore lint/suspicious/noExplicitAny: Chrome AI experimental API
     window.LanguageModel || (window as any).ai?.languageModel;
   const apiAvailable = !!languageModel;
   let aiStatus: "unavailable" | "downloading" | "available" | "unknown" =
@@ -49,6 +50,7 @@ export async function performSystemCheck(): Promise<SystemCheckResult> {
   // Check Web Audio API
   const webAudioSupported =
     typeof AudioContext !== "undefined" ||
+    // biome-ignore lint/suspicious/noExplicitAny: Checking for legacy webkit API
     typeof (window as any).webkitAudioContext !== "undefined";
 
   // Check Geolocation
