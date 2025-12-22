@@ -8,6 +8,7 @@
   "author": "",
   "scripts": {
     "build": "turbo run build",
+    "clean": "turbo run clean",
     "format": "turbo run format",
     "format:check": "biome check",
     "test": "echo \"No unit tests yet\" && exit 0"

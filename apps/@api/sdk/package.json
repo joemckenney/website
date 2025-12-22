@@ -17,6 +17,7 @@
   "scripts": {
     "generate": "openapi-ts",
     "build": "npm run generate && tsc",
+    "clean": "rm -rf dist src/generated",
     "format": "biome format --write ."
   },
   "devDependencies": {

@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "go build -o dist/topoftree ./cmd/topoftree",
+    "clean": "rm -rf dist",
     "format": "biome format --write ."
   },
   "files": [
