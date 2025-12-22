@@ -46,7 +46,6 @@ export class AudioSynthesizer {
 
     const ctx = this.audioContext;
     this.isPlaying = true;
-    this.currentParams = params;
 
     // Create oscillators
     for (const oscParam of params.oscillators) {
@@ -213,7 +212,6 @@ export class AudioSynthesizer {
     this.gainNodes = newGainNodes;
     this.lfoNodes = [];
     this.lfoGainNodes = [];
-    this.currentParams = newParams;
 
     // Apply new LFOs
     this.applyLFOs(newParams, newOscillators, newGainNodes, this.filterNodes);
