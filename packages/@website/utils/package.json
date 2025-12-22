@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "build": "tsgo",
+    "clean": "rm -rf dist",
     "format": "biome format --write ."
   },
   "devDependencies": {

@@ -31,6 +31,9 @@
       "dependsOn": ["build:docker:prod"],
       "cache": false
     },
+    "clean": {
+      "cache": false
+    },
     "clean:docker": {
       "cache": false
     }
