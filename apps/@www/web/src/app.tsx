@@ -263,7 +263,9 @@ function App() {
     );
     addLog(`  Playing: ${isPlaying ? "Yes" : "No"}`, "output");
 
+    // biome-ignore lint/suspicious/noExplicitAny: Accessing internal audioContext property
     if (synthRef.current && (synthRef.current as any).audioContext) {
+      // biome-ignore lint/suspicious/noExplicitAny: Accessing internal audioContext property
       const ctx = (synthRef.current as any).audioContext;
       addLog(`  AudioContext State: ${ctx.state}`, "output");
       addLog(`  Sample Rate: ${ctx.sampleRate}Hz`, "output");
@@ -271,6 +273,7 @@ function App() {
 
     const audioApiSupported =
       typeof AudioContext !== "undefined" ||
+      // biome-ignore lint/suspicious/noExplicitAny: Checking for legacy webkit API
       typeof (window as any).webkitAudioContext !== "undefined";
     addLog(
       `  Web Audio API: ${audioApiSupported ? "✓ Supported" : "✗ Not supported"}`,
@@ -281,7 +284,9 @@ function App() {
     // Chrome AI Section
     addLog("CHROME AI (GEMINI NANO)", "info");
     const hasLanguageModel =
+      // biome-ignore lint/suspicious/noExplicitAny: Chrome AI experimental API
       typeof (window as any).LanguageModel !== "undefined" ||
+      // biome-ignore lint/suspicious/noExplicitAny: Chrome AI experimental API
       typeof (window as any).ai?.languageModel !== "undefined";
     addLog(
       `  API Available: ${hasLanguageModel ? "✓ Yes" : "✗ No"}`,
@@ -291,7 +296,10 @@ function App() {
     if (hasLanguageModel) {
       try {
         const languageModel =
-          (window as any).LanguageModel || (window as any).ai?.languageModel;
+          // biome-ignore lint/suspicious/noExplicitAny: Chrome AI experimental API
+          (window as any).LanguageModel ||
+          // biome-ignore lint/suspicious/noExplicitAny: Chrome AI experimental API
+          (window as any).ai?.languageModel;
         if (languageModel) {
           const availability = await languageModel.availability();
           const statusIcon =

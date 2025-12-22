@@ -15,7 +15,6 @@ export class AudioSynthesizer {
   private reverbMix: GainNode | null = null;
   private analyserNode: AnalyserNode | null = null;
   private isPlaying = false;
-  private currentParams: AudioParameters | null = null;
 
   async initialize(): Promise<void> {
     this.audioContext = new AudioContext();

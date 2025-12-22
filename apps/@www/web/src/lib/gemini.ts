@@ -447,10 +447,12 @@ function sanitizeAudioParameters(params: AudioParameters): AudioParameters {
       rate: Math.max(0.01, Math.min(20, lfo.rate || 0.1)),
       depth: Math.max(0, Math.min(1, lfo.depth || 0.5)),
       target: validLFOTargets.includes(lfo.target)
-        ? (lfo.target as any)
+        ? // biome-ignore lint/suspicious/noExplicitAny: Type narrowing after validation
+          (lfo.target as any)
         : "detune",
       waveform: validLFOWaveforms.includes(lfo.waveform)
-        ? (lfo.waveform as any)
+        ? // biome-ignore lint/suspicious/noExplicitAny: Type narrowing after validation
+          (lfo.waveform as any)
         : "sine",
       targetIndex: lfo.targetIndex,
     })),

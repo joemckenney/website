@@ -20,7 +20,9 @@ class TerminalLogger {
       timestamp: Date.now(),
     };
 
-    this.listeners.forEach((callback) => callback(line));
+    for (const callback of this.listeners) {
+      callback(line);
+    }
   }
 
   info(text: string) {
@@ -54,7 +56,9 @@ class TerminalLogger {
       type: "output",
       timestamp: Date.now(),
     };
-    this.listeners.forEach((callback) => callback(line));
+    for (const callback of this.listeners) {
+      callback(line);
+    }
   }
 }
 

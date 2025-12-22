@@ -99,7 +99,7 @@ function App() {
       if (response.data) {
         console.log(response.data.message);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Ping error:", error);
       alert("Failed to ping. Please try again.");
     }
@@ -113,7 +113,11 @@ function App() {
           <p className={styles.unauthText}>
             Please sign in with Google to access this application.
           </p>
-          <button onClick={handleLogin} className={styles.primaryButton}>
+          <button
+            type="button"
+            onClick={handleLogin}
+            className={styles.primaryButton}
+          >
             Login with Google
           </button>
         </div>
@@ -133,7 +137,7 @@ function App() {
             Authenticated as: {userEmail || "Loading..."}
           </p>
         </div>
-        <button onClick={handleLogout} className={styles.button}>
+        <button type="button" onClick={handleLogout} className={styles.button}>
           Logout
         </button>
       </header>
@@ -150,7 +154,11 @@ function App() {
         <div className={styles.endpointsGrid}>
           <div className={styles.endpointBox}>
             <h3 className={styles.subsectionTitle}>Ping Endpoint</h3>
-            <button onClick={handlePing} className={styles.button}>
+            <button
+              type="button"
+              onClick={handlePing}
+              className={styles.button}
+            >
               {"Ping Server"}
             </button>
           </div>

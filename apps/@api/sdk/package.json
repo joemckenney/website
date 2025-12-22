@@ -18,6 +18,7 @@
     "generate": "openapi-ts",
     "build": "npm run generate && tsc",
     "clean": "rm -rf dist src/generated",
+    "lint": "biome check --write .",
     "format": "biome format --write ."
   },
   "devDependencies": {
