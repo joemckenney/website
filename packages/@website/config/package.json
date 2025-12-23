@@ -5,6 +5,10 @@
   "files": [
     "*.json"
   ],
+  "scripts": {
+    "lint": "echo 'No lint needed for config package' && exit 0",
+    "format": "echo 'No format needed for config package' && exit 0"
+  },
   "exports": {
     "./base.json": "./base.json",
     "./react.json": "./react.json",
