@@ -43,14 +43,27 @@ pnpm run build
 # Format all code
 pnpm run format
 
-# Build specific workspace (from repo root)
-pnpm --filter @www/app build
-pnpm --filter @api/app build
+# Run all dev servers with hot reload (recommended)
+pnpm run dev
 
-# Run dev server for main app
-cd apps/@www/app
+# Build specific workspace (from repo root)
+pnpm --filter @www/web build
+pnpm --filter @api/service build
+
+# Run dev server for a specific app
+cd apps/@www/web
 pnpm run dev
 ```
+
+### Development Workflow
+
+The `pnpm run dev` command starts all development servers with automatic rebuilding:
+
+- **API Service** (`@api/service`): Runs `tsx watch` - auto-restarts on code changes and regenerates OpenAPI spec
+- **SDK** (`@api/sdk`): Marked as `interruptible` in Turbo - automatically rebuilds when API's OpenAPI spec changes
+- **Web App** (`@www/web`): Runs Vite dev server with HMR - hot reloads when SDK or app code changes
+
+Turbo orchestrates these in dependency order and handles restarts automatically. Just run `pnpm run dev` from the repo root and edit any file - changes will propagate through the stack.
 
 ## Main Application: Weather Sonification
 
@@ -126,28 +139,40 @@ Once the app is running, available commands in the terminal:
 
 This demonstrates the type-safe API development pattern:
 
-1. **Server** (`@api/app`) defines API with TypeBox schemas
+1. **Server** (`@api/service`) defines API with TypeBox schemas
 2. **OpenAPI spec** auto-generated to `dist/openapi.json` on server start
 3. **SDK** (`@api/sdk`) reads spec and generates typed client with `@hey-api/openapi-ts`
-4. **Client** (`@app/app`) imports SDK and gets full type safety
+4. **Client** (`@app/web`) imports SDK and gets full type safety
 
 ### Running the Demo
 
+The easiest way is to use the unified dev command:
+
+```bash
+# From repo root - starts everything with automatic rebuilds
+pnpm run dev
+```
+
+This starts:
+- API server on http://localhost:3000 (docs at /docs)
+- SDK watcher (rebuilds when OpenAPI spec changes)
+- Client dev server
+
+**Alternative - Manual approach**:
+
 ```bash
 # Terminal 1: Start server (generates OpenAPI spec)
-cd apps/@api/app
+cd apps/@api/service
 pnpm run dev  # Runs on http://localhost:3000, docs at /docs
 
 # Terminal 2: Generate SDK (after server starts once)
 cd apps/@api/sdk
-pnpm run build  # Generates typed client from ../app/dist/openapi.json
+pnpm run build  # Generates typed client from ../service/dist/openapi.json
 
 # Terminal 3: Start client
-cd apps/@app/app
+cd apps/@app/web
 pnpm run dev  # Vite dev server
 ```
-
-**Important**: The server must start at least once to generate `dist/openapi.json` before SDK can build.
 
 ## Styling
 

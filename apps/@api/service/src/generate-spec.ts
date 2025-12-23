@@ -43,10 +43,9 @@ await registerRoutes(fastify, {});
 // Ready the server (generates the OpenAPI spec)
 await fastify.ready();
 
-// Generate OpenAPI spec to dist folder
-await mkdir("./dist", { recursive: true });
+// Generate OpenAPI spec to @api/spec folder
 const spec = fastify.swagger();
-await writeFile("./dist/openapi.json", JSON.stringify(spec, null, 2));
+await writeFile("../spec/openapi.json", JSON.stringify(spec, null, 2));
 
 console.log("✅ OpenAPI spec generated: dist/openapi.json");
 
