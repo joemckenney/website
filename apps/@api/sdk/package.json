@@ -16,16 +16,18 @@
   },
   "scripts": {
     "generate": "openapi-ts",
-    "build": "npm run generate && tsc",
+    "build": "npm run generate && tsgo",
     "clean": "rm -rf dist src/generated",
+    "check": "biome check .",
     "lint": "biome check --write .",
     "format": "biome format --write ."
   },
   "devDependencies": {
     "@api/service": "workspace:*",
+    "@biomejs/biome": "catalog:",
     "@hey-api/client-fetch": "^0.7.1",
     "@hey-api/openapi-ts": "^0.87.2",
-    "@website/tsconfig": "workspace:*",
-    "typescript": "^5.5.3"
+    "@typescript/native-preview": "catalog:",
+    "@website/config": "workspace:*"
   }
 }

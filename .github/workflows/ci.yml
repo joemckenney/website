@@ -43,8 +43,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Format check
-        run: pnpm biome check
+      - name: Code quality check
+        run: pnpm run check
 
       - name: Type check & Build
         run: pnpm turbo build

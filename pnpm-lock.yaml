@@ -5,6 +5,15 @@ settings:
   excludeLinksFromLockfile: false
   injectWorkspacePackages: true
 
+catalogs:
+  default:
+    '@biomejs/biome':
+      specifier: 2.2.6
+      version: 2.2.6
+    '@typescript/native-preview':
+      specifier: 7.0.0-dev.20251017.1
+      version: 7.0.0-dev.20251017.1
+
 importers:
 
   .:
@@ -12,9 +21,6 @@ importers:
       '@anthropic-ai/claude-code':
         specifier: ^2.0.21
         version: 2.0.21
-      '@biomejs/biome':
-        specifier: 2.2.6
-        version: 2.2.6
       turbo:
         specifier: ^2.5.8
         version: 2.5.8
@@ -24,18 +30,21 @@ importers:
       '@api/service':
         specifier: workspace:*
         version: link:../service
+      '@biomejs/biome':
+        specifier: 'catalog:'
+        version: 2.2.6
       '@hey-api/client-fetch':
         specifier: ^0.7.1
         version: 0.7.3
       '@hey-api/openapi-ts':
         specifier: ^0.87.2
         version: 0.87.2(typescript@5.9.3)
-      '@website/tsconfig':
+      '@typescript/native-preview':
+        specifier: 'catalog:'
+        version: 7.0.0-dev.20251017.1
+      '@website/config':
         specifier: workspace:*
-        version: link:../../../packages/@website/tsconfig
-      typescript:
-        specifier: ^5.5.3
-        version: 5.9.3
+        version: link:../../../packages/@website/config
 
   apps/@api/service:
     dependencies:
@@ -73,24 +82,27 @@ importers:
         specifier: ^1.0.13
         version: 1.0.51
     devDependencies:
+      '@biomejs/biome':
+        specifier: 'catalog:'
+        version: 2.2.6
       '@types/jsonwebtoken':
         specifier: ^9.0.10
         version: 9.0.10
       '@types/node':
         specifier: ^20.14.0
         version: 20.19.22
-      '@website/tsconfig':
+      '@typescript/native-preview':
+        specifier: 'catalog:'
+        version: 7.0.0-dev.20251017.1
+      '@website/config':
         specifier: workspace:*
-        version: link:../../../packages/@website/tsconfig
+        version: link:../../../packages/@website/config
       pino-pretty:
         specifier: ^13.1.2
         version: 13.1.2
       tsx:
         specifier: ^4.16.2
         version: 4.20.6
-      typescript:
-        specifier: ^5.5.3
-        version: 5.9.3
 
   apps/@app/web:
     dependencies:
@@ -104,6 +116,9 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
     devDependencies:
+      '@biomejs/biome':
+        specifier: 'catalog:'
+        version: 2.2.6
       '@types/react':
         specifier: ^18.3.12
         version: 18.3.26
@@ -111,7 +126,7 @@ importers:
         specifier: ^18.3.1
         version: 18.3.7(@types/react@18.3.26)
       '@typescript/native-preview':
-        specifier: 7.0.0-dev.20251017.1
+        specifier: 'catalog:'
         version: 7.0.0-dev.20251017.1
       '@vanilla-extract/css':
         specifier: ^1.16.2
@@ -122,9 +137,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.4
         version: 4.7.0(vite@6.4.0(@types/node@24.8.1)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.8.1))
-      '@website/tsconfig':
+      '@website/config':
         specifier: workspace:*
-        version: link:../../../packages/@website/tsconfig
+        version: link:../../../packages/@website/config
       vite:
         specifier: ^6.0.7
         version: 6.4.0(@types/node@24.8.1)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.8.1)
@@ -141,6 +156,9 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
     devDependencies:
+      '@biomejs/biome':
+        specifier: 'catalog:'
+        version: 2.2.6
       '@types/react':
         specifier: ^18.3.12
         version: 18.3.26
@@ -148,7 +166,7 @@ importers:
         specifier: ^18.3.1
         version: 18.3.7(@types/react@18.3.26)
       '@typescript/native-preview':
-        specifier: 7.0.0-dev.20251017.1
+        specifier: 'catalog:'
         version: 7.0.0-dev.20251017.1
       '@vanilla-extract/css':
         specifier: ^1.16.2
@@ -159,23 +177,26 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.4
         version: 4.7.0(vite@6.4.0(@types/node@24.8.1)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.8.1))
-      '@website/tsconfig':
+      '@website/config':
         specifier: workspace:*
-        version: link:../../../packages/@website/tsconfig
+        version: link:../../../packages/@website/config
       vite:
         specifier: ^6.0.7
         version: 6.4.0(@types/node@24.8.1)(jiti@2.6.1)(tsx@4.20.6)(yaml@2.8.1)
 
-  packages/@website/tsconfig: {}
+  packages/@website/config: {}
 
   packages/@website/utils:
     devDependencies:
+      '@biomejs/biome':
+        specifier: 'catalog:'
+        version: 2.2.6
       '@typescript/native-preview':
-        specifier: 7.0.0-dev.20251017.1
+        specifier: 'catalog:'
         version: 7.0.0-dev.20251017.1
-      '@website/tsconfig':
+      '@website/config':
         specifier: workspace:*
-        version: link:../tsconfig
+        version: link:../config
 
 packages:
 

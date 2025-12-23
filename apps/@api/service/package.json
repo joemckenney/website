@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc && node dist/generate-spec.js",
+    "build": "tsgo && node dist/generate-spec.js",
     "build:docker": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/api-service:latest -f Dockerfile $REPO_ROOT",
     "build:docker:local": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/api-service:latest -f Dockerfile $REPO_ROOT",
     "build:docker:prod": "REPO_ROOT=$(git rev-parse --show-toplevel) && docker build -t ${DOCKERHUB_USERNAME}/api-service:${TAG:-latest} -f Dockerfile $REPO_ROOT",
@@ -17,6 +17,7 @@
     "clean": "rm -rf dist",
     "clean:docker": "docker rmi localhost:5000/api-service:latest || true",
     "start": "node dist/index.js",
+    "check": "biome check .",
     "lint": "biome check --write .",
     "format": "biome format --write ."
   },
@@ -34,11 +35,12 @@
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
+    "@biomejs/biome": "catalog:",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.14.0",
-    "@website/tsconfig": "workspace:*",
+    "@typescript/native-preview": "catalog:",
+    "@website/config": "workspace:*",
     "pino-pretty": "^13.1.2",
-    "tsx": "^4.16.2",
-    "typescript": "^5.5.3"
+    "tsx": "^4.16.2"
   }
 }

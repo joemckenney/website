@@ -14,6 +14,7 @@
     "clean": "rm -rf dist",
     "clean:docker": "docker rmi localhost:5000/app-web:latest || true",
     "preview": "vite preview",
+    "check": "biome check .",
     "lint": "biome check --write .",
     "format": "biome format --write ."
   },
@@ -23,13 +24,14 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@website/tsconfig": "workspace:*",
+    "@biomejs/biome": "catalog:",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "@typescript/native-preview": "7.0.0-dev.20251017.1",
+    "@typescript/native-preview": "catalog:",
     "@vanilla-extract/css": "^1.16.2",
     "@vanilla-extract/vite-plugin": "^4.0.18",
     "@vitejs/plugin-react": "^4.3.4",
+    "@website/config": "workspace:*",
     "vite": "^6.0.7"
   }
 }
