@@ -1,5 +1,5 @@
-import { defineConfig } from "@hey-api/openapi-ts";
 import spec from "@api/spec";
+import { defineConfig } from "@hey-api/openapi-ts";
 
 export default defineConfig({
   input: spec,
