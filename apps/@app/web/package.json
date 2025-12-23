@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsgo && vite build",
-    "build:docker": "REPO_ROOT=$(pnpm exec topoftree) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/app-web:latest --build-arg VITE_API_URL=http://api.local.com -f Dockerfile $REPO_ROOT",
-    "build:docker:local": "REPO_ROOT=$(pnpm exec topoftree) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/app-web:latest --build-arg VITE_API_URL=http://api.local.com -f Dockerfile $REPO_ROOT",
-    "build:docker:prod": "REPO_ROOT=$(pnpm exec topoftree) && docker build -t ${DOCKERHUB_USERNAME}/app-web:${TAG:-latest} --build-arg VITE_API_URL=https://api.joemckenney.com -f Dockerfile $REPO_ROOT",
+    "build:docker": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/app-web:latest --build-arg VITE_API_URL=http://api.local.com -f Dockerfile $REPO_ROOT",
+    "build:docker:local": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/app-web:latest --build-arg VITE_API_URL=http://api.local.com -f Dockerfile $REPO_ROOT",
+    "build:docker:prod": "REPO_ROOT=$(git rev-parse --show-toplevel) && docker build -t ${DOCKERHUB_USERNAME}/app-web:${TAG:-latest} --build-arg VITE_API_URL=https://api.joemckenney.com -f Dockerfile $REPO_ROOT",
     "deploy:helm:local": "helm upgrade --install app-web ./helm -f ./helm/values-local.yaml --wait --timeout=5m",
     "deploy:helm:prod": "helm upgrade --install app-web ./helm -f ./helm/values-prod.yaml --wait --timeout=5m",
     "clean": "rm -rf dist",
@@ -23,7 +23,6 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@website/topoftree": "workspace:*",
     "@website/tsconfig": "workspace:*",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",

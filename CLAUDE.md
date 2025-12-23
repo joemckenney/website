@@ -19,7 +19,6 @@ apps/
 
 packages/
   @website/
-    topoftree/       - Go CLI tool (finds git repository root)
     tsconfig/        - Shared TypeScript configurations
     utils/           - TypeScript utility library
 ```
@@ -51,10 +50,6 @@ pnpm --filter @api/app build
 # Run dev server for main app
 cd apps/@www/app
 pnpm run dev
-
-# Build Go CLI tool
-cd packages/@website/topoftree
-pnpm run build  # Runs: go build -o dist/topoftree ./cmd/topoftree
 ```
 
 ## Main Application: Weather Sonification
@@ -185,10 +180,6 @@ Workspace dependencies use `workspace:*` protocol:
 ```
 
 Turbo automatically builds dependencies before dependents.
-
-### Go Requirements
-
-Building `@website/topoftree` requires Go toolchain.
 
 ### Chrome AI Development
 
