@@ -12,5 +12,8 @@
   },
   "scripts": {
     "clean": "rm -f openapi.json"
+  },
+  "devDependencies": {
+    "@api/service": "workspace:*"
   }
 }
