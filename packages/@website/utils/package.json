@@ -15,7 +15,6 @@
     "format": "biome format --write ."
   },
   "devDependencies": {
-    "@website/topoftree": "workspace:*",
     "@website/tsconfig": "workspace:*",
     "@typescript/native-preview": "7.0.0-dev.20251017.1"
   }

@@ -43,12 +43,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Setup Go for topoftree
-        uses: actions/setup-go@v5
-        with:
-          go-version: 'stable'
-          cache-dependency-path: packages/@website/topoftree/go.sum
-
       - name: Format check
         run: pnpm biome check
 

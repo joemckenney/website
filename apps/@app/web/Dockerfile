@@ -24,8 +24,8 @@ FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-# Install Go, pnpm, and build dependencies
-RUN apk add --no-cache go npm && \
+# Install pnpm
+RUN apk add --no-cache npm && \
     npm install -g pnpm@9.15.4
 
 # Copy workspace configs and lockfile from pruned output
