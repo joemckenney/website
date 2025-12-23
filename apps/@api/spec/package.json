@@ -1,0 +1,16 @@
+{
+  "name": "@api/spec",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "main": "./openapi.json",
+  "files": [
+    "openapi.json"
+  ],
+  "exports": {
+    ".": "./openapi.json"
+  },
+  "scripts": {
+    "clean": "rm -f openapi.json"
+  }
+}

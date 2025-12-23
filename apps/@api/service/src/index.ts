@@ -71,12 +71,11 @@ const start = async () => {
   try {
     await fastify.listen({ port: 3000, host: "0.0.0.0" });
 
-    // Generate OpenAPI spec to dist folder (development only)
+    // Generate OpenAPI spec to @api/spec package (development only)
     if (process.env.NODE_ENV !== "production") {
-      await mkdir("./dist", { recursive: true });
       const spec = fastify.swagger();
-      await writeFile("./dist/openapi.json", JSON.stringify(spec, null, 2));
-      console.log("OpenAPI spec written to dist/openapi.json");
+      await writeFile("../spec/openapi.json", JSON.stringify(spec, null, 2));
+      console.log("OpenAPI spec written to @api/spec/openapi.json");
     }
 
     console.log("Server listening on http://localhost:3000");

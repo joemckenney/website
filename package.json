@@ -12,6 +12,7 @@
     "check": "turbo run check",
     "clean": "turbo run clean",
     "deploy:helm:local": "turbo run deploy:helm:local",
+    "dev": "turbo run dev",
     "dev:setup": "./infrastructure/scripts/dev-setup.sh",
     "dev:start": "./infrastructure/scripts/dev-start.sh",
     "dev:status": "./infrastructure/scripts/dev-status.sh",
