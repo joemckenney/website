@@ -1,5 +1,5 @@
 {
-  "name": "clandestine",
+  "name": "website",
   "version": "0.0.0",
   "private": true,
   "description": "",
@@ -8,8 +8,14 @@
   "author": "",
   "scripts": {
     "build": "turbo run build",
+    "build:docker:local": "turbo run build:docker:local",
     "check": "turbo run check",
     "clean": "turbo run clean",
+    "deploy:helm:local": "turbo run deploy:helm:local",
+    "dev:setup": "./infrastructure/scripts/dev-setup.sh",
+    "dev:start": "./infrastructure/scripts/dev-start.sh",
+    "dev:status": "./infrastructure/scripts/dev-status.sh",
+    "dev:stop": "./infrastructure/scripts/dev-stop.sh",
     "format": "turbo run format",
     "lint": "turbo run lint",
     "test": "echo \"No unit tests yet\" && exit 0"

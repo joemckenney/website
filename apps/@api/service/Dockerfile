@@ -5,8 +5,8 @@ FROM node:24-alpine AS workspace-pruner
 
 WORKDIR /app
 
-# Install pnpm and turbo (pin pnpm version for cache stability)
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+# Enable corepack to use pnpm version from package.json
+RUN corepack enable
 
 # Set up pnpm global bin directory
 ENV PNPM_HOME="/pnpm"
@@ -24,9 +24,8 @@ FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-# Install Go, pnpm, and build dependencies
-RUN apk add --no-cache go npm && \
-    npm install -g pnpm@9.15.4
+# Enable corepack to use pnpm version from package.json
+RUN corepack enable
 
 # Copy workspace configs and lockfile from pruned output
 COPY --from=workspace-pruner /app/out/json/ .
