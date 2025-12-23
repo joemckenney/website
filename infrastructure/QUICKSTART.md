@@ -15,46 +15,44 @@ This quick start gets you from zero to production HTTPS websites in ~30 minutes.
 
 ## Local Development (Minikube)
 
-**Time**: ~30 minutes
+**Time**: ~10 minutes
 **Cost**: Free
 **Best for**: Development, testing, learning Kubernetes
 
 ```bash
-# 1. Prerequisites
-brew install minikube kubectl helm  # macOS
-# or use your package manager
+# 1. First-time setup (creates cluster, enables addons, configures DNS)
+pnpm run dev:setup
 
-# 2. Start minikube
-minikube start --cpus=4 --memory=8192
+# 2. Start cluster and registry
+pnpm run dev:start
 
-# 3. Enable addons
-minikube addons enable ingress
-minikube addons enable registry
+# 3. Build images
+pnpm run build:local
 
-# 4. Set up local registry (in a separate terminal)
-cd infrastructure
-./scripts/setup-local-registry.sh
-# Keep this terminal open, or run in background:
-# nohup ./scripts/registry-daemon.sh > /tmp/registry-daemon.log 2>&1 &
-
-# 5. Configure DNS
-echo "$(minikube ip) www.local.com app.local.com api.local.com" | sudo tee -a /etc/hosts
-
-# 6. Build images
-cd infrastructure
-./scripts/build-local.sh
-
-# 7. Configure secrets
-vim helm/values/app-server-local.yaml
+# 4. Configure secrets (first time only)
+vim infrastructure/helm/values/app-server-local.yaml
 # Update Google OAuth credentials and other secrets
 
-# 8. Deploy
-./scripts/deploy-local.sh
+# 5. Deploy applications
+pnpm run deploy:local
 
-# 9. Access
+# 6. Check status
+pnpm run dev:status
+
+# 7. Access
 open http://app.local.com
 open http://api.local.com/docs
 ```
+
+**Available commands:**
+- `pnpm run dev:setup` - First-time cluster setup (minikube, addons, DNS)
+- `pnpm run dev:start` - Start cluster and registry port-forward
+- `pnpm run dev:status` - Check cluster and deployment status
+- `pnpm run dev:stop` - Stop cluster and registry
+- `pnpm run build:local` - Build container images
+- `pnpm run deploy:local` - Deploy applications to cluster
+
+**Prerequisites**: minikube, kubectl, helm, docker (see dev:setup for installation instructions)
 
 **Full guide**: [Local Development Setup](./terraform/environments/local/README.md)
 
@@ -213,10 +211,12 @@ infrastructure/
 ├── QUICKSTART.md            # This file
 ├── .gitignore               # Git ignore rules
 ├── scripts/                 # Helper scripts
-│   ├── build-local.sh
-│   ├── deploy-local.sh
-│   ├── build-production.sh
-│   └── deploy-production.sh
+│   ├── dev-setup.sh         # First-time local cluster setup
+│   ├── dev-start.sh         # Start cluster and registry
+│   ├── dev-status.sh        # Check cluster status
+│   ├── dev-stop.sh          # Stop cluster
+│   ├── build-production.sh  # Build production images
+│   └── deploy-production.sh # Deploy to production
 ├── helm/                    # Helm charts
 │   ├── charts/
 │   │   ├── app-server/     # Server chart
@@ -238,34 +238,24 @@ infrastructure/
 
 ### Registry not accessible (local)
 ```bash
-# Check if registry addon is enabled
-minikube addons list | grep registry
+# Check status
+pnpm run dev:status
 
-# Check if port-forward is running
-lsof -i :5000
-
-# Restart registry setup
-pkill -f 'port-forward.*registry'
-./scripts/setup-local-registry.sh
-
-# Or run persistent daemon
-nohup ./scripts/registry-daemon.sh > /tmp/registry-daemon.log 2>&1 &
+# Restart cluster and registry
+pnpm run dev:stop
+pnpm run dev:start
 ```
 
 ### Images not found (local)
 ```bash
-# Check if images exist in minikube
-eval $(minikube docker-env)
-docker images | grep -E "app-server|app-client"
+# Rebuild images
+pnpm run build:local
 
-# Rebuild if missing
-./scripts/build-local.sh
-
-# Restart deployments to pick up new images
+# Restart deployments
 kubectl rollout restart deployment/app-server deployment/app-client
 
-# Check pod status
-kubectl get pods
+# Check status
+pnpm run dev:status
 kubectl describe pod <pod-name>  # For detailed error info
 ```
 
