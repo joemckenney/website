@@ -6,6 +6,7 @@
     "*.json"
   ],
   "scripts": {
+    "check": "echo 'No check needed for config package' && exit 0",
     "lint": "echo 'No lint needed for config package' && exit 0",
     "format": "echo 'No format needed for config package' && exit 0"
   },
