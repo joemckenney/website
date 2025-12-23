@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsgo && node dist/generate-spec.js",
+    "build": "tsgo && tsx src/generate-spec.ts",
     "build:docker": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/api-service:latest -f Dockerfile $REPO_ROOT",
     "build:docker:local": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/api-service:latest -f Dockerfile $REPO_ROOT",
     "build:docker:prod": "REPO_ROOT=$(git rev-parse --show-toplevel) && docker build -t ${DOCKERHUB_USERNAME}/api-service:${TAG:-latest} -f Dockerfile $REPO_ROOT",
@@ -28,6 +28,7 @@
     "@fastify/swagger": "^9.6.0",
     "@fastify/swagger-ui": "^5.2.3",
     "@fastify/type-provider-typebox": "^6.1.0",
+    "@user/sdk": "workspace:*",
     "typebox": "^1.0.13",
     "arctic": "^3.7.0",
     "dotenv": "^17.2.3",

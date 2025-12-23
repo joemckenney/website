@@ -1,4 +1,5 @@
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
+import { client as userClient, userService } from "@user/sdk";
 import { Google, generateCodeVerifier, generateState } from "arctic";
 import type { FastifyInstance } from "fastify";
 import { Type } from "typebox";
@@ -20,6 +21,11 @@ const google = new Google(
   config.google.clientSecret,
   config.google.redirectUri,
 );
+
+// Configure user service client
+userClient.setConfig({
+  baseUrl: config.userServiceUrl,
+});
 
 // In-memory store for OAuth state and code verifier (use Redis in production)
 const oauthStore = new Map<
@@ -139,13 +145,58 @@ export async function registerAuthRoutes(
         );
 
         const userInfo = (await response.json()) as {
+          id: string;
           email: string;
           name: string;
+          picture?: string;
         };
 
         // Check if email is allowed
         if (userInfo.email !== config.allowedEmail) {
           return reply.redirect(`${config.frontendUrl}?error=unauthorized`);
+        }
+
+        // Look up or create user in user service
+        try {
+          // Try to find existing user by OAuth provider
+          const { data: existingUser, error: lookupError } =
+            await userService.getUserByProvider({
+              path: {
+                provider: "google",
+                providerId: userInfo.id,
+              },
+            });
+
+          if (lookupError && lookupError.error !== "User not found") {
+            fastify.log.error("User lookup failed:", lookupError);
+          }
+
+          // Create user if not found
+          if (!existingUser) {
+            const { data: newUser, error: createError } =
+              await userService.createUser({
+                body: {
+                  email: userInfo.email,
+                  name: userInfo.name,
+                  avatarUrl: userInfo.picture ?? null,
+                  provider: "google",
+                  providerId: userInfo.id,
+                },
+              });
+
+            if (createError) {
+              fastify.log.error("User creation failed:", createError);
+            } else {
+              fastify.log.info(`Created new user: ${newUser?.email}`);
+            }
+          } else {
+            fastify.log.info(`Found existing user: ${existingUser.email}`);
+          }
+        } catch (userServiceError) {
+          // Log but don't fail auth - user service might be unavailable
+          fastify.log.warn(
+            `User service error (continuing with auth): ${String(userServiceError)}`,
+          );
         }
 
         // Generate JWT tokens

@@ -1,0 +1,36 @@
+{
+  "name": "@user/service",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsgo && tsx src/generate-spec.ts",
+    "start": "node dist/index.js",
+    "clean": "rm -rf dist",
+    "check": "biome check .",
+    "lint": "biome check --write .",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.1.0",
+    "@fastify/swagger": "^9.6.0",
+    "@fastify/swagger-ui": "^5.2.3",
+    "@fastify/type-provider-typebox": "^6.1.0",
+    "@user/orm": "workspace:*",
+    "dotenv": "^17.2.3",
+    "fastify": "^5.6.2",
+    "typebox": "^1.0.13"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:",
+    "@types/node": "^20.14.0",
+    "@typescript/native-preview": "catalog:",
+    "@website/config": "workspace:*",
+    "pino-pretty": "^13.1.2",
+    "tsx": "^4.16.2"
+  }
+}
