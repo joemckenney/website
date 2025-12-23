@@ -15,7 +15,8 @@
     "format": "biome format --write ."
   },
   "devDependencies": {
-    "@website/tsconfig": "workspace:*",
-    "@typescript/native-preview": "7.0.0-dev.20251017.1"
+    "@biomejs/biome": "catalog:",
+    "@typescript/native-preview": "catalog:",
+    "@website/config": "workspace:*"
   }
 }

@@ -19,7 +19,7 @@ apps/
 
 packages/
   @website/
-    tsconfig/        - Shared TypeScript configurations
+    config/          - Shared configuration (TypeScript + Biome)
     utils/           - TypeScript utility library
 ```
 
@@ -160,11 +160,13 @@ Styles are defined in `.css.ts` files:
 
 Example: `apps/@www/app/src/app.css.ts` defines styles imported as JS objects.
 
-## TypeScript Configuration
+## Configuration
 
-Shared configs in `packages/@website/tsconfig/`:
-- Base configuration extended by all packages
-- Ensures consistent TypeScript settings across workspace
+Shared configs in `packages/@website/config/`:
+- **TypeScript**: Base configurations extended by all packages
+- **Biome**: Linting and formatting rules extended by all packages
+- Ensures consistent settings across workspace
+- Each package has its own `biome.json` extending from `@website/config`
 
 ## Development Notes
 
@@ -174,7 +176,7 @@ Workspace dependencies use `workspace:*` protocol:
 ```json
 {
   "dependencies": {
-    "@website/utils": "workspace:*"
+    "@website/config": "workspace:*"
   }
 }
 ```
