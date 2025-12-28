@@ -7,6 +7,17 @@
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**"]
     },
+    // Services that generate OpenAPI specs need spec/ in outputs for cache restoration
+    "@api/service#build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": ["dist/**", "spec/**"]
+    },
+    "@user/service#build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": ["dist/**", "spec/**"]
+    },
     "check": {
       "dependsOn": ["^check"]
     },
