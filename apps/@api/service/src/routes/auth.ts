@@ -167,8 +167,13 @@ export async function registerAuthRoutes(
               },
             });
 
-          if (lookupError && (lookupError as { error?: string })?.error !== "User not found") {
-            fastify.log.error(`User lookup failed: ${JSON.stringify(lookupError)}`);
+          if (
+            lookupError &&
+            (lookupError as { error?: string })?.error !== "User not found"
+          ) {
+            fastify.log.error(
+              `User lookup failed: ${JSON.stringify(lookupError)}`,
+            );
           }
 
           // Create user if not found
@@ -185,7 +190,9 @@ export async function registerAuthRoutes(
               });
 
             if (createError) {
-              fastify.log.error(`User creation failed: ${JSON.stringify(createError)}`);
+              fastify.log.error(
+                `User creation failed: ${JSON.stringify(createError)}`,
+              );
             } else {
               fastify.log.info(`Created new user: ${newUser?.email}`);
             }

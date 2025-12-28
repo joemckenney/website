@@ -1,5 +1,6 @@
-import type { FastifyInstance } from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
+import type { FastifyInstance } from "fastify";
+import { Type } from "typebox";
 import { prisma, serializeUser } from "../db/client.js";
 import {
   CreateUserBody,
@@ -10,7 +11,6 @@ import {
   UserIdParams,
   UserProviderParams,
 } from "../schemas.js";
-import { Type } from "typebox";
 
 export async function registerUserRoutes(
   app: FastifyInstance & { withTypeProvider: () => FastifyInstance },
