@@ -1,20 +1,20 @@
 import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
-import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Fastify from "fastify";
-import { registerAuthRoutes } from "./routes/auth.js";
-import { registerRoutes } from "./routes.js";
+import { Type } from "typebox";
+import { config } from "./config.js";
+import { registerUserRoutes } from "./routes/users.js";
+import { HealthResponse } from "./schemas.js";
 
 const fastify = Fastify({
   logger:
-    process.env.NODE_ENV === "production"
-      ? true // JSON logging in production
+    config.nodeEnv === "production"
+      ? true
       : {
-          // Pretty logging in development
           transport: {
             target: "pino-pretty",
             options: {
@@ -26,36 +26,24 @@ const fastify = Fastify({
         },
 }).withTypeProvider<TypeBoxTypeProvider>();
 
-await fastify.register(cookie);
-
 await fastify.register(cors, {
-  origin: true, // Allow all origins in development
-  credentials: true, // Allow cookies to be sent
+  origin: true,
+  credentials: true,
 });
 
 await fastify.register(swagger, {
   openapi: {
     info: {
-      title: "Squared API",
-      description: "API with ping and squared endpoints using WASM",
+      title: "User Service API",
+      description: "Internal user management API",
       version: "1.0.0",
     },
     servers: [
       {
-        url: "http://localhost:3000",
+        url: `http://localhost:${config.port}`,
         description: "Development server",
       },
     ],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
-          description: "JWT access token obtained from /auth/google flow",
-        },
-      },
-    },
   },
 });
 
@@ -63,24 +51,47 @@ await fastify.register(swaggerUi, {
   routePrefix: "/docs",
 });
 
-await registerAuthRoutes(fastify);
-await registerRoutes(fastify, {});
+// Health check endpoint
+fastify.get(
+  "/health",
+  {
+    schema: {
+      operationId: "healthCheck",
+      description: "Health check endpoint",
+      tags: ["health"],
+      response: {
+        200: HealthResponse,
+      },
+    },
+  },
+  async () => {
+    return {
+      status: "ok",
+      timestamp: new Date().toISOString(),
+    };
+  },
+);
+
+// Register user routes
+await registerUserRoutes(fastify);
 
 // Start server
 const start = async () => {
   try {
-    await fastify.listen({ port: 3000, host: "0.0.0.0" });
+    await fastify.listen({ port: config.port, host: "0.0.0.0" });
 
     // Generate OpenAPI spec to local spec folder (development only)
-    if (process.env.NODE_ENV !== "production") {
+    if (config.nodeEnv !== "production") {
       const spec = fastify.swagger();
       await mkdir("./spec", { recursive: true });
       await writeFile("./spec/openapi.json", JSON.stringify(spec, null, 2));
       console.log("OpenAPI spec written to ./spec/openapi.json");
     }
 
-    console.log("Server listening on http://localhost:3000");
-    console.log("OpenAPI docs available at http://localhost:3000/docs");
+    console.log(`Server listening on http://localhost:${config.port}`);
+    console.log(
+      `OpenAPI docs available at http://localhost:${config.port}/docs`,
+    );
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

@@ -52,3 +52,4 @@ secrets:
   allowedEmail: "j.mckenney00@gmail.com"
   frontendUrl: "https://app.joemckenney.com"
   backendUrl: "https://api.joemckenney.com"
+  userServiceUrl: "http://user-service:3002"

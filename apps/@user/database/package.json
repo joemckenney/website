@@ -1,0 +1,14 @@
+{
+  "name": "@user/database",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "up": "docker compose up -d",
+    "down": "docker compose down",
+    "logs": "docker compose logs -f postgres",
+    "reset": "docker compose down -v && docker compose up -d",
+    "status": "docker compose ps",
+    "deploy:helm:local": "helm upgrade --install user-postgres oci://registry-1.docker.io/bitnamicharts/postgresql -f ../service/infrastructure/postgres/helm/values-local.yaml --wait --timeout=5m",
+    "undeploy:helm:local": "helm uninstall user-postgres || true"
+  }
+}

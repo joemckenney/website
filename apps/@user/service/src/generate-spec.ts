@@ -1,44 +1,62 @@
 import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
+import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Fastify from "fastify";
-import { registerAuthRoutes } from "./routes/auth.js";
-import { registerRoutes } from "./routes.js";
+import { Type } from "typebox";
+import { config } from "./config.js";
+import { registerUserRoutes } from "./routes/users.js";
+import { HealthResponse } from "./schemas.js";
 
 const fastify = Fastify({
-  logger: false, // Disable logging for spec generation
+  logger: false,
 }).withTypeProvider<TypeBoxTypeProvider>();
+
+await fastify.register(cors, {
+  origin: true,
+  credentials: true,
+});
 
 await fastify.register(swagger, {
   openapi: {
     info: {
-      title: "Squared API",
-      description: "API with ping and squared endpoints using WASM",
+      title: "User Service API",
+      description: "Internal user management API",
       version: "1.0.0",
     },
     servers: [
       {
-        url: "http://localhost:3000",
+        url: `http://localhost:${config.port}`,
         description: "Development server",
       },
     ],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
-          description: "JWT access token obtained from /auth/google flow",
-        },
-      },
-    },
   },
 });
 
-// Register routes (but don't start server)
-await registerAuthRoutes(fastify);
-await registerRoutes(fastify, {});
+// Health check endpoint
+fastify.get(
+  "/health",
+  {
+    schema: {
+      operationId: "healthCheck",
+      description: "Health check endpoint",
+      tags: ["health"],
+      response: {
+        200: HealthResponse,
+      },
+    },
+  },
+  async () => {
+    return {
+      status: "ok",
+      timestamp: new Date().toISOString(),
+    };
+  },
+);
+
+// Register user routes
+await registerUserRoutes(fastify);
 
 // Ready the server (generates the OpenAPI spec)
 await fastify.ready();

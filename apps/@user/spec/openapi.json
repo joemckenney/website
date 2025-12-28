@@ -1,0 +1,746 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "User Service API",
+    "description": "Internal user management API",
+    "version": "1.0.0"
+  },
+  "components": {
+    "schemas": {}
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "healthCheck",
+        "tags": [
+          "health"
+        ],
+        "description": "Health check endpoint",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": "Health status"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "description": "Current timestamp"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users": {
+      "post": {
+        "operationId": "createUser",
+        "tags": [
+          "users"
+        ],
+        "description": "Create a new user from OAuth signup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "provider",
+                  "providerId"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "description": "User email address"
+                  },
+                  "name": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "avatarUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "provider": {
+                    "type": "string",
+                    "description": "OAuth provider (e.g., google)"
+                  },
+                  "providerId": {
+                    "type": "string",
+                    "description": "OAuth provider user ID"
+                  },
+                  "metadata": {
+                    "description": "Additional metadata"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "email",
+                    "provider",
+                    "providerId",
+                    "createdAt",
+                    "updatedAt",
+                    "metadata"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "User ID (UUID)"
+                    },
+                    "email": {
+                      "type": "string",
+                      "description": "User email address"
+                    },
+                    "name": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "avatarUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "provider": {
+                      "type": "string",
+                      "description": "OAuth provider (e.g., google)"
+                    },
+                    "providerId": {
+                      "type": "string",
+                      "description": "OAuth provider user ID"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation timestamp (ISO 8601)"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update timestamp (ISO 8601)"
+                    },
+                    "metadata": {
+                      "description": "Additional metadata (JSON)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "operationId": "getUserById",
+        "tags": [
+          "users"
+        ],
+        "description": "Get a user by their ID",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "email",
+                    "provider",
+                    "providerId",
+                    "createdAt",
+                    "updatedAt",
+                    "metadata"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "User ID (UUID)"
+                    },
+                    "email": {
+                      "type": "string",
+                      "description": "User email address"
+                    },
+                    "name": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "avatarUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "provider": {
+                      "type": "string",
+                      "description": "OAuth provider (e.g., google)"
+                    },
+                    "providerId": {
+                      "type": "string",
+                      "description": "OAuth provider user ID"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation timestamp (ISO 8601)"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update timestamp (ISO 8601)"
+                    },
+                    "metadata": {
+                      "description": "Additional metadata (JSON)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateUser",
+        "tags": [
+          "users"
+        ],
+        "description": "Update a user by their ID",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "description": "User email address"
+                  },
+                  "name": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "avatarUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "metadata": {
+                    "description": "Additional metadata"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "email",
+                    "provider",
+                    "providerId",
+                    "createdAt",
+                    "updatedAt",
+                    "metadata"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "User ID (UUID)"
+                    },
+                    "email": {
+                      "type": "string",
+                      "description": "User email address"
+                    },
+                    "name": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "avatarUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "provider": {
+                      "type": "string",
+                      "description": "OAuth provider (e.g., google)"
+                    },
+                    "providerId": {
+                      "type": "string",
+                      "description": "OAuth provider user ID"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation timestamp (ISO 8601)"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update timestamp (ISO 8601)"
+                    },
+                    "metadata": {
+                      "description": "Additional metadata (JSON)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteUser",
+        "tags": [
+          "users"
+        ],
+        "description": "Delete a user by their ID",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/by-email/{email}": {
+      "get": {
+        "operationId": "getUserByEmail",
+        "tags": [
+          "users"
+        ],
+        "description": "Get a user by their email address",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "email",
+            "required": true,
+            "description": "User email"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "email",
+                    "provider",
+                    "providerId",
+                    "createdAt",
+                    "updatedAt",
+                    "metadata"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "User ID (UUID)"
+                    },
+                    "email": {
+                      "type": "string",
+                      "description": "User email address"
+                    },
+                    "name": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "avatarUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "provider": {
+                      "type": "string",
+                      "description": "OAuth provider (e.g., google)"
+                    },
+                    "providerId": {
+                      "type": "string",
+                      "description": "OAuth provider user ID"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation timestamp (ISO 8601)"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update timestamp (ISO 8601)"
+                    },
+                    "metadata": {
+                      "description": "Additional metadata (JSON)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/by-provider/{provider}/{providerId}": {
+      "get": {
+        "operationId": "getUserByProvider",
+        "tags": [
+          "users"
+        ],
+        "description": "Get a user by their OAuth provider and provider ID",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "description": "OAuth provider"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "providerId",
+            "required": true,
+            "description": "OAuth provider user ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "email",
+                    "provider",
+                    "providerId",
+                    "createdAt",
+                    "updatedAt",
+                    "metadata"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "User ID (UUID)"
+                    },
+                    "email": {
+                      "type": "string",
+                      "description": "User email address"
+                    },
+                    "name": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "avatarUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "provider": {
+                      "type": "string",
+                      "description": "OAuth provider (e.g., google)"
+                    },
+                    "providerId": {
+                      "type": "string",
+                      "description": "OAuth provider user ID"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation timestamp (ISO 8601)"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update timestamp (ISO 8601)"
+                    },
+                    "metadata": {
+                      "description": "Additional metadata (JSON)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3002",
+      "description": "Development server"
+    }
+  ]
+}

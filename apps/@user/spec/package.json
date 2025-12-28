@@ -1,12 +1,10 @@
 {
-  "name": "@api/spec",
+  "name": "@user/spec",
   "version": "0.0.0",
   "type": "module",
   "private": true,
   "main": "./openapi.json",
-  "files": [
-    "openapi.json"
-  ],
+  "files": ["openapi.json"],
   "exports": {
     ".": "./openapi.json"
   },
@@ -15,6 +13,6 @@
     "clean": "rm -f openapi.json"
   },
   "devDependencies": {
-    "@api/service": "workspace:*"
+    "@user/service": "workspace:*"
   }
 }
