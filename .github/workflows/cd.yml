@@ -82,6 +82,20 @@ jobs:
         if: needs.build-production-images.outputs.app_web_built != 'true'
         run: echo "Skipping app-web deployment - no changes detected"
 
+      - name: Deploy user-service
+        if: needs.build-production-images.outputs.user_service_built == 'true'
+        run: |
+          helm upgrade --install user-service apps/@user/service/helm \
+            -f apps/@user/service/helm/values-prod.yaml \
+            --set image.tag=sha-${{ github.sha }} \
+            --set secrets.databaseUrl="${{ secrets.USER_SERVICE_DATABASE_URL }}" \
+            --wait \
+            --timeout=5m
+
+      - name: Skip user-service deployment (no changes)
+        if: needs.build-production-images.outputs.user_service_built != 'true'
+        run: echo "Skipping user-service deployment - no changes detected"
+
       - name: Deploy api-service
         if: needs.build-production-images.outputs.api_service_built == 'true'
         run: |
@@ -109,6 +123,9 @@ jobs:
           fi
           if [ "${{ needs.build-production-images.outputs.api_service_built }}" == "true" ]; then
             kubectl rollout status deployment/api-service --timeout=3m
+          fi
+          if [ "${{ needs.build-production-images.outputs.user_service_built }}" == "true" ]; then
+            kubectl rollout status deployment/user-service --timeout=3m
           fi
 
       - name: Run production smoke tests
@@ -144,6 +161,9 @@ jobs:
           if [ "${{ needs.build-production-images.outputs.api_service_built }}" == "true" ]; then
             helm rollback api-service 0 --wait || true
           fi
+          if [ "${{ needs.build-production-images.outputs.user_service_built }}" == "true" ]; then
+            helm rollback user-service 0 --wait || true
+          fi
 
       - name: Get deployment status
         if: always()
@@ -170,6 +190,7 @@ jobs:
           echo "| www-web | ${{ needs.build-production-images.outputs.www_web_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| app-web | ${{ needs.build-production-images.outputs.app_web_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| api-service | ${{ needs.build-production-images.outputs.api_service_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| user-service | ${{ needs.build-production-images.outputs.user_service_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
 
   deployment-notification:
     name: Deployment Notification

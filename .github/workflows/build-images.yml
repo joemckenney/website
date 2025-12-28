@@ -38,6 +38,9 @@ on:
       api_service_built:
         description: 'Whether api-service was built'
         value: ${{ jobs.build.outputs.api_service_built }}
+      user_service_built:
+        description: 'Whether user-service was built'
+        value: ${{ jobs.build.outputs.user_service_built }}
 
 env:
   DOCKERHUB_USERNAME: crowprose
@@ -53,6 +56,7 @@ jobs:
       www_web: ${{ steps.changes.outputs.www_web }}
       app_web: ${{ steps.changes.outputs.app_web }}
       api_service: ${{ steps.changes.outputs.api_service }}
+      user_service: ${{ steps.changes.outputs.user_service }}
 
     steps:
       - name: Checkout code
@@ -94,6 +98,7 @@ jobs:
             echo "www_web=true" >> $GITHUB_OUTPUT
             echo "app_web=true" >> $GITHUB_OUTPUT
             echo "api_service=true" >> $GITHUB_OUTPUT
+            echo "user_service=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -103,6 +108,7 @@ jobs:
             echo "www_web=true" >> $GITHUB_OUTPUT
             echo "app_web=true" >> $GITHUB_OUTPUT
             echo "api_service=true" >> $GITHUB_OUTPUT
+            echo "user_service=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -138,6 +144,16 @@ jobs:
             echo "@api/service: no changes"
           fi
 
+          # Check if @user/service or its dependencies changed
+          USER_PACKAGES=$(pnpm turbo run build --filter='@user/service...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
+          if [ -n "$USER_PACKAGES" ]; then
+            echo "user_service=true" >> $GITHUB_OUTPUT
+            echo "@user/service affected packages: $USER_PACKAGES"
+          else
+            echo "user_service=false" >> $GITHUB_OUTPUT
+            echo "@user/service: no changes"
+          fi
+
   build:
     name: Build & Push Images
     runs-on: ubuntu-latest
@@ -149,6 +165,7 @@ jobs:
       www_web_built: ${{ steps.build-www-web.outcome == 'success' }}
       app_web_built: ${{ steps.build-app-web.outcome == 'success' }}
       api_service_built: ${{ steps.build-api-service.outcome == 'success' }}
+      user_service_built: ${{ steps.build-user-service.outcome == 'success' }}
 
     steps:
       - name: Checkout code
@@ -248,6 +265,27 @@ jobs:
         if: needs.detect-changes.outputs.api_service != 'true'
         run: echo "Skipping api-service build - no changes detected"
 
+      - name: Build and push user-service
+        id: build-user-service
+        if: needs.detect-changes.outputs.user_service == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/@user/service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/user-service:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Skip user-service (no changes)
+        if: needs.detect-changes.outputs.user_service != 'true'
+        run: echo "Skipping user-service build - no changes detected"
+
       - name: Summary
         run: |
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
@@ -257,3 +295,4 @@ jobs:
           echo "| www-web | ${{ needs.detect-changes.outputs.www_web == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| app-web | ${{ needs.detect-changes.outputs.app_web == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| api-service | ${{ needs.detect-changes.outputs.api_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| user-service | ${{ needs.detect-changes.outputs.user_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY

@@ -33,8 +33,9 @@ COPY --from=workspace-pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=workspace-pruner /app/out/pnpm-workspace.yaml* ./
 
 # Install dependencies with cache mount for pnpm store
+# Note: --no-frozen-lockfile needed because turbo prune generates incomplete lockfiles for pnpm v9+
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile
+    pnpm install
 
 # Copy source files from pruned output
 COPY --from=workspace-pruner /app/out/full/ .
