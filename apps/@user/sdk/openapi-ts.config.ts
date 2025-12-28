@@ -3,7 +3,10 @@ import { defineConfig } from "@hey-api/openapi-ts";
 
 export default defineConfig({
   input: spec,
-  output: "./src/generated",
+  output: {
+    path: "./src/generated",
+    importFileExtension: ".js",
+  },
   client: "@hey-api/client-fetch",
   plugins: [
     {

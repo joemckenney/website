@@ -16,7 +16,7 @@
   },
   "scripts": {
     "dev": "pnpm run build && chokidar '../spec/openapi.json' -c 'pnpm run build'",
-    "build": "openapi-ts && tsup",
+    "build": "openapi-ts && tsgo",
     "clean": "rm -rf dist src/generated",
     "check": "biome check .",
     "lint": "biome check --write .",
@@ -31,8 +31,6 @@
     "@hey-api/openapi-ts": "^0.87.2",
     "@typescript/native-preview": "catalog:",
     "@website/config": "workspace:*",
-    "chokidar-cli": "^3.0.0",
-    "tsup": "^8.4.0",
-    "typescript": "^5.9.3"
+    "chokidar-cli": "^3.0.0"
   }
 }
