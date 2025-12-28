@@ -16,19 +16,23 @@
   },
   "scripts": {
     "dev": "pnpm run build && chokidar '../spec/openapi.json' -c 'pnpm run build'",
-    "build": "openapi-ts && tsgo",
+    "build": "openapi-ts && tsup",
     "clean": "rm -rf dist src/generated",
     "check": "biome check .",
     "lint": "biome check --write .",
     "format": "biome format --write ."
   },
+  "dependencies": {
+    "@hey-api/client-fetch": "^0.7.1"
+  },
   "devDependencies": {
     "@user/spec": "workspace:*",
     "@biomejs/biome": "catalog:",
-    "@hey-api/client-fetch": "^0.7.1",
     "@hey-api/openapi-ts": "^0.87.2",
     "@typescript/native-preview": "catalog:",
     "@website/config": "workspace:*",
-    "chokidar-cli": "^3.0.0"
+    "chokidar-cli": "^3.0.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.9.3"
   }
 }

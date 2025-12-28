@@ -1,9 +1,9 @@
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "./generated/prisma/client.js";
 import { Pool } from "pg";
 
-export { PrismaClient } from "@prisma/client";
-export type * from "@prisma/client";
+export { PrismaClient };
+export type * from "./generated/prisma/client.js";
 
 /**
  * Create a PrismaClient instance with the pg adapter.

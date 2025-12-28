@@ -16,8 +16,8 @@ RUN pnpm add -g turbo
 # Copy entire monorepo
 COPY . .
 
-# Prune workspace to only include @api/service and its dependencies
-RUN turbo prune @api/service --docker
+# Prune workspace to only include @user/service and its dependencies
+RUN turbo prune @user/service --docker
 
 # Build stage
 FROM node:24-alpine AS builder
@@ -33,15 +33,14 @@ COPY --from=workspace-pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=workspace-pruner /app/out/pnpm-workspace.yaml* ./
 
 # Install dependencies with cache mount for pnpm store
-# Note: --no-frozen-lockfile needed because turbo prune generates incomplete lockfiles for pnpm v9+
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
-    pnpm install
+    pnpm install --frozen-lockfile
 
 # Copy source files from pruned output
 COPY --from=workspace-pruner /app/out/full/ .
 
 # Build using turbo (no remote cache - Docker layer cache is sufficient)
-RUN pnpm turbo build --filter=@api/service...
+RUN pnpm turbo build --filter=@user/service...
 
 # Deploy stage - creates production deployment
 FROM builder AS deployer
@@ -49,8 +48,7 @@ FROM builder AS deployer
 ENV NODE_ENV=production
 
 # Deploy production-ready output to /app/pruned with only prod dependencies
-# Modern pnpm deploy properly handles workspace dependencies and their files
-RUN pnpm --filter=@api/service --prod deploy /app/pruned
+RUN pnpm --filter=@user/service --prod deploy /app/pruned
 
 # Production stage
 FROM node:24-alpine
@@ -65,6 +63,6 @@ COPY --from=deployer /app/pruned .
 # Fix permissions for non-root user (pnpm deploy creates some files with 600 permissions)
 RUN chmod -R a+r /app
 
-EXPOSE 3000
+EXPOSE 3002
 
 CMD ["node", "dist/index.js"]

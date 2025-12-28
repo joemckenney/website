@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
@@ -80,11 +80,12 @@ const start = async () => {
   try {
     await fastify.listen({ port: config.port, host: "0.0.0.0" });
 
-    // Generate OpenAPI spec to @user/spec package (development only)
+    // Generate OpenAPI spec to local spec folder (development only)
     if (config.nodeEnv !== "production") {
       const spec = fastify.swagger();
-      await writeFile("../spec/openapi.json", JSON.stringify(spec, null, 2));
-      console.log("OpenAPI spec written to @user/spec/openapi.json");
+      await mkdir("./spec", { recursive: true });
+      await writeFile("./spec/openapi.json", JSON.stringify(spec, null, 2));
+      console.log("OpenAPI spec written to ./spec/openapi.json");
     }
 
     console.log(`Server listening on http://localhost:${config.port}`);

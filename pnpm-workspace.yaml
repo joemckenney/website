@@ -2,6 +2,9 @@ packages:
   - 'apps/*/*'
   - 'packages/*/*'
 
+# Required for pnpm deploy to properly bundle workspace dependencies
+inject-workspace-packages: true
+
 catalog:
   '@biomejs/biome': 2.2.6
   '@typescript/native-preview': 7.0.0-dev.20251017.1

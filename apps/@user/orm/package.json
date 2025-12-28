@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "dev": "prisma generate --watch",
-    "build": "prisma generate && tsgo",
+    "build": "prisma generate && tsc",
     "generate": "prisma generate",
     "migrate:dev": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
@@ -29,8 +29,9 @@
     "format": "biome format --write ."
   },
   "dependencies": {
-    "@prisma/adapter-pg": "latest",
-    "@prisma/client": "latest",
+    "@prisma/adapter-pg": "^7.2.0",
+    "@prisma/client": "^7.2.0",
+    "@prisma/client-runtime-utils": "^7.2.0",
     "pg": "^8.14.1"
   },
   "devDependencies": {
@@ -38,6 +39,7 @@
     "@types/pg": "^8.15.4",
     "@typescript/native-preview": "catalog:",
     "@website/config": "workspace:*",
-    "prisma": "latest"
+    "prisma": "^7.2.0",
+    "typescript": "^5.9.3"
   }
 }

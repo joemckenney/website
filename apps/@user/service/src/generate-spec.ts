@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
@@ -61,11 +61,12 @@ await registerUserRoutes(fastify);
 // Ready the server (generates the OpenAPI spec)
 await fastify.ready();
 
-// Generate OpenAPI spec to @user/spec folder
+// Generate OpenAPI spec to local spec folder
 const spec = fastify.swagger();
-await writeFile("../spec/openapi.json", JSON.stringify(spec, null, 2));
+await mkdir("./spec", { recursive: true });
+await writeFile("./spec/openapi.json", JSON.stringify(spec, null, 2));
 
-console.log("OpenAPI spec generated: ../spec/openapi.json");
+console.log("✅ OpenAPI spec generated: ./spec/openapi.json");
 
 // Close without starting the server
 await fastify.close();
