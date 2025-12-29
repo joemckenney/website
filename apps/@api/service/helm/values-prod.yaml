@@ -53,3 +53,7 @@ secrets:
   frontendUrl: "https://app.joemckenney.com"
   backendUrl: "https://api.joemckenney.com"
   userServiceUrl: "http://user-service:3002"
+
+# Prometheus metrics
+metrics:
+  enabled: true

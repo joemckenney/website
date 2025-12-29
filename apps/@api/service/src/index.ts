@@ -6,6 +6,7 @@ import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Fastify from "fastify";
+import metricsPlugin from "fastify-metrics";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerRoutes } from "./routes.js";
 
@@ -31,6 +32,14 @@ await fastify.register(cookie);
 await fastify.register(cors, {
   origin: true, // Allow all origins in development
   credentials: true, // Allow cookies to be sent
+});
+
+// Prometheus metrics endpoint at /metrics
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+await fastify.register(metricsPlugin as any, {
+  endpoint: "/metrics",
+  defaultMetrics: { enabled: true },
+  routeMetrics: { enabled: true },
 });
 
 await fastify.register(swagger, {
