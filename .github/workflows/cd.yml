@@ -130,8 +130,15 @@ jobs:
 
       - name: Run production smoke tests
         run: |
-          # Wait for ingress to update
-          sleep 30
+          # Wait for all pods to be ready
+          echo "Waiting for pods to be ready..."
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=www-web --timeout=120s
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=app-web --timeout=120s
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=api-service --timeout=120s
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=user-service --timeout=120s
+
+          # Brief pause for ingress backend propagation
+          sleep 5
 
           # Test www-app
           echo "Testing www.joemckenney.com..."
