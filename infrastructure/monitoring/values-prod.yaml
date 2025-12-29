@@ -1,0 +1,117 @@
+# Prometheus + Grafana stack for o11y.joemckenney.com
+# Install with:
+#   KUBECONFIG=~/.kube/vultr-prod-config helm install monitoring prometheus-community/kube-prometheus-stack \
+#     -f infrastructure/monitoring/values-prod.yaml \
+#     --set grafana."grafana\.ini".auth\.google.client_id="$GOOGLE_CLIENT_ID" \
+#     --set grafana."grafana\.ini".auth\.google.client_secret="$GOOGLE_CLIENT_SECRET"
+
+# Grafana configuration
+grafana:
+  enabled: true
+
+  # Sidecars disabled - Vultr's K8s API has SSL cert issues
+  # Manually configure datasource and import dashboards in Grafana UI
+  sidecar:
+    dashboards:
+      enabled: false
+    datasources:
+      enabled: false
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    hosts:
+      - o11y.joemckenney.com
+    tls:
+      - secretName: grafana-tls
+        hosts:
+          - o11y.joemckenney.com
+
+  persistence:
+    enabled: true
+    size: 5Gi
+
+  grafana.ini:
+    server:
+      root_url: https://o11y.joemckenney.com
+
+    auth:
+      disable_login_form: true
+      disable_signout_menu: false
+
+    auth.google:
+      enabled: true
+      allow_sign_up: true
+      auto_login: true
+      # Set via: --set grafana."grafana\.ini"."auth\.google".client_id="..." --set grafana."grafana\.ini"."auth\.google".client_secret="..."
+      client_id: ""
+      client_secret: ""
+      scopes: openid email profile
+      auth_url: https://accounts.google.com/o/oauth2/auth
+      token_url: https://accounts.google.com/o/oauth2/token
+      api_url: https://openidconnect.googleapis.com/v1/userinfo
+      # IMPORTANT: Only allow your email
+      allowed_emails: j.mckenney00@gmail.com
+
+    users:
+      auto_assign_org_role: Admin
+
+  # Disable leaked secrets check (we're using OAuth, not admin password)
+  assertNoLeakedSecrets: false
+
+  resources:
+    limits:
+      cpu: 150m
+      memory: 256Mi
+    requests:
+      cpu: 25m
+      memory: 128Mi
+
+# Prometheus configuration
+prometheus:
+  enabled: true
+
+  prometheusSpec:
+    retention: 15d
+    retentionSize: "8GB"
+
+    resources:
+      limits:
+        cpu: 300m
+        memory: 768Mi
+      requests:
+        cpu: 50m
+        memory: 256Mi
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+
+# Alertmanager - disable for now (can enable later for alerts)
+alertmanager:
+  enabled: false
+
+# Node exporter - collects node-level metrics
+nodeExporter:
+  enabled: true
+
+# kube-state-metrics - collects Kubernetes object metrics
+kubeStateMetrics:
+  enabled: true
+
+# Disable components not needed for small clusters
+kubeEtcd:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
