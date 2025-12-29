@@ -41,3 +41,7 @@ env:
 # Secrets - injected via GHA secrets (see cd.yml)
 secrets:
   databaseUrl: ""
+
+# Prometheus metrics
+metrics:
+  enabled: true

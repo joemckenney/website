@@ -68,3 +68,7 @@ env:
 
 secrets:
   databaseUrl: ""
+
+# Prometheus metrics
+metrics:
+  enabled: false

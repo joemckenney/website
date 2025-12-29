@@ -94,9 +94,126 @@ prometheus:
             requests:
               storage: 10Gi
 
-# Alertmanager - disable for now (can enable later for alerts)
+# Alertmanager - sends alert notifications via email
 alertmanager:
-  enabled: false
+  enabled: true
+  config:
+    global:
+      smtp_from: "alerts@joemckenney.com"
+      smtp_smarthost: "smtp.gmail.com:587"
+      smtp_auth_username: "j.mckenney00@gmail.com"
+      # Set via --set alertmanager.config.global.smtp_auth_password="your-gmail-app-password"
+      smtp_auth_password: ""
+    route:
+      receiver: "email"
+      group_by: ["alertname", "namespace"]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+    receivers:
+      - name: "null"
+      - name: "email"
+        email_configs:
+          - to: "j.mckenney00@gmail.com"
+            send_resolved: true
+
+# Custom alerting rules
+additionalPrometheusRulesMap:
+  custom-alerts:
+    groups:
+      - name: critical
+        rules:
+          - alert: PodCrashLooping
+            expr: rate(kube_pod_container_status_restarts_total[15m]) > 0.2
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Pod {{ $labels.pod }} is crash looping"
+              description: "Pod {{ $labels.pod }} in {{ $labels.namespace }} has restarted more than 3 times in 15 minutes"
+
+          - alert: PodNotReady
+            expr: kube_pod_status_ready{condition="false"} == 1
+            for: 10m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Pod {{ $labels.pod }} not ready"
+              description: "Pod {{ $labels.pod }} in {{ $labels.namespace }} has been not ready for 10 minutes"
+
+          - alert: NodeNotReady
+            expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Node {{ $labels.node }} not ready"
+              description: "Node {{ $labels.node }} has been not ready for 5 minutes"
+
+          - alert: PVCAlmostFull
+            expr: kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes > 0.85
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "PVC {{ $labels.persistentvolumeclaim }} almost full"
+              description: "PVC {{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full"
+
+      - name: warning
+        rules:
+          - alert: HighMemoryUsage
+            expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.85
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High memory usage on {{ $labels.instance }}"
+              description: "Memory usage is above 85% for 10 minutes"
+
+          - alert: HighCPUUsage
+            expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage on {{ $labels.instance }}"
+              description: "CPU usage is above 85% for 10 minutes"
+
+          - alert: PrometheusStorageAlmostFull
+            expr: prometheus_tsdb_storage_blocks_bytes / (10 * 1024 * 1024 * 1024) > 0.8
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Prometheus storage almost full"
+              description: "Prometheus storage is above 80% of 10GB limit"
+
+      - name: http
+        rules:
+          - alert: HighErrorRate
+            expr: |
+              sum(rate(nginx_ingress_controller_requests{status=~"5.."}[5m])) by (ingress)
+              /
+              sum(rate(nginx_ingress_controller_requests[5m])) by (ingress)
+              > 0.05
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "High 5xx error rate on {{ $labels.ingress }}"
+              description: "{{ $labels.ingress }} has >5% error rate"
+
+          - alert: HighResponseTime
+            expr: |
+              histogram_quantile(0.95,
+                sum(rate(nginx_ingress_controller_request_duration_seconds_bucket[5m])) by (le, ingress)
+              ) > 2
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High response time on {{ $labels.ingress }}"
+              description: "95th percentile response time is above 2 seconds on {{ $labels.ingress }}"
 
 # Node exporter - collects node-level metrics
 nodeExporter:
