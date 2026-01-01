@@ -110,6 +110,22 @@ alertmanager:
       group_wait: 30s
       group_interval: 5m
       repeat_interval: 4h
+      routes:
+        # Route InfoInhibitor and Watchdog to null (they're meta-alerts, not real problems)
+        - receiver: "null"
+          matchers:
+            - alertname =~ "InfoInhibitor|Watchdog"
+        # Route info-level alerts to null (too noisy)
+        - receiver: "null"
+          matchers:
+            - severity = "info"
+    inhibit_rules:
+      # Inhibit info alerts when InfoInhibitor is firing for the same namespace
+      - source_matchers:
+          - alertname = "InfoInhibitor"
+        target_matchers:
+          - severity = "info"
+        equal: ["namespace"]
     receivers:
       - name: "null"
       - name: "email"
