@@ -4,32 +4,44 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a monorepo exploring modern full-stack development with TypeScript and type-safe API generation. The main application (`@www/app`) is an experimental weather sonification web app that uses Chrome's built-in AI (Gemini Nano) to generate evolving ambient soundscapes based on real-time weather data.
+A production-ready TypeScript monorepo demonstrating modern full-stack development with type-safe API generation, Kubernetes deployment, and comprehensive observability. Deployed to Vultr VKE with automated CI/CD.
 
 ## Repository Structure
 
 ```
 apps/
-  @www/app/          - Main web app: Weather sonification with Chrome AI
+  @www/web/           - Main web app: Weather sonification with Chrome AI
   @api/
-    app/             - Fastify API with OpenAPI/TypeBox
-    sdk/             - Auto-generated TypeScript client from OpenAPI spec
+    service/          - Fastify API with OpenAPI/TypeBox, OAuth, JWT auth
+    sdk/              - Auto-generated TypeScript client from OpenAPI spec
+    spec/             - OpenAPI specification package
   @app/
-    app/             - React + Vite frontend demo
+    web/              - React + Vite demo client with sidebar UI
+  @user/
+    service/          - User management Fastify API with Prisma
+    orm/              - Prisma ORM package (PostgreSQL)
+    database/         - Docker Compose + Helm for PostgreSQL
+    sdk/              - Auto-generated TypeScript client
+    spec/             - OpenAPI specification package
 
 packages/
   @website/
-    config/          - Shared configuration (TypeScript + Biome)
-    utils/           - TypeScript utility library
-```
+    config/           - Shared TypeScript + Biome configuration
+    utils/            - Shared TypeScript utilities
 
-The `@www/app` is the primary application. The `@api` workspace contains the API server and SDK. The `@app/app` is a demo client that demonstrates the type-safe full-stack pattern (server → OpenAPI spec → SDK generation → client).
+infrastructure/
+  helm/charts/        - Shared Helm chart templates
+  monitoring/         - Prometheus + Grafana + Loki configuration
+  terraform/          - Vultr VKE infrastructure as code
+  scripts/            - Local development helper scripts
+```
 
 ## Build System
 
-**Package Manager**: pnpm (workspace-based monorepo)
-**Build Orchestration**: Turbo (with caching and dependency graphs)
-**Formatter**: Biome
+**Package Manager**: pnpm 10.x (workspace-based monorepo)
+**Build Orchestration**: Turbo (with remote caching)
+**Formatter/Linter**: Biome
+**Container Runtime**: Docker with multi-stage builds
 
 ### Common Commands
 
@@ -43,189 +55,217 @@ pnpm run build
 # Format all code
 pnpm run format
 
-# Run all dev servers with hot reload (recommended)
+# Run all dev servers with hot reload
 pnpm run dev
 
-# Build specific workspace (from repo root)
-pnpm --filter @www/web build
+# Build specific workspace
 pnpm --filter @api/service build
+pnpm --filter @app/web build
 
-# Run dev server for a specific app
-cd apps/@www/web
-pnpm run dev
+# Type check
+pnpm run check
 ```
 
 ### Development Workflow
 
-The `pnpm run dev` command starts all development servers with automatic rebuilding:
+`pnpm run dev` starts all development servers with automatic rebuilding:
 
-- **API Service** (`@api/service`): Runs `tsx watch` - auto-restarts on code changes and regenerates OpenAPI spec
-- **SDK** (`@api/sdk`): Marked as `interruptible` in Turbo - automatically rebuilds when API's OpenAPI spec changes
-- **Web App** (`@www/web`): Runs Vite dev server with HMR - hot reloads when SDK or app code changes
+- **@api/service**: Fastify server with `tsx watch`, regenerates OpenAPI spec on changes
+- **@api/sdk**: Rebuilds when OpenAPI spec changes (Turbo `interruptible`)
+- **@user/service**: User management API with `tsx watch`
+- **@app/web**: Vite dev server with HMR
+- **@www/web**: Vite dev server with HMR
 
-Turbo orchestrates these in dependency order and handles restarts automatically. Just run `pnpm run dev` from the repo root and edit any file - changes will propagate through the stack.
+Turbo orchestrates dependency order automatically.
 
-## Main Application: Weather Sonification
+## Applications
 
-**Location**: `apps/@www/app/`
+### @www/web - Weather Sonification (Primary App)
 
-### Architecture
+**Location**: `apps/@www/web/`
+**URL**: https://www.joemckenney.com
 
-The app demonstrates several advanced web platform features:
+Experimental web app using Chrome's built-in AI (Gemini Nano) to generate ambient soundscapes from weather data.
 
-1. **Chrome Built-in AI Integration** (Gemini Nano via Prompt API)
-   - Uses Chrome's experimental `window.LanguageModel` API
-   - Generates creative audio parameters from weather data
-   - Supports persistent AI sessions for continuous evolution
-   - Falls back to rule-based generation when AI unavailable
+**Key Features**:
+- Chrome Built-in AI (Gemini Nano via Prompt API)
+- Web Audio API synthesis with multi-oscillator additive synthesis
+- Real-time frequency visualization
+- Geolocation + Open-Meteo weather API
 
-2. **Web Audio API Synthesis**
-   - Multi-oscillator additive synthesis for rich drones
-   - Real-time frequency visualization with AnalyserNode
-   - Smooth crossfading between parameter sets (8s transitions)
-   - Layered oscillators with LFO modulation for organic movement
+**Browser Requirements**: Chrome Dev/Canary 127+ with experimental flags enabled.
 
-3. **Geolocation + Weather Data**
-   - Uses browser Geolocation API
-   - Fetches weather from Open-Meteo API
-   - Translates weather metrics into audio parameters
+### @api/service - API Gateway
 
-4. **Evolution Engine**
-   - Continuous AI-driven soundscape evolution
-   - Maintains persistent AI session (avoids re-initialization overhead)
-   - Configurable evolution interval and crossfade duration
-   - Smooth parameter interpolation
+**Location**: `apps/@api/service/`
+**URLs**: http://localhost:3000 (dev), https://api.joemckenney.com (prod)
 
-### Key Files
+Fastify REST API with:
+- TypeBox schema validation
+- OpenAPI spec auto-generation (`/docs` for Swagger UI)
+- Google OAuth authentication (via Arctic)
+- JWT access/refresh tokens (httpOnly cookies for refresh)
+- Prometheus metrics endpoint (`/metrics`)
 
-- `src/app.tsx` - Main application orchestration, command handling, state management
-- `src/lib/audio-synthesizer.ts` - Web Audio synthesis engine with crossfading
-- `src/lib/audio-evolution-engine.ts` - Continuous evolution loop using AI sessions
-- `src/lib/gemini.ts` - Chrome AI API integration (Prompt API, session management)
-- `src/lib/weather.ts` - Weather data fetching (Open-Meteo API)
-- `src/lib/geolocation.ts` - Browser geolocation wrapper
-- `src/components/terminal.tsx` - Command-line interface component
-- `src/components/frequency-visualizer.tsx` - Real-time audio visualization
+### @app/web - Demo Client
 
-### Running the Main App
+**Location**: `apps/@app/web/`
+**URL**: https://app.joemckenney.com
 
-```bash
-cd apps/@www/app
-pnpm run dev  # Starts Vite dev server on http://localhost:5173
+React + Vite frontend demonstrating type-safe API integration:
+- Collapsible sidebar navigation (Claude.ai-style)
+- User avatar with logout menu
+- Debug page for token inspection
+- Chat prompt interface (placeholder for future agent)
+
+### @user/service - User Management
+
+**Location**: `apps/@user/service/`
+
+Fastify API for user CRUD with:
+- Prisma ORM (PostgreSQL)
+- TypeBox schemas
+- Prometheus metrics
+
+## Type-Safe API Pattern
+
+```
+Server (TypeBox) → OpenAPI Spec → @hey-api/openapi-ts → SDK → Type-safe Client
 ```
 
-**Browser Requirements**:
-- Chrome Dev/Canary (version 127+)
-- Experimental flags enabled:
-  - `chrome://flags/#prompt-api-for-gemini-nano` → Enabled
-  - `chrome://flags/#optimization-guide-on-device-model` → Enabled BypassPerfRequirement
-- First run triggers Gemini Nano model download (~1.7GB)
+1. Define routes with TypeBox schemas in `@api/service`
+2. OpenAPI spec generated to `dist/openapi.json` on build
+3. `@api/sdk` generates typed client from spec
+4. Clients import SDK for full type safety
 
-### Terminal Commands
+## Infrastructure
 
-Once the app is running, available commands in the terminal:
+### Kubernetes Deployment
 
-- `start` - Begin weather sonification (fetches location/weather, generates soundscape)
-- `evolve` - Enable continuous AI-driven evolution (use after `start`)
-- `stop` - Stop audio playback and evolution
-- `setup` - Show Chrome AI setup instructions
-- `debug` - Display system status (browser, audio, AI, geolocation)
-- `clear` - Clear terminal
-- `help` - Show command list
+**Local**: Minikube with local Docker registry
+**Production**: Vultr VKE (Kubernetes 1.34)
 
-## Demo: Type-Safe Full-Stack
+Each app has a Helm chart in its `helm/` directory:
+- `values.yaml` - Base values
+- `values-local.yaml` - Minikube overrides
+- `values-prod.yaml` - Production overrides
 
-**Location**: `apps/@api/` and `apps/@app/`
+### Monitoring Stack
 
-This demonstrates the type-safe API development pattern:
+**URL**: https://o11y.joemckenney.com (Google OAuth protected)
 
-1. **Server** (`@api/service`) defines API with TypeBox schemas
-2. **OpenAPI spec** auto-generated to `dist/openapi.json` on server start
-3. **SDK** (`@api/sdk`) reads spec and generates typed client with `@hey-api/openapi-ts`
-4. **Client** (`@app/web`) imports SDK and gets full type safety
+- **Prometheus**: Metrics collection from ServiceMonitors
+- **Grafana**: Dashboards and alerting
+- **Loki**: Log aggregation via Promtail
+- **Alertmanager**: Email notifications for critical alerts
 
-### Running the Demo
+Configuration in `infrastructure/monitoring/values-prod.yaml`.
 
-The easiest way is to use the unified dev command:
+### CI/CD (GitHub Actions)
+
+**Workflows**:
+- `ci.yml` - PR checks (build, lint, type-check)
+- `build-images.yml` - Docker image builds
+- `cd.yml` - Production deployment with smoke tests
+
+**Required Secrets**:
+- `KUBE_CONFIG_PROD` - Base64 Vultr kubeconfig
+- `DOCKERHUB_TOKEN` - Docker Hub credentials
+- `GOOGLE_CLIENT_ID/SECRET` - OAuth credentials
+- `JWT_SECRET` - Token signing key
+
+### Helm Deployment Commands
 
 ```bash
-# From repo root - starts everything with automatic rebuilds
-pnpm run dev
+# Local (Minikube)
+pnpm run deploy:helm:local
+
+# Production (requires KUBECONFIG)
+KUBECONFIG=~/.kube/vultr-prod-config helm upgrade --install <release> <chart> \
+  -f values-prod.yaml \
+  --set image.tag=<tag>
 ```
 
-This starts:
-- API server on http://localhost:3000 (docs at /docs)
-- SDK watcher (rebuilds when OpenAPI spec changes)
-- Client dev server
-
-**Alternative - Manual approach**:
+### Monitoring Commands
 
 ```bash
-# Terminal 1: Start server (generates OpenAPI spec)
-cd apps/@api/service
-pnpm run dev  # Runs on http://localhost:3000, docs at /docs
+# Check Prometheus targets
+kubectl exec prometheus-monitoring-kube-prometheus-prometheus-0 -c prometheus -- \
+  wget -qO- 'http://localhost:9090/api/v1/targets'
 
-# Terminal 2: Generate SDK (after server starts once)
-cd apps/@api/sdk
-pnpm run build  # Generates typed client from ../service/dist/openapi.json
+# View Grafana
+kubectl port-forward svc/monitoring-grafana 3000:80
 
-# Terminal 3: Start client
-cd apps/@app/web
-pnpm run dev  # Vite dev server
+# Check logs via Loki
+# Use Grafana Explore with Loki datasource
 ```
 
 ## Styling
 
 **Framework**: Vanilla Extract (type-safe CSS-in-JS)
 
-Styles are defined in `.css.ts` files:
-- Type-safe styling with autocomplete
-- CSS variables defined in `tokens.css.ts`
-- Scoped class names prevent collisions
-
-Example: `apps/@www/app/src/app.css.ts` defines styles imported as JS objects.
+Styles in `.css.ts` files with type-safe tokens. Each app defines its own design system.
 
 ## Configuration
 
 Shared configs in `packages/@website/config/`:
-- **TypeScript**: Base configurations extended by all packages
-- **Biome**: Linting and formatting rules extended by all packages
-- Ensures consistent settings across workspace
-- Each package has its own `biome.json` extending from `@website/config`
+- `base.json`, `react.json`, `node.json` - TypeScript configs
+- `biome.json` - Linting and formatting
+
+All packages extend these via `"extends": "@website/config/..."`.
 
 ## Development Notes
 
-### Monorepo Dependencies
+### Adding a New Service
 
-Workspace dependencies use `workspace:*` protocol:
-```json
-{
-  "dependencies": {
-    "@website/config": "workspace:*"
-  }
-}
+1. Create directory in `apps/@<namespace>/<name>/`
+2. Add `package.json` with workspace dependencies
+3. Create Helm chart in `helm/` subdirectory
+4. Add ServiceMonitor for Prometheus (with `release: monitoring` label)
+5. Update `pnpm-workspace.yaml` if needed
+6. Add to CI/CD workflows
+
+### ServiceMonitor Labels
+
+Prometheus only scrapes ServiceMonitors with `release: monitoring` label:
+
+```yaml
+metadata:
+  labels:
+    release: monitoring
 ```
 
-Turbo automatically builds dependencies before dependents.
+### Database (PostgreSQL)
 
-### Chrome AI Development
+Local development uses Docker Compose in `@user/database`:
+```bash
+cd apps/@user/database
+pnpm run up      # Start PostgreSQL
+pnpm run down    # Stop
+pnpm run reset   # Reset data
+```
 
-When working with Chrome AI features:
-- Test in Chrome Dev/Canary with flags enabled
-- Handle `downloading` state gracefully (model not yet available)
-- Always provide fallback logic when AI unavailable
-- Use persistent sessions for repeated prompts (evolution engine pattern)
-- Clean up sessions with `session.destroy()` when done
+Prisma commands in `@user/orm`:
+```bash
+pnpm run migrate:dev   # Run migrations
+pnpm run db:push       # Push schema changes
+pnpm run studio        # Open Prisma Studio
+```
 
-### Audio Synthesis Development
+### Environment Variables
 
-When modifying audio features:
-- AudioContext requires user gesture to start (handled by terminal commands)
-- Use `cancelScheduledValues()` before scheduling new parameter changes
-- Crossfading requires careful gain envelope management
-- Test with headphones (low-frequency drones may not be audible on laptop speakers)
-- AnalyserNode provides real-time frequency data for visualization
+API services use:
+- `GOOGLE_CLIENT_ID/SECRET` - OAuth
+- `JWT_SECRET` - Token signing
+- `FRONTEND_URL` - CORS origin
+- `DATABASE_URL` - PostgreSQL connection (user-service)
 
-### Adding New Terminal Commands
+Clients use:
+- `VITE_API_URL` - API endpoint
 
-Edit `apps/@www/app/src/app.tsx`, function `handleCommand()`. Follow the pattern of existing commands (add to help text, implement handler function, call from command dispatcher).
+### Production URLs
+
+- https://www.joemckenney.com - Main web app
+- https://app.joemckenney.com - Demo client
+- https://api.joemckenney.com - API gateway
+- https://o11y.joemckenney.com - Grafana (monitoring)
