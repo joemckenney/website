@@ -5,6 +5,7 @@ metadata:
   name: {{ include "user-service.fullname" . }}
   labels:
     {{- include "user-service.labels" . | nindent 4 }}
+    release: monitoring
 spec:
   selector:
     matchLabels:

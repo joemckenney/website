@@ -5,6 +5,7 @@ metadata:
   name: {{ include "app-server.fullname" . }}
   labels:
     {{- include "app-server.labels" . | nindent 4 }}
+    release: monitoring
 spec:
   selector:
     matchLabels:
