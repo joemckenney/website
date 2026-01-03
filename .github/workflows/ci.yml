@@ -65,15 +65,17 @@ jobs:
 
       - name: Lint Helm charts
         run: |
-          helm lint apps/@www/web/helm
-          helm lint apps/@app/web/helm
-          helm lint apps/@api/service/helm
+          helm lint apps/www/helm
+          helm lint apps/dashboard/helm
+          helm lint services/@gateway/service/helm
+          helm lint services/@users/service/helm
 
       - name: Render templates (dry-run)
         run: |
-          helm template www-web apps/@www/web/helm
-          helm template app-web apps/@app/web/helm
-          helm template api-service apps/@api/service/helm
+          helm template www-web apps/www/helm
+          helm template app-web apps/dashboard/helm
+          helm template api-service services/@gateway/service/helm
+          helm template user-service services/@users/service/helm
 
   build-images:
     name: Build Docker Images
