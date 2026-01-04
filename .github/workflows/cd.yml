@@ -59,8 +59,8 @@ jobs:
       - name: Deploy www-web
         if: needs.build-production-images.outputs.www_web_built == 'true'
         run: |
-          helm upgrade --install www-web apps/@www/web/helm \
-            -f apps/@www/web/helm/values-prod.yaml \
+          helm upgrade --install www-web apps/www/helm \
+            -f apps/www/helm/values-prod.yaml \
             --set image.tag=sha-${{ github.sha }} \
             --wait \
             --timeout=5m
@@ -72,8 +72,8 @@ jobs:
       - name: Deploy app-web
         if: needs.build-production-images.outputs.app_web_built == 'true'
         run: |
-          helm upgrade --install app-web apps/@app/web/helm \
-            -f apps/@app/web/helm/values-prod.yaml \
+          helm upgrade --install app-web apps/dashboard/helm \
+            -f apps/dashboard/helm/values-prod.yaml \
             --set image.tag=sha-${{ github.sha }} \
             --wait \
             --timeout=5m
@@ -85,8 +85,8 @@ jobs:
       - name: Deploy user-service
         if: needs.build-production-images.outputs.user_service_built == 'true'
         run: |
-          helm upgrade --install user-service apps/@user/service/helm \
-            -f apps/@user/service/helm/values-prod.yaml \
+          helm upgrade --install user-service services/@users/service/helm \
+            -f services/@users/service/helm/values-prod.yaml \
             --set image.tag=sha-${{ github.sha }} \
             --set secrets.databaseUrl="${{ secrets.USER_SERVICE_DATABASE_URL }}" \
             --wait \
@@ -99,8 +99,8 @@ jobs:
       - name: Deploy api-service
         if: needs.build-production-images.outputs.api_service_built == 'true'
         run: |
-          helm upgrade --install api-service apps/@api/service/helm \
-            -f apps/@api/service/helm/values-prod.yaml \
+          helm upgrade --install api-service services/@gateway/service/helm \
+            -f services/@gateway/service/helm/values-prod.yaml \
             --set image.tag=sha-${{ github.sha }} \
             --set secrets.googleClientId="${{ secrets.GOOGLE_CLIENT_ID }}" \
             --set secrets.googleClientSecret="${{ secrets.GOOGLE_CLIENT_SECRET }}" \

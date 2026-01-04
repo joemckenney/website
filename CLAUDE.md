@@ -10,17 +10,17 @@ A production-ready TypeScript monorepo demonstrating modern full-stack developme
 
 ```
 apps/
-  @www/web/           - Main web app: Weather sonification with Chrome AI
-  @api/
-    service/          - Fastify API with OpenAPI/TypeBox, OAuth, JWT auth
+  www/                - Main web app: Weather sonification with Chrome AI
+  dashboard/          - React + Vite demo client with sidebar UI
+
+services/
+  @gateway/
+    service/          - Fastify API Gateway with OpenAPI/TypeBox, OAuth, JWT auth
     sdk/              - Auto-generated TypeScript client from OpenAPI spec
     spec/             - OpenAPI specification package
-  @app/
-    web/              - React + Vite demo client with sidebar UI
-  @user/
+  @users/
     service/          - User management Fastify API with Prisma
-    orm/              - Prisma ORM package (PostgreSQL)
-    database/         - Docker Compose + Helm for PostgreSQL
+    db/               - Prisma ORM package (PostgreSQL)
     sdk/              - Auto-generated TypeScript client
     spec/             - OpenAPI specification package
 
@@ -29,7 +29,7 @@ packages/
     config/           - Shared TypeScript + Biome configuration
     utils/            - Shared TypeScript utilities
 
-infrastructure/
+infra/
   helm/charts/        - Shared Helm chart templates
   monitoring/         - Prometheus + Grafana + Loki configuration
   terraform/          - Vultr VKE infrastructure as code
@@ -59,8 +59,8 @@ pnpm run format
 pnpm run dev
 
 # Build specific workspace
-pnpm --filter @api/service build
-pnpm --filter @app/web build
+pnpm --filter @gateway/service build
+pnpm --filter @app/dashboard build
 
 # Type check
 pnpm run check
@@ -70,19 +70,19 @@ pnpm run check
 
 `pnpm run dev` starts all development servers with automatic rebuilding:
 
-- **@api/service**: Fastify server with `tsx watch`, regenerates OpenAPI spec on changes
-- **@api/sdk**: Rebuilds when OpenAPI spec changes (Turbo `interruptible`)
-- **@user/service**: User management API with `tsx watch`
-- **@app/web**: Vite dev server with HMR
-- **@www/web**: Vite dev server with HMR
+- **@gateway/service**: Fastify server with `tsx watch`, regenerates OpenAPI spec on changes
+- **@gateway/sdk**: Rebuilds when OpenAPI spec changes (Turbo `interruptible`)
+- **@users/service**: User management API with `tsx watch`
+- **@app/dashboard**: Vite dev server with HMR
+- **@app/www**: Vite dev server with HMR
 
 Turbo orchestrates dependency order automatically.
 
 ## Applications
 
-### @www/web - Weather Sonification (Primary App)
+### @app/www - Weather Sonification (Primary App)
 
-**Location**: `apps/@www/web/`
+**Location**: `apps/www/`
 **URL**: https://www.joemckenney.com
 
 Experimental web app using Chrome's built-in AI (Gemini Nano) to generate ambient soundscapes from weather data.
@@ -95,9 +95,9 @@ Experimental web app using Chrome's built-in AI (Gemini Nano) to generate ambien
 
 **Browser Requirements**: Chrome Dev/Canary 127+ with experimental flags enabled.
 
-### @api/service - API Gateway
+### @gateway/service - API Gateway
 
-**Location**: `apps/@api/service/`
+**Location**: `services/@gateway/service/`
 **URLs**: http://localhost:3000 (dev), https://api.joemckenney.com (prod)
 
 Fastify REST API with:
@@ -107,9 +107,9 @@ Fastify REST API with:
 - JWT access/refresh tokens (httpOnly cookies for refresh)
 - Prometheus metrics endpoint (`/metrics`)
 
-### @app/web - Demo Client
+### @app/dashboard - Demo Client
 
-**Location**: `apps/@app/web/`
+**Location**: `apps/dashboard/`
 **URL**: https://app.joemckenney.com
 
 React + Vite frontend demonstrating type-safe API integration:
@@ -118,9 +118,9 @@ React + Vite frontend demonstrating type-safe API integration:
 - Debug page for token inspection
 - Chat prompt interface (placeholder for future agent)
 
-### @user/service - User Management
+### @users/service - User Management
 
-**Location**: `apps/@user/service/`
+**Location**: `services/@users/service/`
 
 Fastify API for user CRUD with:
 - Prisma ORM (PostgreSQL)
@@ -133,9 +133,9 @@ Fastify API for user CRUD with:
 Server (TypeBox) → OpenAPI Spec → @hey-api/openapi-ts → SDK → Type-safe Client
 ```
 
-1. Define routes with TypeBox schemas in `@api/service`
+1. Define routes with TypeBox schemas in `@gateway/service` or `@users/service`
 2. OpenAPI spec generated to `dist/openapi.json` on build
-3. `@api/sdk` generates typed client from spec
+3. SDK packages generate typed client from spec
 4. Clients import SDK for full type safety
 
 ## Infrastructure
@@ -159,7 +159,7 @@ Each app has a Helm chart in its `helm/` directory:
 - **Loki**: Log aggregation via Promtail
 - **Alertmanager**: Email notifications for critical alerts
 
-Configuration in `infrastructure/monitoring/values-prod.yaml`.
+Configuration in `infra/monitoring/values-prod.yaml`.
 
 ### CI/CD (GitHub Actions)
 
@@ -218,7 +218,7 @@ All packages extend these via `"extends": "@website/config/..."`.
 
 ### Adding a New Service
 
-1. Create directory in `apps/@<namespace>/<name>/`
+1. Create directory in `services/@<domain>/<name>/`
 2. Add `package.json` with workspace dependencies
 3. Create Helm chart in `helm/` subdirectory
 4. Add ServiceMonitor for Prometheus (with `release: monitoring` label)
@@ -237,15 +237,7 @@ metadata:
 
 ### Database (PostgreSQL)
 
-Local development uses Docker Compose in `@user/database`:
-```bash
-cd apps/@user/database
-pnpm run up      # Start PostgreSQL
-pnpm run down    # Stop
-pnpm run reset   # Reset data
-```
-
-Prisma commands in `@user/orm`:
+Prisma commands in `@users/db`:
 ```bash
 pnpm run migrate:dev   # Run migrations
 pnpm run db:push       # Push schema changes
@@ -258,7 +250,7 @@ API services use:
 - `GOOGLE_CLIENT_ID/SECRET` - OAuth
 - `JWT_SECRET` - Token signing
 - `FRONTEND_URL` - CORS origin
-- `DATABASE_URL` - PostgreSQL connection (user-service)
+- `DATABASE_URL` - PostgreSQL connection (users-service)
 
 Clients use:
 - `VITE_API_URL` - API endpoint

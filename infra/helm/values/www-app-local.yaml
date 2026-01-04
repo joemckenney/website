@@ -1,0 +1,26 @@
+# Local Minikube environment values for www-app
+replicaCount: 1
+
+image:
+  repository: localhost:5000/www-app  # Local registry
+  tag: latest
+  pullPolicy: IfNotPresent  # Try local first, then registry
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: www.local.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []  # No TLS locally
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi

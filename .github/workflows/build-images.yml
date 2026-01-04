@@ -114,44 +114,44 @@ jobs:
 
           echo "Detecting changes against: $BASE_REF"
 
-          # Check if @www/web or its dependencies changed
-          WWW_PACKAGES=$(pnpm turbo run build --filter='@www/web...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
+          # Check if @app/www or its dependencies changed
+          WWW_PACKAGES=$(pnpm turbo run build --filter='@app/www...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
           if [ -n "$WWW_PACKAGES" ]; then
             echo "www_web=true" >> $GITHUB_OUTPUT
-            echo "@www/web affected packages: $WWW_PACKAGES"
+            echo "@app/www affected packages: $WWW_PACKAGES"
           else
             echo "www_web=false" >> $GITHUB_OUTPUT
-            echo "@www/web: no changes"
+            echo "@app/www: no changes"
           fi
 
-          # Check if @app/web or its dependencies changed
-          APP_PACKAGES=$(pnpm turbo run build --filter='@app/web...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
+          # Check if @app/dashboard or its dependencies changed
+          APP_PACKAGES=$(pnpm turbo run build --filter='@app/dashboard...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
           if [ -n "$APP_PACKAGES" ]; then
             echo "app_web=true" >> $GITHUB_OUTPUT
-            echo "@app/web affected packages: $APP_PACKAGES"
+            echo "@app/dashboard affected packages: $APP_PACKAGES"
           else
             echo "app_web=false" >> $GITHUB_OUTPUT
-            echo "@app/web: no changes"
+            echo "@app/dashboard: no changes"
           fi
 
-          # Check if @api/service or its dependencies changed
-          API_PACKAGES=$(pnpm turbo run build --filter='@api/service...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
+          # Check if @gateway/service or its dependencies changed
+          API_PACKAGES=$(pnpm turbo run build --filter='@gateway/service...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
           if [ -n "$API_PACKAGES" ]; then
             echo "api_service=true" >> $GITHUB_OUTPUT
-            echo "@api/service affected packages: $API_PACKAGES"
+            echo "@gateway/service affected packages: $API_PACKAGES"
           else
             echo "api_service=false" >> $GITHUB_OUTPUT
-            echo "@api/service: no changes"
+            echo "@gateway/service: no changes"
           fi
 
-          # Check if @user/service or its dependencies changed
-          USER_PACKAGES=$(pnpm turbo run build --filter='@user/service...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
+          # Check if @users/service or its dependencies changed
+          USER_PACKAGES=$(pnpm turbo run build --filter='@users/service...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
           if [ -n "$USER_PACKAGES" ]; then
             echo "user_service=true" >> $GITHUB_OUTPUT
-            echo "@user/service affected packages: $USER_PACKAGES"
+            echo "@users/service affected packages: $USER_PACKAGES"
           else
             echo "user_service=false" >> $GITHUB_OUTPUT
-            echo "@user/service: no changes"
+            echo "@users/service: no changes"
           fi
 
   build:
@@ -195,7 +195,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: apps/@www/web/Dockerfile
+          file: apps/www/Dockerfile
           push: true
           tags: |
             ${{ env.DOCKERHUB_USERNAME }}/www-web:${{ steps.meta.outputs.tag }}
@@ -222,7 +222,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: apps/@app/web/Dockerfile
+          file: apps/dashboard/Dockerfile
           push: true
           tags: |
             ${{ env.DOCKERHUB_USERNAME }}/app-web:${{ steps.meta.outputs.tag }}
@@ -247,7 +247,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: apps/@api/service/Dockerfile
+          file: services/@gateway/service/Dockerfile
           push: true
           tags: |
             ${{ env.DOCKERHUB_USERNAME }}/api-service:${{ steps.meta.outputs.tag }}
@@ -271,7 +271,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: apps/@user/service/Dockerfile
+          file: services/@users/service/Dockerfile
           push: true
           tags: |
             ${{ env.DOCKERHUB_USERNAME }}/user-service:${{ steps.meta.outputs.tag }}

@@ -8,15 +8,24 @@
       "outputs": ["dist/**"]
     },
     // Services that generate OpenAPI specs need spec/ in outputs for cache restoration
-    "@api/service#build": {
+    "@gateway/service#build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**", "spec/**"]
     },
-    "@user/service#build": {
+    "@users/service#build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**", "spec/**"]
+    },
+    // Spec packages output openapi.json to their root
+    "@gateway/spec#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["openapi.json"]
+    },
+    "@users/spec#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["openapi.json"]
     },
     "check": {
       "dependsOn": ["^check"]
