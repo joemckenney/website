@@ -3,6 +3,7 @@ lockfileVersion: '9.0'
 settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
+  injectWorkspacePackages: true
 
 catalogs:
   default:
@@ -324,7 +325,7 @@ importers:
     devDependencies:
       '@users/service':
         specifier: workspace:*
-        version: link:../service
+        version: file:services/@users/service
 
 packages:
 
@@ -1297,6 +1298,12 @@ packages:
   '@typescript/native-preview@7.0.0-dev.20251017.1':
     resolution: {integrity: sha512-awfunrvMGHxKdkqTRbcsrLQMaVkAAZWR0BrlOOJiy+JRnE/I/uhGBQ9oLvvUr1bGt4QnkXz3mybCdn2pFgSy5g==}
     hasBin: true
+
+  '@users/db@file:services/@users/db':
+    resolution: {directory: services/@users/db, type: directory}
+
+  '@users/service@file:services/@users/service':
+    resolution: {directory: services/@users/service, type: directory}
 
   '@vanilla-extract/babel-plugin-debug-ids@1.2.2':
     resolution: {integrity: sha512-MeDWGICAF9zA/OZLOKwhoRlsUW+fiMwnfuOAqFVohL31Agj7Q/RBWAYweqjHLgFBCsdnr6XIfwjJnmb2znEWxw==}
@@ -3466,6 +3473,34 @@ snapshots:
       '@typescript/native-preview-linux-x64': 7.0.0-dev.20251017.1
       '@typescript/native-preview-win32-arm64': 7.0.0-dev.20251017.1
       '@typescript/native-preview-win32-x64': 7.0.0-dev.20251017.1
+
+  '@users/db@file:services/@users/db(prisma@7.2.0(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(typescript@5.9.3)':
+    dependencies:
+      '@prisma/adapter-pg': 7.2.0
+      '@prisma/client': 7.2.0(prisma@7.2.0(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(typescript@5.9.3)
+      '@prisma/client-runtime-utils': 7.2.0
+      pg: 8.16.3
+    transitivePeerDependencies:
+      - pg-native
+      - prisma
+      - typescript
+
+  '@users/service@file:services/@users/service':
+    dependencies:
+      '@fastify/cors': 11.2.0
+      '@fastify/swagger': 9.6.1
+      '@fastify/swagger-ui': 5.2.3
+      '@fastify/type-provider-typebox': 6.1.0(typebox@1.0.71)
+      '@users/db': file:services/@users/db(prisma@7.2.0(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(typescript@5.9.3)
+      dotenv: 17.2.3
+      fastify: 5.6.2
+      fastify-metrics: 12.1.0(fastify@5.6.2)
+      typebox: 1.0.71
+    transitivePeerDependencies:
+      - pg-native
+      - prisma
+      - supports-color
+      - typescript
 
   '@vanilla-extract/babel-plugin-debug-ids@1.2.2':
     dependencies:
