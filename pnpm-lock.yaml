@@ -27,15 +27,42 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@crow/box':
+        specifier: workspace:*
+        version: link:../../packages/@crow/box
+      '@crow/button':
+        specifier: workspace:*
+        version: link:../../packages/@crow/button
+      '@crow/flex':
+        specifier: workspace:*
+        version: link:../../packages/@crow/flex
+      '@crow/icon':
+        specifier: workspace:*
+        version: link:../../packages/@crow/icon
+      '@crow/text':
+        specifier: workspace:*
+        version: link:../../packages/@crow/text
+      '@crow/textarea':
+        specifier: workspace:*
+        version: link:../../packages/@crow/textarea
+      '@crow/theme':
+        specifier: workspace:*
+        version: link:../../packages/@crow/theme
       '@gateway/sdk':
         specifier: workspace:*
         version: link:../../services/@gateway/sdk
+      '@generouted/react-router':
+        specifier: ^1.20.0
+        version: 1.20.0(react-router@7.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(vite@6.4.1(@types/node@20.19.27)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2))
       react:
         specifier: ^18.3.1
         version: 18.3.1
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
+      react-router:
+        specifier: ^7.11.0
+        version: 7.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
     devDependencies:
       '@biomejs/biome':
         specifier: 'catalog:'
@@ -1302,6 +1329,13 @@ packages:
     peerDependencies:
       typebox: ^1.0.13
 
+  '@generouted/react-router@1.20.0':
+    resolution: {integrity: sha512-VAOdbH/Z2MzroTB61XYsS1uMJvX5am7CKuF/MgF3ZXS6YSvA6rz9pvQxZbg5PIK4R9h7bsA/oRQlJNLSgQKjEA==}
+    peerDependencies:
+      react: '>=18'
+      react-router: '>=7'
+      vite: '>=5'
+
   '@hey-api/client-fetch@0.7.3':
     resolution: {integrity: sha512-nysIXMag9nr5ENy+47G0AYsegdT7vT6S4KLfY7NVgM6HsyZ0DrhCZvz5nP70M16x9i860SrnXhjpcuHx0g5sDQ==}
     deprecated: Starting with v0.73.0, this package is bundled directly inside @hey-api/openapi-ts.
@@ -1450,6 +1484,18 @@ packages:
   '@mrleebo/prisma-ast@0.12.1':
     resolution: {integrity: sha512-JwqeCQ1U3fvccttHZq7Tk0m/TMC6WcFAQZdukypW3AzlJYKYTGNVd1ANU2GuhKnv4UQuOFj3oAl0LLG/gxFN1w==}
     engines: {node: '>=16'}
+
+  '@nodelib/fs.scandir@2.1.5':
+    resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
+    engines: {node: '>= 8'}
+
+  '@nodelib/fs.stat@2.0.5':
+    resolution: {integrity: sha512-RkhPPp2zrqDAQA/2jNhnztcPAlv64XdhIp7a7454A5ovI7Bukxgt7MX7udwAu3zg1DcpPU0rz3VV1SeaqvY4+A==}
+    engines: {node: '>= 8'}
+
+  '@nodelib/fs.walk@1.2.8':
+    resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
+    engines: {node: '>= 8'}
 
   '@opentelemetry/api@1.9.0':
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
@@ -2223,6 +2269,10 @@ packages:
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
 
+  fast-glob@3.3.3:
+    resolution: {integrity: sha512-7MptL8U0cqcFdzIzwOTHoilX9x5BrNqye7Z/LuC7kCMRio1EMSyqRK3BEAUD7sXRq4iT4AzTVuZdhgQ2TCvYLg==}
+    engines: {node: '>=8.6.0'}
+
   fast-json-stringify@6.1.1:
     resolution: {integrity: sha512-DbgptncYEXZqDUOEl4krff4mUiVrTZZVI7BBrQR/T3BqMj/eM1flTC1Uk2uUoLcWCxjT95xKulV/Lc6hhOZsBQ==}
 
@@ -2302,6 +2352,11 @@ packages:
 
   generate-function@2.3.1:
     resolution: {integrity: sha512-eeB5GfMNeevm/GRYq20ShmsaGcmI81kIX2K9XQx5miC8KdHaC6Jm0qQ8ZNeGOi7wYB8OsdxKs+Y2oVuTFuVwKQ==}
+
+  generouted@1.20.0:
+    resolution: {integrity: sha512-VXU5dFsWdm/faFo2fTGW5obYxy8hhM6B1WXYhCLAV+5pODhrsu8RBc/1IsOQKqtHFYqsuSE5C5KpzmBaLllUqg==}
+    peerDependencies:
+      vite: '>=5'
 
   gensync@1.0.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
@@ -2525,6 +2580,14 @@ packages:
 
   media-query-parser@2.0.2:
     resolution: {integrity: sha512-1N4qp+jE0pL5Xv4uEcwVUhIkwdUO3S/9gML90nqKA7v7FcOS5vUtatfzok9S9U1EJU8dHWlcv95WLnKmmxZI9w==}
+
+  merge2@1.4.1:
+    resolution: {integrity: sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==}
+    engines: {node: '>= 8'}
+
+  micromatch@4.0.8:
+    resolution: {integrity: sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==}
+    engines: {node: '>=8.6'}
 
   mime@3.0.0:
     resolution: {integrity: sha512-jSCU7/VB1loIWBZe14aEYHU/+1UMEHoaO7qxCOVJOw9GgH72VAWppxNcjU+x9a2k3GSIBXNKxXQFqRvvZ7vr3A==}
@@ -2787,6 +2850,9 @@ packages:
   pure-rand@6.1.0:
     resolution: {integrity: sha512-bVWawvoZoBYpp6yIoQtQXHZjmz35RSVHnUOTefl8Vcjr8snTPY1wnpSPMWekcFwbxI6gtmT7rSYPFvz71ldiOA==}
 
+  queue-microtask@1.2.3:
+    resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
+
   quick-format-unescaped@4.0.4:
     resolution: {integrity: sha512-tYC1Q1hgyRuHgloV/YXs2w15unPVh8qfu/qCTfhTYamaw7fyhumKa2yGpdSo87vY32rIclj+4fWYQXUMs9EHvg==}
 
@@ -2801,6 +2867,16 @@ packages:
   react-refresh@0.17.0:
     resolution: {integrity: sha512-z6F7K9bV85EfseRCp2bzrpyQ0Gkw1uLoCel9XBVWPg/TjRj94SkJzUTGfOa4bs7iJvBWtQG0Wq7wnI0syw3EBQ==}
     engines: {node: '>=0.10.0'}
+
+  react-router@7.11.0:
+    resolution: {integrity: sha512-uI4JkMmjbWCZc01WVP2cH7ZfSzH91JAZUDd7/nIprDgWxBV1TkkmLToFh7EbMTcMak8URFRa2YoBL/W8GWnCTQ==}
+    engines: {node: '>=20.0.0'}
+    peerDependencies:
+      react: '>=18'
+      react-dom: '>=18'
+    peerDependenciesMeta:
+      react-dom:
+        optional: true
 
   react@18.3.1:
     resolution: {integrity: sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==}
@@ -2864,6 +2940,9 @@ packages:
   run-applescript@7.1.0:
     resolution: {integrity: sha512-DPe5pVFaAsinSaV6QjQ6gdiedWDcRCbUuiQfQa2wmWV7+xC9bGulGI8+TdRmoFkAPaBXk8CrAbnlY2ISniJ47Q==}
     engines: {node: '>=18'}
+
+  run-parallel@1.2.0:
+    resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
 
   safe-buffer@5.2.1:
     resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
@@ -3688,6 +3767,14 @@ snapshots:
     dependencies:
       typebox: 1.0.71
 
+  '@generouted/react-router@1.20.0(react-router@7.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(vite@6.4.1(@types/node@20.19.27)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2))':
+    dependencies:
+      fast-glob: 3.3.3
+      generouted: 1.20.0(vite@6.4.1(@types/node@20.19.27)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2))
+      react: 18.3.1
+      react-router: 7.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      vite: 6.4.1(@types/node@20.19.27)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
+
   '@hey-api/client-fetch@0.7.3': {}
 
   '@hey-api/codegen-core@0.3.3(typescript@5.9.3)':
@@ -3820,6 +3907,18 @@ snapshots:
     dependencies:
       chevrotain: 10.5.0
       lilconfig: 2.1.0
+
+  '@nodelib/fs.scandir@2.1.5':
+    dependencies:
+      '@nodelib/fs.stat': 2.0.5
+      run-parallel: 1.2.0
+
+  '@nodelib/fs.stat@2.0.5': {}
+
+  '@nodelib/fs.walk@1.2.8':
+    dependencies:
+      '@nodelib/fs.scandir': 2.1.5
+      fastq: 1.20.1
 
   '@opentelemetry/api@1.9.0': {}
 
@@ -4712,6 +4811,14 @@ snapshots:
 
   fast-deep-equal@3.1.3: {}
 
+  fast-glob@3.3.3:
+    dependencies:
+      '@nodelib/fs.stat': 2.0.5
+      '@nodelib/fs.walk': 1.2.8
+      glob-parent: 5.1.2
+      merge2: 1.4.1
+      micromatch: 4.0.8
+
   fast-json-stringify@6.1.1:
     dependencies:
       '@fastify/merge-json-schemas': 0.2.1
@@ -4816,6 +4923,10 @@ snapshots:
   generate-function@2.3.1:
     dependencies:
       is-property: 1.0.2
+
+  generouted@1.20.0(vite@6.4.1(@types/node@20.19.27)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)):
+    dependencies:
+      vite: 6.4.1(@types/node@20.19.27)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
 
   gensync@1.0.0-beta.2: {}
 
@@ -5019,6 +5130,13 @@ snapshots:
   media-query-parser@2.0.2:
     dependencies:
       '@babel/runtime': 7.28.4
+
+  merge2@1.4.1: {}
+
+  micromatch@4.0.8:
+    dependencies:
+      braces: 3.0.3
+      picomatch: 2.3.1
 
   mime@3.0.0: {}
 
@@ -5296,6 +5414,8 @@ snapshots:
 
   pure-rand@6.1.0: {}
 
+  queue-microtask@1.2.3: {}
+
   quick-format-unescaped@4.0.4: {}
 
   rc9@2.1.2:
@@ -5310,6 +5430,14 @@ snapshots:
       scheduler: 0.23.2
 
   react-refresh@0.17.0: {}
+
+  react-router@7.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+    dependencies:
+      cookie: 1.1.1
+      react: 18.3.1
+      set-cookie-parser: 2.7.2
+    optionalDependencies:
+      react-dom: 18.3.1(react@18.3.1)
 
   react@18.3.1:
     dependencies:
@@ -5376,6 +5504,10 @@ snapshots:
       fsevents: 2.3.3
 
   run-applescript@7.1.0: {}
+
+  run-parallel@1.2.0:
+    dependencies:
+      queue-microtask: 1.2.3
 
   safe-buffer@5.2.1: {}
 

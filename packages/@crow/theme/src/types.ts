@@ -23,8 +23,10 @@ export type Theme = {
   borderWidths: Tokens["borderWidths"];
   colors: ThemeColors;
   fonts: Tokens["fonts"];
+  fontFamilies: Tokens["fontFamilies"];
   fontSizes: Tokens["fontSizes"];
   fontWeights: Tokens["fontWeights"];
+  letterSpacing: Tokens["letterSpacing"];
   opacity: Tokens["opacity"];
   radii: Tokens["radii"];
   shadows: Tokens["shadows"];

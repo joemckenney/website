@@ -1,6 +1,7 @@
+import "@crow/theme/styles";
+import { Routes } from "@generouted/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import App from "./app";
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
@@ -9,6 +10,6 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <Routes />
   </StrictMode>,
 );
