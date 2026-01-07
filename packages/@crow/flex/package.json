@@ -1,0 +1,32 @@
+{
+  "name": "@crow/flex",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/index.js --packages=external --jsx=automatic && tsgo --declaration --emitDeclarationOnly --outDir dist",
+    "clean": "rm -rf dist",
+    "check": "biome check ."
+  },
+  "dependencies": {
+    "@crow/box": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:",
+    "@types/react": "^18.0.0",
+    "@typescript/native-preview": "catalog:",
+    "@website/config": "workspace:*",
+    "esbuild": "^0.24.0"
+  }
+}
