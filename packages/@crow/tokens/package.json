@@ -1,0 +1,29 @@
+{
+  "name": "@crow/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.js --packages=external && tsgo --declaration --emitDeclarationOnly --outDir dist",
+    "clean": "rm -rf dist",
+    "check": "biome check ."
+  },
+  "dependencies": {
+    "chroma-js": "^2.4.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:",
+    "@types/chroma-js": "^2.4.0",
+    "@typescript/native-preview": "catalog:",
+    "@website/config": "workspace:*",
+    "esbuild": "^0.24.0"
+  }
+}

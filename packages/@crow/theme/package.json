@@ -1,0 +1,40 @@
+{
+  "name": "@crow/theme",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./styles": "./dist/index.css",
+    "./styles/reset": "./dist/reset.css"
+  },
+  "sideEffects": [
+    "*.css",
+    "*.css.ts"
+  ],
+  "scripts": {
+    "build": "node build.mjs && tsgo --declaration --emitDeclarationOnly --outDir dist",
+    "clean": "rm -rf dist",
+    "check": "biome check ."
+  },
+  "dependencies": {
+    "@crow/tokens": "workspace:*",
+    "@vanilla-extract/css": "^1.16.0",
+    "@vanilla-extract/css-utils": "^0.1.4",
+    "@vanilla-extract/private": "^1.0.6",
+    "@vanilla-extract/sprinkles": "^1.6.3",
+    "deepmerge": "^4.3.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:",
+    "@typescript/native-preview": "catalog:",
+    "@vanilla-extract/esbuild-plugin": "^2.3.0",
+    "@website/config": "workspace:*",
+    "esbuild": "^0.24.0"
+  }
+}
