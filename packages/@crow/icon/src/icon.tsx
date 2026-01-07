@@ -1,15 +1,20 @@
-import { type ForwardedRef, type ReactElement, forwardRef, cloneElement } from 'react';
-import type { Theme } from '@crow/theme';
-import { Box, type Props as BoxProps } from '@crow/box';
+import { Box, type Props as BoxProps } from "@crow/box";
+import type { Theme } from "@crow/theme";
+import {
+  cloneElement,
+  type ForwardedRef,
+  forwardRef,
+  type ReactElement,
+} from "react";
 
 export interface Props {
-  color?: BoxProps['color'];
-  size?: keyof Theme['space'];
+  color?: BoxProps["color"];
+  size?: keyof Theme["space"];
   strokeWidth?: 1 | 1.5 | 2;
   children: ReactElement<{
     height: string;
     width: string;
-    strokeWidth: Props['strokeWidth'];
+    strokeWidth: Props["strokeWidth"];
   }>;
 }
 
@@ -26,8 +31,8 @@ function Icon(props: Props, ref?: ForwardedRef<HTMLElement>) {
       ref={ref}
     >
       {cloneElement(children, {
-        width: '100%',
-        height: '100%',
+        width: "100%",
+        height: "100%",
         strokeWidth: strokeWidth,
       })}
     </Box>
@@ -35,5 +40,5 @@ function Icon(props: Props, ref?: ForwardedRef<HTMLElement>) {
 }
 
 const Component = forwardRef(Icon);
-Component.displayName = 'Icon';
+Component.displayName = "Icon";
 export { Component as Icon };

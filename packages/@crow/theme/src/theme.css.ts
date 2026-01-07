@@ -1,22 +1,21 @@
-import merge from 'deepmerge';
+import { type Mode, tokens } from "@crow/tokens";
 
 import {
   createGlobalTheme,
   createGlobalThemeContract,
-} from '@vanilla-extract/css';
+} from "@vanilla-extract/css";
+import merge from "deepmerge";
 
-import { tokens, type Mode } from '@crow/tokens';
-
-import type { Theme } from './types';
+import type { Theme } from "./types";
 
 const getVarName = (_value: string | null, path: string[]) =>
-  path.join('-').replace('.', '_').replace('/', '__');
+  path.join("-").replace(".", "_").replace("/", "__");
 
-const baseTokens: Omit<Theme, 'colors'> = tokens;
+const baseTokens: Omit<Theme, "colors"> = tokens;
 const baseVars = createGlobalThemeContract(baseTokens, getVarName);
-createGlobalTheme(':root', baseVars, baseTokens);
+createGlobalTheme(":root", baseVars, baseTokens);
 
-const makeColorScheme = (mode: Mode = 'light') => {
+const makeColorScheme = (mode: Mode = "light") => {
   const colors = tokens.colors[mode];
   return {
     colors: {
@@ -25,13 +24,13 @@ const makeColorScheme = (mode: Mode = 'light') => {
     },
   };
 };
-const colorModeTokens = makeColorScheme('light');
+const colorModeTokens = makeColorScheme("light");
 const colorModeVars = createGlobalThemeContract(colorModeTokens, getVarName);
 createGlobalTheme('[data-theme="light"]', colorModeVars, colorModeTokens);
 createGlobalTheme(
   '[data-theme="dark"]',
   colorModeVars,
-  makeColorScheme('dark')
+  makeColorScheme("dark"),
 );
 type ColorVars = typeof colorModeVars;
 const colorVars = colorModeVars as ColorVars;

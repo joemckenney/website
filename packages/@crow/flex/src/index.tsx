@@ -1,36 +1,36 @@
-import { forwardRef, type ForwardedRef } from 'react';
-import { Box, type Props as BoxProps } from '@crow/box';
+import { Box, type Props as BoxProps } from "@crow/box";
+import { type ForwardedRef, forwardRef } from "react";
 
-type Direction = 'horizontal' | 'vertical';
+type Direction = "horizontal" | "vertical";
 
-const directionMap: Record<Direction, BoxProps['flexDirection']> = {
-  horizontal: 'row',
-  vertical: 'column',
+const directionMap: Record<Direction, BoxProps["flexDirection"]> = {
+  horizontal: "row",
+  vertical: "column",
 };
 
 export interface Props
   extends Omit<
     BoxProps,
-    'alignItems' | 'justifyContent' | 'flexWrap' | 'wrap' | 'flexDirection'
+    "alignItems" | "justifyContent" | "flexWrap" | "wrap" | "flexDirection"
   > {
-  align?: BoxProps['alignItems'];
+  align?: BoxProps["alignItems"];
   direction?: Direction;
-  justify?: BoxProps['justifyContent'];
+  justify?: BoxProps["justifyContent"];
   wrap?: boolean;
-  opacity?: BoxProps['opacity'];
-  onClick?: BoxProps['onClick'];
+  opacity?: BoxProps["opacity"];
+  onClick?: BoxProps["onClick"];
 }
 
 function Flex(
   { align, direction, justify, wrap, ...restProps }: Props,
-  ref?: ForwardedRef<HTMLElement>
+  ref?: ForwardedRef<HTMLElement>,
 ) {
   return (
     <Box
       alignItems={align}
       display="flex"
       flexDirection={direction ? directionMap[direction] : undefined}
-      flexWrap={wrap ? 'wrap' : undefined}
+      flexWrap={wrap ? "wrap" : undefined}
       justifyContent={justify}
       ref={ref}
       {...restProps}
@@ -39,5 +39,5 @@ function Flex(
 }
 
 const Component = forwardRef(Flex);
-Component.displayName = 'Flex';
+Component.displayName = "Flex";
 export { Component as Flex };

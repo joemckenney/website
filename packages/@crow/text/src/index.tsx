@@ -1,24 +1,29 @@
-import { forwardRef, type ForwardedRef, type ReactNode, type ElementType } from 'react';
-import { Box, type Props as BoxProps } from '@crow/box';
-import { textClasses, type TextVariants } from './index.css';
+import { Box, type Props as BoxProps } from "@crow/box";
+import {
+  type ElementType,
+  type ForwardedRef,
+  forwardRef,
+  type ReactNode,
+} from "react";
+import { textClasses } from "./index.css";
 
 export interface Props {
   as?: ElementType;
   children: ReactNode;
-  font?: BoxProps['fontFamily'];
-  size?: BoxProps['fontSize'];
-  weight?: BoxProps['fontWeight'];
-  textAlign?: BoxProps['textAlign'];
-  textDecoration?: BoxProps['textDecoration'];
-  textTransform?: BoxProps['textTransform'];
-  color?: BoxProps['color'];
+  font?: BoxProps["fontFamily"];
+  size?: BoxProps["fontSize"];
+  weight?: BoxProps["fontWeight"];
+  textAlign?: BoxProps["textAlign"];
+  textDecoration?: BoxProps["textDecoration"];
+  textTransform?: BoxProps["textTransform"];
+  color?: BoxProps["color"];
   truncate?: boolean | number;
   wrap?: boolean;
 }
 
 function Text(
   {
-    as = 'span',
+    as = "span",
     children,
     color,
     font,
@@ -30,7 +35,7 @@ function Text(
     wrap,
     weight,
   }: Props,
-  ref?: ForwardedRef<HTMLElement>
+  ref?: ForwardedRef<HTMLElement>,
 ) {
   return (
     <Box
@@ -47,8 +52,8 @@ function Text(
       fontWeight={weight}
       color={color}
       style={{
-        WebkitLineClamp: !!truncate
-          ? typeof truncate == 'number'
+        WebkitLineClamp: truncate
+          ? typeof truncate === "number"
             ? truncate
             : 1
           : 0,
@@ -61,5 +66,5 @@ function Text(
 }
 
 const Component = forwardRef(Text);
-Component.displayName = 'Text';
+Component.displayName = "Text";
 export { Component as Text };

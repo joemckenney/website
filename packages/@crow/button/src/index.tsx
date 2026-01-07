@@ -1,33 +1,33 @@
-import { forwardRef, type ElementType, type ForwardedRef } from 'react';
-import { mergeProps, useObjectRef } from '@react-aria/utils';
-import { useHover, usePress } from '@react-aria/interactions';
+import { Text } from "@crow/text";
+import { useHover, usePress } from "@react-aria/interactions";
+import { mergeProps, useObjectRef } from "@react-aria/utils";
 import type {
   AriaBaseButtonProps,
   ButtonProps,
   LinkButtonProps,
-} from '@react-types/button';
-import { Text } from '@crow/text';
+} from "@react-types/button";
+import { type ElementType, type ForwardedRef, forwardRef } from "react";
 
-import { buttonClasses, type ButtonVariants } from './index.css';
+import { buttonClasses } from "./index.css";
 
-export interface Props<T extends ElementType = 'button'>
+export interface Props<T extends ElementType = "button">
   extends AriaBaseButtonProps,
     ButtonProps,
     LinkButtonProps<T> {
-  variant?: 'default' | 'primary' | 'danger' | 'minimal';
-  width?: 'fit' | 'full';
+  variant?: "default" | "primary" | "danger" | "minimal";
+  width?: "fit" | "full";
 }
 
-function Button<T extends ElementType = 'button'>(
+function Button<T extends ElementType = "button">(
   props: Props<T>,
-  ref?: ForwardedRef<HTMLButtonElement>
+  ref?: ForwardedRef<HTMLButtonElement>,
 ) {
   const {
-    elementType: ElementType = 'button',
+    elementType: ElementType = "button",
     children,
     isDisabled,
-    variant = 'default',
-    width = 'fit',
+    variant = "default",
+    width = "fit",
   } = props;
 
   const { pressProps } = usePress({
@@ -59,5 +59,5 @@ function Button<T extends ElementType = 'button'>(
 }
 
 const Component = forwardRef(Button);
-Component.displayName = 'Button';
+Component.displayName = "Button";
 export { Component as Button };

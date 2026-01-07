@@ -1,26 +1,28 @@
-import { recipe, type RecipeVariants } from '@vanilla-extract/recipes';
-import { vars } from '@crow/theme';
+import { vars } from "@crow/theme";
+import { type RecipeVariants, recipe } from "@vanilla-extract/recipes";
 
-type CrowRecipeVariants<T extends ReturnType<typeof recipe>> = NonNullable<RecipeVariants<T>>;
+type CrowRecipeVariants<T extends ReturnType<typeof recipe>> = NonNullable<
+  RecipeVariants<T>
+>;
 
 export const buttonClasses = recipe({
   base: {
-    position: 'relative',
-    boxSizing: 'border-box',
-    display: 'inline-flex',
+    position: "relative",
+    boxSizing: "border-box",
+    display: "inline-flex",
     height: vars.space[10],
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     gap: vars.space[1],
     border: vars.borderWidths[0],
     borderRadius: vars.radii[2],
     padding: `${vars.space[2]} ${vars.space[3]}`,
-    cursor: 'pointer',
-    transitionProperty: 'border-color, background',
-    transitionDuration: '0.2s',
-    transitionTimingFunction: 'ease',
-    whiteSpace: 'nowrap',
-    ':focus-visible': {
+    cursor: "pointer",
+    transitionProperty: "border-color, background",
+    transitionDuration: "0.2s",
+    transitionTimingFunction: "ease",
+    whiteSpace: "nowrap",
+    ":focus-visible": {
       outline: `${vars.colors.terracotta500} ${vars.borderStyles.solid} ${vars.borderWidths[2]}`,
     },
   },
@@ -32,7 +34,7 @@ export const buttonClasses = recipe({
         background: vars.colors.white,
         border: `${vars.borderWidths[1]} ${vars.borderStyles.solid} ${vars.colors.stone300}`,
         selectors: {
-          '&:enabled:hover': {
+          "&:enabled:hover": {
             borderColor: vars.colors.stone400,
             background: vars.colors.stone100,
           },
@@ -41,11 +43,11 @@ export const buttonClasses = recipe({
       primary: {
         color: vars.colors.white,
         background: vars.colors.terracotta500,
-        ':focus-visible': {
+        ":focus-visible": {
           outlineColor: vars.colors.terracotta200,
         },
         selectors: {
-          '&:enabled:hover': {
+          "&:enabled:hover": {
             background: vars.colors.terracotta600,
           },
         },
@@ -54,7 +56,7 @@ export const buttonClasses = recipe({
         color: vars.colors.white,
         background: vars.colors.rust500,
         selectors: {
-          '&:enabled:hover': {
+          "&:enabled:hover": {
             background: vars.colors.rust600,
           },
         },
@@ -63,7 +65,7 @@ export const buttonClasses = recipe({
         color: vars.colors.terracotta500,
         background: vars.colors.transparent,
         selectors: {
-          '&:enabled:hover': {
+          "&:enabled:hover": {
             background: vars.colors.terracotta50,
           },
         },
@@ -80,7 +82,7 @@ export const buttonClasses = recipe({
     disabled: {
       true: {
         opacity: vars.opacity[40],
-        cursor: 'not-allowed',
+        cursor: "not-allowed",
       },
     },
   },

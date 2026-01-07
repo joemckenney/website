@@ -1,22 +1,22 @@
 import {
-  type ForwardedRef,
   type AllHTMLAttributes,
-  type ElementType,
   createElement,
+  type ElementType,
+  type ForwardedRef,
   forwardRef,
-} from 'react';
-import { utilClasses, type Utils } from './index.css';
+} from "react";
+import { type Utils, utilClasses } from "./index.css";
 
 export interface Props
   extends Omit<
       AllHTMLAttributes<HTMLElement>,
-      'as' | 'color' | 'height' | 'width'
+      "as" | "color" | "height" | "width"
     >,
     Utils {
   as?: ElementType;
 }
 
-function Box({ as = 'div', ...props }: Props, ref?: ForwardedRef<HTMLElement>) {
+function Box({ as = "div", ...props }: Props, ref?: ForwardedRef<HTMLElement>) {
   const utilProps: Record<string, unknown> = {};
   const nativeProps: Record<string, unknown> = {};
 
@@ -29,7 +29,7 @@ function Box({ as = 'div', ...props }: Props, ref?: ForwardedRef<HTMLElement>) {
   }
 
   const classNames = [props.className, utilClasses({ ...utilProps })]
-    .join(' ')
+    .join(" ")
     .trim();
 
   return createElement(as, {
@@ -40,6 +40,6 @@ function Box({ as = 'div', ...props }: Props, ref?: ForwardedRef<HTMLElement>) {
 }
 
 const Component = forwardRef(Box);
-Component.displayName = 'Box';
+Component.displayName = "Box";
 export { Component as Box };
 export type { Utils as BoxUtils };

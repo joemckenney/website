@@ -1,5 +1,5 @@
-import { forwardRef, type ForwardedRef, type SVGProps } from 'react';
-import { Icon, type Props as IconProps } from './icon';
+import { type ForwardedRef, forwardRef, type SVGProps } from "react";
+import { Icon, type Props as IconProps } from "./icon";
 
 const XSvg = (props: SVGProps<SVGSVGElement>) => (
   <svg
@@ -12,6 +12,7 @@ const XSvg = (props: SVGProps<SVGSVGElement>) => (
     fill="none"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
     {...props}
   >
     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
@@ -21,8 +22,8 @@ const XSvg = (props: SVGProps<SVGSVGElement>) => (
 );
 
 function IconXComponent(
-  props: Omit<IconProps, 'children'>,
-  ref?: ForwardedRef<HTMLElement>
+  props: Omit<IconProps, "children">,
+  ref?: ForwardedRef<HTMLElement>,
 ) {
   return (
     <Icon ref={ref} {...props}>
@@ -32,5 +33,5 @@ function IconXComponent(
 }
 
 const Component = forwardRef(IconXComponent);
-Component.displayName = 'IconX';
+Component.displayName = "IconX";
 export { Component as IconX };

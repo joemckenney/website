@@ -1,6 +1,6 @@
-import type { Tokens, Color } from '@crow/tokens';
+import type { Color, Tokens } from "@crow/tokens";
 
-type BaseColors = Tokens['colors']['base'] & {
+type BaseColors = Tokens["colors"]["base"] & {
   [key in Color]: string;
 };
 
@@ -19,15 +19,15 @@ type ThemeColors = BaseColors & {
 };
 
 export type Theme = {
-  borderStyles: Tokens['borderStyles'];
-  borderWidths: Tokens['borderWidths'];
+  borderStyles: Tokens["borderStyles"];
+  borderWidths: Tokens["borderWidths"];
   colors: ThemeColors;
-  fonts: Tokens['fonts'];
-  fontSizes: Tokens['fontSizes'];
-  fontWeights: Tokens['fontWeights'];
-  opacity: Tokens['opacity'];
-  radii: Tokens['radii'];
-  shadows: Tokens['shadows'];
-  space: Tokens['space'];
-  zIndexes: Tokens['zIndexes'];
+  fonts: Tokens["fonts"];
+  fontSizes: Tokens["fontSizes"];
+  fontWeights: Tokens["fontWeights"];
+  opacity: Tokens["opacity"];
+  radii: Tokens["radii"];
+  shadows: Tokens["shadows"];
+  space: Tokens["space"];
+  zIndexes: Tokens["zIndexes"];
 };
