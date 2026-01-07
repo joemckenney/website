@@ -1,63 +1,66 @@
 export const fontFamilies = {
-  inter: 'inter var',
-  spaceGrotesque: 'space grotesque',
+  dinEngschrift: 'DIN 1451 Engschrift',
+  dinMittelschrift: 'DIN 1451 Mittelschrift',
+  dmMono: 'DM Mono',
 };
 
-const sansSystemFontFamilyStack =
-  '-apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Cantarell, Ubuntu, roboto, noto, arial, sans-serif';
+const displayFontStack = `${fontFamilies.dinEngschrift}, 'Bebas Neue', 'Oswald', 'Barlow Condensed', sans-serif`;
+const textFontStack = `${fontFamilies.dinMittelschrift}, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+const monoFontStack = `${fontFamilies.dmMono}, 'IBM Plex Mono', Menlo, Consolas, monospace`;
 
 export const fonts = {
-  sans: `${fontFamilies.spaceGrotesque}, ${sansSystemFontFamilyStack}`,
-  sansDisplay: `${fontFamilies.spaceGrotesque}, ${sansSystemFontFamilyStack}`,
-  sansText: `${fontFamilies.inter}, ${sansSystemFontFamilyStack}`,
-  mono: `Menlo, Consolas, Monaco, Liberation Mono, Lucida Console, monospace`,
+  display: displayFontStack,
+  sans: textFontStack,
+  sansDisplay: displayFontStack,
+  sansText: textFontStack,
+  mono: monoFontStack,
 };
 
 export const fontSizes = {
-  /** 16px / 24px */
+  /** 14px / 22px - body text */
   root: {
-    fontSize: '16px',
-    lineHeight: '1.5rem',
+    fontSize: '14px',
+    lineHeight: '1.6',
+  },
+  /** 14px / 22px */
+  base: {
+    fontSize: '0.875rem',
+    lineHeight: '1.6',
+  },
+  /** 10px / 14px - tiny labels */
+  xs: {
+    fontSize: '0.625rem',
+    lineHeight: '1.4',
+  },
+  /** 12px / 18px - small text */
+  sm: {
+    fontSize: '0.75rem',
+    lineHeight: '1.5',
   },
   /** 16px / 24px */
-  base: {
-    fontSize: '1rem',
-    lineHeight: '1.5rem',
-  },
-  /** 12px / 16px */
-  xs: {
-    fontSize: '0.75rem',
-    lineHeight: '1rem',
-  },
-  /** 14px / 20px */
-  sm: {
-    fontSize: '0.875rem',
-    lineHeight: '1.25rem',
-  },
-  /** 18px / 28px */
   md: {
-    fontSize: '1.125rem',
-    lineHeight: '1.75rem',
+    fontSize: '1rem',
+    lineHeight: '1.5',
   },
-  /** 22px / 32px */
+  /** 20px / 28px */
   lg: {
-    fontSize: '1.375rem',
-    lineHeight: '2rem',
+    fontSize: '1.25rem',
+    lineHeight: '1.4',
   },
-  /** 28px / 40px */
+  /** 24px / 32px */
   xl: {
-    fontSize: '1.75rem',
-    lineHeight: '2.5rem',
+    fontSize: '1.5rem',
+    lineHeight: '1.33',
   },
-  /** 36px / 52px */
+  /** 32px / 40px */
   '2xl': {
-    fontSize: '2.25rem',
-    lineHeight: '3.25rem',
+    fontSize: '2rem',
+    lineHeight: '1.25',
   },
-  /** 64px / 84px */
+  /** 48px / 56px */
   '3xl': {
-    fontSize: '4rem',
-    lineHeight: '5.25rem',
+    fontSize: '3rem',
+    lineHeight: '1.17',
   },
 };
 
@@ -72,4 +75,12 @@ export const fontWeights = {
   extraBold: '800',
   black: '900',
   extraBlack: '950',
+};
+
+export const letterSpacing = {
+  tight: '-0.02em',
+  normal: '0',
+  wide: '0.05em',
+  wider: '0.1em',
+  widest: '0.15em',
 };

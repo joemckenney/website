@@ -2,108 +2,88 @@ export type Mode = 'light' | 'dark';
 
 export type Color = keyof (typeof colors)['light'];
 
-const blurple = {
-  blurple50: '#f1edfd',
-  blurple100: '#e2dafb',
-  blurple200: '#c6b5f7',
-  blurple300: '#a991f3',
-  blurple400: '#8d6cef',
-  blurple500: '#7047eb',
-  blurple600: '#5a39be',
-  blurple700: '#442b91',
-  blurple800: '#2f1d63',
-  blurple900: '#190f36',
+// Warm stone neutrals - editorial/newspaper aesthetic
+const stone = {
+  stone50: '#faf9f7',   // background
+  stone100: '#f3f1ed',  // background alt
+  stone200: '#e8e6e1',
+  stone300: '#d4d0c8',  // border
+  stone400: '#b5b0a5',
+  stone500: '#8a8479',
+  stone600: '#6b6b6b',  // muted text
+  stone700: '#524e47',
+  stone800: '#3a3733',
+  stone900: '#1a1a1a',  // primary text
 };
 
-const ultramarine = {
-  ultramarine50: '#ded3f4',
-  ultramarine100: '#cdbdec',
-  ultramarine200: '#aa93db',
-  ultramarine300: '#8868cb',
-  ultramarine400: '#653eba',
-  ultramarine500: '#4313aa',
-  ultramarine600: '#360f88',
-  ultramarine700: '#280b66',
-  ultramarine800: '#1b0844',
-  ultramarine900: '#0d0422',
+// Pure ink blacks for high contrast elements
+const ink = {
+  ink50: '#f5f5f5',
+  ink100: '#e5e5e5',
+  ink200: '#cccccc',
+  ink300: '#a3a3a3',
+  ink400: '#737373',
+  ink500: '#525252',
+  ink600: '#404040',
+  ink700: '#2e2e2e',
+  ink800: '#1a1a1a',
+  ink900: '#0a0a0a',
 };
 
-const burntOrange = {
-  burntOrange50: '#fdece7',
-  burntOrange100: '#fadad0',
-  burntOrange200: '#f5b5a1',
-  burntOrange300: '#f18f71',
-  burntOrange400: '#ec6a42',
-  burntOrange500: '#e74513',
-  burntOrange600: '#b9370f',
-  burntOrange700: '#8b290b',
-  burntOrange800: '#5c1c08',
-  burntOrange900: '#2e0e04',
+// Subtle warm accent - terracotta/rust
+const terracotta = {
+  terracotta50: '#fdf6f4',
+  terracotta100: '#fae8e4',
+  terracotta200: '#f5d0c7',
+  terracotta300: '#e9a899',
+  terracotta400: '#db7f6b',
+  terracotta500: '#c45a42',
+  terracotta600: '#a34835',
+  terracotta700: '#7d3828',
+  terracotta800: '#5a291d',
+  terracotta900: '#3d1c14',
 };
 
-const sunGlow = {
-  sunGlow50: '#fff9ea',
-  sunGlow100: '#fff3d5',
-  sunGlow200: '#ffe7ab',
-  sunGlow300: '#ffdb80',
-  sunGlow400: '#ffcf56',
-  sunGlow500: '#ffc32c',
-  sunGlow600: '#cd9c23',
-  sunGlow700: '#9a761a',
-  sunGlow800: '#684f12',
-  sunGlow900: '#352909',
+// Success/valid states - sage green
+const sage = {
+  sage50: '#f6f9f6',
+  sage100: '#e8f0e8',
+  sage200: '#d1e0d1',
+  sage300: '#a8c5a8',
+  sage400: '#7fa97f',
+  sage500: '#5a8a5a',
+  sage600: '#476e47',
+  sage700: '#365336',
+  sage800: '#263b26',
+  sage900: '#1a291a',
 };
 
-const sky = {
-  sky50: '#f2fbff',
-  sky100: '#e4f7ff',
-  sky200: '#c9efff',
-  sky300: '#afe8ff',
-  sky400: '#94e0ff',
-  sky500: '#79d8ff',
-  sky600: '#61b8dc',
-  sky700: '#4998b9',
-  sky800: '#307996',
-  sky900: '#185973',
+// Warning states - warm amber
+const amber = {
+  amber50: '#fffbeb',
+  amber100: '#fef3c7',
+  amber200: '#fde68a',
+  amber300: '#fcd34d',
+  amber400: '#fbbf24',
+  amber500: '#f59e0b',
+  amber600: '#d97706',
+  amber700: '#b45309',
+  amber800: '#92400e',
+  amber900: '#78350f',
 };
 
-const midnight = {
-  midnight50: '#678edb',
-  midnight100: '#5c81c9',
-  midnight200: '#4766a3',
-  midnight300: '#314b7e',
-  midnight400: '#1c3058',
-  midnight500: '#061533',
-  midnight600: '#051129',
-  midnight700: '#040d1f',
-  midnight800: '#020814',
-  midnight900: '#01040a',
-};
-
-const conifer = {
-  conifer50: '#f8fff1',
-  conifer100: '#f2ffe2',
-  conifer200: '#e4ffc6',
-  conifer300: '#d7ffa9',
-  conifer400: '#c9ff8d',
-  conifer500: '#bcff70',
-  conifer600: '#9eda5a',
-  conifer700: '#80b543',
-  conifer800: '#62912d',
-  conifer900: '#446c16',
-};
-
-const gray = {
-  gray50: '#f6f6f6',
-  gray100: '#ededed',
-  gray200: '#dadada',
-  gray300: '#c8c8c8',
-  gray400: '#b5b5b5',
-  gray500: '#a3a3a3',
-  gray600: '#919191',
-  gray700: '#7e7e7e',
-  gray800: '#6c6c6c',
-  gray900: '#595959',
+// Error states - muted red
+const rust = {
+  rust50: '#fef2f2',
+  rust100: '#fee2e2',
+  rust200: '#fecaca',
+  rust300: '#fca5a5',
+  rust400: '#f87171',
+  rust500: '#dc2626',
+  rust600: '#b91c1c',
+  rust700: '#991b1b',
+  rust800: '#7f1d1d',
+  rust900: '#450a0a',
 };
 
 export const colors = {
@@ -114,23 +94,29 @@ export const colors = {
     inherit: 'inherit',
   },
   light: {
-    ...blurple,
-    ...ultramarine,
-    ...burntOrange,
-    ...sunGlow,
-    ...sky,
-    ...midnight,
-    ...conifer,
-    ...gray,
+    ...stone,
+    ...ink,
+    ...terracotta,
+    ...sage,
+    ...amber,
+    ...rust,
   },
   dark: {
-    ...blurple,
-    ...ultramarine,
-    ...burntOrange,
-    ...sunGlow,
-    ...sky,
-    ...midnight,
-    ...conifer,
-    ...gray,
+    // Inverted for dark mode
+    stone50: '#1a1a1a',
+    stone100: '#252422',
+    stone200: '#3a3733',
+    stone300: '#524e47',
+    stone400: '#6b6b6b',
+    stone500: '#8a8479',
+    stone600: '#b5b0a5',
+    stone700: '#d4d0c8',
+    stone800: '#e8e6e1',
+    stone900: '#faf9f7',
+    ...ink,
+    ...terracotta,
+    ...sage,
+    ...amber,
+    ...rust,
   },
 };

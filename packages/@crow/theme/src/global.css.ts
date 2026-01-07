@@ -4,6 +4,7 @@ import { vars } from './theme.css';
 globalStyle(':root', {
   fontFamily: vars.fonts.sansText,
   ...vars.fontSizes.root,
-  color: vars.colors.midnight500,
+  color: vars.colors.stone900,
+  backgroundColor: vars.colors.stone50,
   WebkitFontSmoothing: 'antialiased',
 });

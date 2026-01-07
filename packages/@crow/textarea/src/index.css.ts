@@ -10,7 +10,7 @@ const autoResizeMaxHeight = `calc(${vars.fontSizes.base.lineHeight} * var(--max-
 
 const textareaStyles = {
   minHeight: vars.space['10'],
-  border: `${vars.borderWidths[1]} ${vars.borderStyles.solid} ${vars.colors.gray200}`,
+  border: `${vars.borderWidths[1]} ${vars.borderStyles.solid} ${vars.colors.stone300}`,
   padding: `${vars.space['2']} ${paddingY}`,
   fontSize: vars.fontSizes.base.fontSize,
   lineHeight: vars.fontSizes.base.lineHeight,
@@ -22,15 +22,15 @@ export const textareaClasses = recipe({
     background: vars.colors.white,
     borderRadius: vars.space['2'],
     boxSizing: 'border-box',
-    color: vars.colors.midnight500,
+    color: vars.colors.stone900,
     whiteSpace: 'pre-wrap',
     overflowWrap: 'anywhere',
     ':focus-visible': {
-      borderColor: vars.colors.blurple500,
-      outline: `${vars.colors.blurple500} ${vars.borderStyles.solid} ${vars.borderWidths[1]}`,
+      borderColor: vars.colors.terracotta500,
+      outline: `${vars.colors.terracotta500} ${vars.borderStyles.solid} ${vars.borderWidths[1]}`,
     },
     '::placeholder': {
-      color: vars.colors.gray500,
+      color: vars.colors.stone500,
     },
   },
 
@@ -38,10 +38,10 @@ export const textareaClasses = recipe({
     validationState: {
       valid: {},
       invalid: {
-        borderColor: vars.colors.burntOrange500,
+        borderColor: vars.colors.rust500,
         ':focus-visible': {
-          borderColor: vars.colors.burntOrange500,
-          outlineColor: vars.colors.burntOrange500,
+          borderColor: vars.colors.rust500,
+          outlineColor: vars.colors.rust500,
         },
       },
     },
@@ -53,8 +53,8 @@ export const textareaClasses = recipe({
     },
     readOnly: {
       true: {
-        background: vars.colors.gray50,
-        borderColor: vars.colors.gray50,
+        background: vars.colors.stone100,
+        borderColor: vars.colors.stone100,
       },
     },
     font: {

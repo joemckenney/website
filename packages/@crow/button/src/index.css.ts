@@ -21,50 +21,50 @@ export const buttonClasses = recipe({
     transitionTimingFunction: 'ease',
     whiteSpace: 'nowrap',
     ':focus-visible': {
-      outline: `${vars.colors.blurple500} ${vars.borderStyles.solid} ${vars.borderWidths[2]}`,
+      outline: `${vars.colors.terracotta500} ${vars.borderStyles.solid} ${vars.borderWidths[2]}`,
     },
   },
 
   variants: {
     variant: {
       default: {
-        color: vars.colors.midnight500,
+        color: vars.colors.stone900,
         background: vars.colors.white,
-        border: `${vars.borderWidths[1]} ${vars.borderStyles.solid} ${vars.colors.gray200}`,
+        border: `${vars.borderWidths[1]} ${vars.borderStyles.solid} ${vars.colors.stone300}`,
         selectors: {
           '&:enabled:hover': {
-            borderColor: vars.colors.gray400,
-            background: vars.colors.gray50,
+            borderColor: vars.colors.stone400,
+            background: vars.colors.stone100,
           },
         },
       },
       primary: {
         color: vars.colors.white,
-        background: vars.colors.blurple500,
+        background: vars.colors.terracotta500,
         ':focus-visible': {
-          outlineColor: vars.colors.blurple200,
+          outlineColor: vars.colors.terracotta200,
         },
         selectors: {
           '&:enabled:hover': {
-            background: vars.colors.blurple700,
+            background: vars.colors.terracotta600,
           },
         },
       },
       danger: {
         color: vars.colors.white,
-        background: vars.colors.burntOrange500,
+        background: vars.colors.rust500,
         selectors: {
           '&:enabled:hover': {
-            background: vars.colors.burntOrange700,
+            background: vars.colors.rust600,
           },
         },
       },
       minimal: {
-        color: vars.colors.blurple500,
+        color: vars.colors.terracotta500,
         background: vars.colors.transparent,
         selectors: {
           '&:enabled:hover': {
-            background: vars.colors.blurple50,
+            background: vars.colors.terracotta50,
           },
         },
       },

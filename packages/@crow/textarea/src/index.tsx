@@ -142,14 +142,14 @@ function Textarea(props: Props, ref?: ForwardedRef<HTMLTextAreaElement>) {
       )}
       {description && (
         <div {...descriptionProps}>
-          <Text color="gray900" size="sm">
+          <Text color="stone600" size="sm">
             {description}
           </Text>
         </div>
       )}
       {errorMessage && (
         <div {...errorMessageProps}>
-          <Text color="burntOrange500" size="sm">
+          <Text color="rust500" size="sm">
             {errorMessage}
           </Text>
         </div>
