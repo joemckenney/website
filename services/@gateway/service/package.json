@@ -24,17 +24,18 @@
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.1.0",
+    "@fastify/http-proxy": "^11.4.1",
     "@fastify/jwt": "^10.0.0",
     "@fastify/swagger": "^9.6.0",
     "@fastify/swagger-ui": "^5.2.3",
     "@fastify/type-provider-typebox": "^6.1.0",
     "@users/sdk": "workspace:*",
-    "typebox": "^1.0.13",
     "arctic": "^3.7.0",
     "dotenv": "^17.2.3",
     "fastify": "^5.6.2",
     "fastify-metrics": "^12.1.0",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "typebox": "^1.0.13"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
