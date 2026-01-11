@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   agentService,
   streamChat,
@@ -20,9 +20,17 @@ export interface AgentMessage {
   isStreaming?: boolean;
 }
 
+export interface UseAgentOptions {
+  /** Initial conversation ID to load */
+  conversationId?: string;
+  /** Callback when a new conversation is created */
+  onConversationCreated?: (id: string) => void;
+}
+
 export interface UseAgentReturn {
   messages: AgentMessage[];
   isStreaming: boolean;
+  isLoading: boolean;
   currentToolCall: string | null;
   conversationId: string | null;
   error: string | null;
@@ -34,21 +42,81 @@ export interface UseAgentReturn {
 let messageIdCounter = 0;
 const generateId = () => `msg-${++messageIdCounter}`;
 
-export function useAgent(): UseAgentReturn {
-  const [messages, setMessages] = useState<AgentMessage[]>([
-    {
-      id: generateId(),
-      role: "assistant",
-      content: "Ready.",
-      timestamp: new Date(),
-    },
-  ]);
+export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
+  const { conversationId: initialConversationId, onConversationCreated } = options;
+
+  const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isLoading, setIsLoading] = useState(!!initialConversationId);
   const [currentToolCall, setCurrentToolCall] = useState<string | null>(null);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(
+    initialConversationId ?? null
+  );
   const [error, setError] = useState<string | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
+  const onConversationCreatedRef = useRef(onConversationCreated);
+  onConversationCreatedRef.current = onConversationCreated;
+
+  // Load existing conversation messages
+  useEffect(() => {
+    if (!initialConversationId) {
+      setMessages([
+        {
+          id: generateId(),
+          role: "assistant",
+          content: "Ready.",
+          timestamp: new Date(),
+        },
+      ]);
+      return;
+    }
+
+    async function loadConversation() {
+      const token = await ensureValidToken();
+      if (!token) {
+        setError("Not authenticated");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await agentService.getConversation({
+          path: { id: initialConversationId! },
+        });
+
+        if (response.error || !response.data) {
+          setError("Failed to load conversation");
+          setIsLoading(false);
+          return;
+        }
+
+        const loadedMessages: AgentMessage[] = response.data.messages.map((msg) => ({
+          id: msg.id,
+          role: msg.role as "user" | "assistant",
+          content: msg.content,
+          timestamp: new Date(msg.createdAt),
+        }));
+
+        if (loadedMessages.length === 0) {
+          loadedMessages.push({
+            id: generateId(),
+            role: "assistant",
+            content: "Ready.",
+            timestamp: new Date(),
+          });
+        }
+
+        setMessages(loadedMessages);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load conversation");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadConversation();
+  }, [initialConversationId]);
 
   const cancelStream = useCallback(() => {
     if (abortControllerRef.current) {
@@ -71,6 +139,7 @@ export function useAgent(): UseAgentReturn {
       },
     ]);
     setError(null);
+    setIsLoading(false);
   }, [cancelStream]);
 
   const sendMessage = useCallback(
@@ -111,6 +180,8 @@ export function useAgent(): UseAgentReturn {
           }
           convId = response.data.id;
           setConversationId(convId);
+          // Notify about new conversation creation
+          onConversationCreatedRef.current?.(convId);
         } catch (err) {
           setError(err instanceof Error ? err.message : "Failed to create conversation");
           return;
@@ -213,6 +284,7 @@ export function useAgent(): UseAgentReturn {
   return {
     messages,
     isStreaming,
+    isLoading,
     currentToolCall,
     conversationId,
     error,

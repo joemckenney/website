@@ -1,25 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChatInput } from "../components/chat-input";
+import { useParams } from "../../router";
+import { ChatInput } from "../../components/chat-input";
 import {
   Message,
   type MessageData,
   ThinkingIndicator,
-} from "../components/message";
-import { useAgent } from "../hooks/useAgent";
-import * as styles from "../styles/chat.css";
+} from "../../components/message";
+import { useAgent } from "../../hooks/useAgent";
+import * as styles from "../../styles/chat.css";
 
-export default function NewConversationPage() {
+export default function ChatPage() {
+  const { id } = useParams("/chat/:id");
+
   const {
     messages,
     isStreaming,
+    isLoading,
     currentToolCall,
     error,
     sendMessage,
   } = useAgent({
-    onConversationCreated: (id) => {
-      // Update URL without remounting - preserves streaming state
-      window.history.replaceState(null, "", `/chat/${id}`);
-    },
+    conversationId: id,
   });
 
   const [input, setInput] = useState("");
@@ -47,6 +48,19 @@ export default function NewConversationPage() {
     content: msg.content,
     timestamp: msg.timestamp,
   }));
+
+  if (isLoading) {
+    return (
+      <>
+        <header className={styles.chatHeader}>
+          <span className={styles.chatTitle}>Loading...</span>
+        </header>
+        <div className={styles.messagesContainer}>
+          <ThinkingIndicator />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

@@ -71,7 +71,7 @@ export function Sidebar({
             </svg>
             New conversation
           </Link>
-          <div className={styles.navItem}>
+          <Link to="/history" className={styles.navItem}>
             <svg
               className={styles.navItemIcon}
               viewBox="0 0 24 24"
@@ -83,7 +83,7 @@ export function Sidebar({
               <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             History
-          </div>
+          </Link>
         </div>
 
         <div className={styles.navSection}>
