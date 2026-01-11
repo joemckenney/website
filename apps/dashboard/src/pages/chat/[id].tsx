@@ -78,11 +78,7 @@ export default function ChatPage() {
         </span>
       </header>
 
-      {error && (
-        <div className={styles.errorBanner}>
-          {error}
-        </div>
-      )}
+      {error && <div className={styles.errorBanner}>{error}</div>}
 
       <div className={styles.messagesContainer}>
         {messageData.map((msg) => (

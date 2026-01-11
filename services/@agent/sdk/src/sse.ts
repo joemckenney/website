@@ -46,7 +46,9 @@ export interface ChatStreamEventData {
 /**
  * A single SSE event from the chat stream
  */
-export type ChatStreamEvent<T extends ChatStreamEventType = ChatStreamEventType> = {
+export type ChatStreamEvent<
+  T extends ChatStreamEventType = ChatStreamEventType,
+> = {
   event: T;
   data: ChatStreamEventData[T];
 };
@@ -83,7 +85,7 @@ export interface StreamChatOptions {
 export async function* streamChat(
   conversationId: string,
   message: string,
-  options: StreamChatOptions
+  options: StreamChatOptions,
 ): AsyncGenerator<ChatStreamEvent> {
   const response = await fetch(
     `${options.baseUrl}/agent/conversations/${conversationId}/chat`,
@@ -95,7 +97,7 @@ export async function* streamChat(
       },
       body: JSON.stringify({ message }),
       signal: options.signal,
-    }
+    },
   );
 
   if (!response.ok) {

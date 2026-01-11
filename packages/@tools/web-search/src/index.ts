@@ -31,7 +31,7 @@ const InputSchema = Type.Object({
       minimum: 1,
       maximum: 10,
       default: 5,
-    })
+    }),
   ),
 });
 

@@ -60,14 +60,15 @@ let messageIdCounter = 0;
 const generateId = () => `msg-${++messageIdCounter}`;
 
 export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
-  const { conversationId: initialConversationId, onConversationCreated } = options;
+  const { conversationId: initialConversationId, onConversationCreated } =
+    options;
 
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLoading, setIsLoading] = useState(!!initialConversationId);
   const [currentToolCall, setCurrentToolCall] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(
-    initialConversationId ?? null
+    initialConversationId ?? null,
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -108,12 +109,14 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
           return;
         }
 
-        const loadedMessages: AgentMessage[] = response.data.messages.map((msg) => ({
-          id: msg.id,
-          role: msg.role as "user" | "assistant",
-          content: msg.content,
-          timestamp: new Date(msg.createdAt),
-        }));
+        const loadedMessages: AgentMessage[] = response.data.messages.map(
+          (msg) => ({
+            id: msg.id,
+            role: msg.role as "user" | "assistant",
+            content: msg.content,
+            timestamp: new Date(msg.createdAt),
+          }),
+        );
 
         if (loadedMessages.length === 0) {
           loadedMessages.push({
@@ -126,7 +129,9 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
 
         setMessages(loadedMessages);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load conversation");
+        setError(
+          err instanceof Error ? err.message : "Failed to load conversation",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -200,7 +205,11 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
           // Notify about new conversation creation
           onConversationCreatedRef.current?.(convId);
         } catch (err) {
-          setError(err instanceof Error ? err.message : "Failed to create conversation");
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to create conversation",
+          );
           return;
         }
       }
@@ -234,8 +243,8 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
               prev.map((m) =>
                 m.id === assistantId
                   ? { ...m, content: m.content + data.content }
-                  : m
-              )
+                  : m,
+              ),
             );
           } else if (event.event === "tool_call") {
             const data = event.data as ChatStreamEventData["tool_call"];
@@ -250,8 +259,8 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
                         { ...data, startTime: new Date() },
                       ],
                     }
-                  : m
-              )
+                  : m,
+              ),
             );
           } else if (event.event === "tool_result") {
             const data = event.data as ChatStreamEventData["tool_result"];
@@ -263,18 +272,18 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
                       toolCalls: m.toolCalls?.map((tc) =>
                         tc.id === data.toolCallId
                           ? { ...tc, result: data.result, endTime: new Date() }
-                          : tc
+                          : tc,
                       ),
                     }
-                  : m
-              )
+                  : m,
+              ),
             );
             setCurrentToolCall(null);
           } else if (event.event === "done") {
             setMessages((prev) =>
               prev.map((m) =>
-                m.id === assistantId ? { ...m, isStreaming: false } : m
-              )
+                m.id === assistantId ? { ...m, isStreaming: false } : m,
+              ),
             );
           } else if (event.event === "error") {
             const data = event.data as ChatStreamEventData["error"];
@@ -287,8 +296,8 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
                       content: m.content || "An error occurred.",
                       isStreaming: false,
                     }
-                  : m
-              )
+                  : m,
+              ),
             );
           }
         }
@@ -303,8 +312,8 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
                     content: m.content || "Connection error.",
                     isStreaming: false,
                   }
-                : m
-            )
+                : m,
+            ),
           );
         }
       } finally {
@@ -313,7 +322,7 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
         abortControllerRef.current = null;
       }
     },
-    [conversationId, isStreaming]
+    [conversationId, isStreaming],
   );
 
   // Compute debug info from messages
@@ -329,7 +338,14 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
       totalToolCalls: allToolCalls.length,
       allToolCalls,
     };
-  }, [messages, conversationId, isStreaming, isLoading, currentToolCall, error]);
+  }, [
+    messages,
+    conversationId,
+    isStreaming,
+    isLoading,
+    currentToolCall,
+    error,
+  ]);
 
   return {
     messages,

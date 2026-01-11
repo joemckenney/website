@@ -38,10 +38,12 @@ export default function HistoryPage() {
           response.data.conversations.map((c) => ({
             ...c,
             title: typeof c.title === "string" ? c.title : null,
-          }))
+          })),
         );
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load conversations");
+        setError(
+          err instanceof Error ? err.message : "Failed to load conversations",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -79,9 +81,7 @@ export default function HistoryPage() {
           <div className={styles.loading}>Loading conversations...</div>
         )}
 
-        {error && (
-          <div className={styles.error}>{error}</div>
-        )}
+        {error && <div className={styles.error}>{error}</div>}
 
         {!isLoading && !error && conversations.length === 0 && (
           <div className={styles.empty}>

@@ -26,10 +26,7 @@ export class Agent {
   private config: AgentConfig;
   private toolRegistry: ToolRegistry;
 
-  constructor(
-    toolRegistry: ToolRegistry,
-    config: Partial<AgentConfig> = {}
-  ) {
+  constructor(toolRegistry: ToolRegistry, config: Partial<AgentConfig> = {}) {
     this.client = new Anthropic();
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.toolRegistry = toolRegistry;
@@ -40,7 +37,7 @@ export class Agent {
    */
   async *stream(
     messages: ConversationMessage[],
-    context: AgentContext
+    context: AgentContext,
   ): AsyncGenerator<StreamEvent> {
     // Truncate context if needed
     const truncatedMessages = truncateContext(messages);
@@ -139,9 +136,9 @@ export class Agent {
               id: tc.id,
               name: tc.name,
               input: tc.arguments,
-            })
+            }),
           ),
-          toolContext
+          toolContext,
         );
 
         // Yield tool results
@@ -196,7 +193,7 @@ export class Agent {
  */
 export function createAgent(
   toolRegistry: ToolRegistry,
-  config?: Partial<AgentConfig>
+  config?: Partial<AgentConfig>,
 ): Agent {
   return new Agent(toolRegistry, config);
 }

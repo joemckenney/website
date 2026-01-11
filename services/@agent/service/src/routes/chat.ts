@@ -8,13 +8,17 @@ import type { FastifyInstance } from "fastify";
 import { config } from "../config.js";
 import { prisma, serializeMessage } from "../db/client.js";
 import { authMiddleware, getUser } from "../lib/auth.js";
-import { ChatRequestBody, ConversationIdParams, ErrorResponse } from "../schemas.js";
+import {
+  ChatRequestBody,
+  ConversationIdParams,
+  ErrorResponse,
+} from "../schemas.js";
 
 // Create tool registry with available tools
 const toolRegistry = createToolRegistry([webSearchTool]);
 
 export async function registerChatRoutes(
-  app: FastifyInstance & { withTypeProvider: () => FastifyInstance }
+  app: FastifyInstance & { withTypeProvider: () => FastifyInstance },
 ) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
 
@@ -73,8 +77,10 @@ export async function registerChatRoutes(
         conversation.messages.map((msg) => ({
           role: msg.role as "user" | "assistant",
           content: msg.content,
-          toolCalls: msg.toolCalls as unknown as ConversationMessage["toolCalls"],
-          toolResults: msg.toolResults as unknown as ConversationMessage["toolResults"],
+          toolCalls:
+            msg.toolCalls as unknown as ConversationMessage["toolCalls"],
+          toolResults:
+            msg.toolResults as unknown as ConversationMessage["toolResults"],
         }));
 
       // Add the new user message
@@ -112,7 +118,9 @@ export async function registerChatRoutes(
                 content: event.message.content,
                 toolCalls:
                   event.message.toolCalls && event.message.toolCalls.length > 0
-                    ? (event.message.toolCalls as unknown as Parameters<typeof prisma.message.create>[0]["data"]["toolCalls"])
+                    ? (event.message.toolCalls as unknown as Parameters<
+                        typeof prisma.message.create
+                      >[0]["data"]["toolCalls"])
                     : undefined,
                 model: config.agent.model,
               },
@@ -143,6 +151,6 @@ export async function registerChatRoutes(
       }
 
       reply.raw.end();
-    }
+    },
   );
 }

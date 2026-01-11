@@ -1,3 +1,4 @@
+export { createToolRegistry, ToolRegistry } from "./registry.js";
 export type {
   ClaudeTool,
   ToolCall,
@@ -6,5 +7,3 @@ export type {
   ToolExecutionResult,
   ToolResult,
 } from "./types.js";
-
-export { createToolRegistry, ToolRegistry } from "./registry.js";

@@ -91,7 +91,7 @@ export class ToolRegistry {
    */
   async execute(
     toolCall: ToolCall,
-    context: ToolContext
+    context: ToolContext,
   ): Promise<ToolExecutionResult> {
     const tool = this.get(toolCall.name);
 
@@ -132,10 +132,10 @@ export class ToolRegistry {
    */
   async executeAll(
     toolCalls: ToolCall[],
-    context: ToolContext
+    context: ToolContext,
   ): Promise<ToolExecutionResult[]> {
     return Promise.all(
-      toolCalls.map((toolCall) => this.execute(toolCall, context))
+      toolCalls.map((toolCall) => this.execute(toolCall, context)),
     );
   }
 }
@@ -143,9 +143,7 @@ export class ToolRegistry {
 /**
  * Create a new tool registry, optionally with initial tools
  */
-export function createToolRegistry(
-  tools?: ToolDefinition[]
-): ToolRegistry {
+export function createToolRegistry(tools?: ToolDefinition[]): ToolRegistry {
   const registry = new ToolRegistry();
   if (tools) {
     for (const tool of tools) {

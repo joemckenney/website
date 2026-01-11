@@ -22,7 +22,9 @@ function ToolCallItem({ toolCall }: { toolCall: ToolCallInfo }) {
         <span className={styles.toolCallName}>{toolCall.name}</span>
         <span
           className={`${styles.toolCallStatus} ${
-            isComplete ? styles.toolCallStatusComplete : styles.toolCallStatusPending
+            isComplete
+              ? styles.toolCallStatusComplete
+              : styles.toolCallStatusPending
           }`}
         >
           {isComplete ? `${duration}ms` : "running"}

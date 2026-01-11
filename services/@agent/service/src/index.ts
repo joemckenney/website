@@ -33,17 +33,21 @@ await fastify.register(cors, {
 });
 
 // Prometheus metrics endpoint at /metrics
-await fastify.register(metricsPlugin as unknown as Parameters<typeof fastify.register>[0], {
-  endpoint: "/metrics",
-  defaultMetrics: { enabled: true },
-  routeMetrics: { enabled: true },
-});
+await fastify.register(
+  metricsPlugin as unknown as Parameters<typeof fastify.register>[0],
+  {
+    endpoint: "/metrics",
+    defaultMetrics: { enabled: true },
+    routeMetrics: { enabled: true },
+  },
+);
 
 await fastify.register(swagger, {
   openapi: {
     info: {
       title: "Agent Service API",
-      description: "AI Agent service with conversation management and streaming",
+      description:
+        "AI Agent service with conversation management and streaming",
       version: "1.0.0",
     },
     servers: [
@@ -82,7 +86,7 @@ fastify.get(
       status: "ok",
       timestamp: new Date().toISOString(),
     };
-  }
+  },
 );
 
 // Register routes
@@ -104,7 +108,7 @@ const start = async () => {
 
     console.log(`Server listening on http://localhost:${config.port}`);
     console.log(
-      `OpenAPI docs available at http://localhost:${config.port}/docs`
+      `OpenAPI docs available at http://localhost:${config.port}/docs`,
     );
   } catch (err) {
     fastify.log.error(err);

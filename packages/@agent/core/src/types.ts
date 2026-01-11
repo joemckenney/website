@@ -37,8 +37,18 @@ export interface ToolCallData {
  */
 export type StreamEvent =
   | { type: "text_delta"; text: string }
-  | { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
-  | { type: "tool_result"; toolCallId: string; result: unknown; isError?: boolean }
+  | {
+      type: "tool_use";
+      id: string;
+      name: string;
+      input: Record<string, unknown>;
+    }
+  | {
+      type: "tool_result";
+      toolCallId: string;
+      result: unknown;
+      isError?: boolean;
+    }
   | { type: "message_complete"; message: ConversationMessage }
   | { type: "error"; error: string };
 

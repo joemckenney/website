@@ -20,7 +20,7 @@ declare module "fastify" {
  */
 export async function authMiddleware(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const userHeader = request.headers["x-user"];
 

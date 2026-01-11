@@ -59,7 +59,7 @@ export const UpdateConversationBody = Type.Object({
   title: Type.Optional(
     Type.Union([Type.String(), Type.Null()], {
       description: "Conversation title",
-    })
+    }),
   ),
 });
 export type UpdateConversationBodyType = Static<typeof UpdateConversationBody>;
@@ -85,7 +85,7 @@ export type ConversationIdParamsType = Static<typeof ConversationIdParams>;
  */
 export const ListConversationsQuery = Type.Object({
   limit: Type.Optional(
-    Type.Number({ description: "Maximum results", default: 50 })
+    Type.Number({ description: "Maximum results", default: 50 }),
   ),
   offset: Type.Optional(Type.Number({ description: "Offset", default: 0 })),
 });

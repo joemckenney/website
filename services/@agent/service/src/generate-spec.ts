@@ -22,7 +22,8 @@ await fastify.register(swagger, {
   openapi: {
     info: {
       title: "Agent Service API",
-      description: "AI Agent service with conversation management and streaming",
+      description:
+        "AI Agent service with conversation management and streaming",
       version: "1.0.0",
     },
     servers: [
@@ -57,7 +58,7 @@ fastify.get(
       status: "ok",
       timestamp: new Date().toISOString(),
     };
-  }
+  },
 );
 
 // Register routes

@@ -27,7 +27,7 @@ function estimateTokens(text: string): number {
  * Convert conversation messages to Claude API format
  */
 export function toClaudeMessages(
-  messages: ConversationMessage[]
+  messages: ConversationMessage[],
 ): ClaudeMessage[] {
   return messages.map((msg) => {
     if (msg.role === "user") {
@@ -40,7 +40,12 @@ export function toClaudeMessages(
     // Assistant message - may include tool use
     const content: Array<
       | { type: "text"; text: string }
-      | { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
+      | {
+          type: "tool_use";
+          id: string;
+          name: string;
+          input: Record<string, unknown>;
+        }
     > = [];
 
     if (msg.content) {
@@ -70,7 +75,7 @@ export function toClaudeMessages(
  */
 export function appendToolResults(
   messages: ClaudeMessage[],
-  results: Array<{ toolCallId: string; result: unknown; isError?: boolean }>
+  results: Array<{ toolCallId: string; result: unknown; isError?: boolean }>,
 ): ClaudeMessage[] {
   const toolResultContent = results.map((r) => ({
     type: "tool_result" as const,
@@ -94,7 +99,7 @@ export function appendToolResults(
  */
 export function truncateContext(
   messages: ConversationMessage[],
-  config: ContextConfig = DEFAULT_CONFIG
+  config: ContextConfig = DEFAULT_CONFIG,
 ): ConversationMessage[] {
   const targetTokens = config.maxContextTokens - config.reserveTokens;
 

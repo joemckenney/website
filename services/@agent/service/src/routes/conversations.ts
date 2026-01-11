@@ -1,7 +1,11 @@
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import type { FastifyInstance } from "fastify";
 import { Type } from "typebox";
-import { prisma, serializeConversation, serializeMessage } from "../db/client.js";
+import {
+  prisma,
+  serializeConversation,
+  serializeMessage,
+} from "../db/client.js";
 import { authMiddleware, getUser } from "../lib/auth.js";
 import {
   Conversation,
@@ -15,7 +19,7 @@ import {
 } from "../schemas.js";
 
 export async function registerConversationRoutes(
-  app: FastifyInstance & { withTypeProvider: () => FastifyInstance }
+  app: FastifyInstance & { withTypeProvider: () => FastifyInstance },
 ) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
 
@@ -47,7 +51,7 @@ export async function registerConversationRoutes(
       });
 
       return reply.status(201).send(serializeConversation(conversation));
-    }
+    },
   );
 
   // List conversations
@@ -84,7 +88,7 @@ export async function registerConversationRoutes(
         conversations: conversations.map(serializeConversation),
         total,
       };
-    }
+    },
   );
 
   // Get conversation with messages
@@ -125,7 +129,7 @@ export async function registerConversationRoutes(
         ...serializeConversation(conversation),
         messages: conversation.messages.map(serializeMessage),
       };
-    }
+    },
   );
 
   // Update conversation
@@ -166,7 +170,7 @@ export async function registerConversationRoutes(
       });
 
       return serializeConversation(conversation);
-    }
+    },
   );
 
   // Delete conversation
@@ -201,6 +205,6 @@ export async function registerConversationRoutes(
 
       await prisma.conversation.delete({ where: { id } });
       return reply.status(204).send();
-    }
+    },
   );
 }
