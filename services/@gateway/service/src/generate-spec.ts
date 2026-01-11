@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import swagger from "@fastify/swagger";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Fastify from "fastify";
+import { registerAgentRoutes } from "./routes/agent.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerRoutes } from "./routes.js";
 
@@ -38,6 +39,7 @@ await fastify.register(swagger, {
 
 // Register routes (but don't start server)
 await registerAuthRoutes(fastify);
+await registerAgentRoutes(fastify);
 await registerRoutes(fastify, {});
 
 // Ready the server (generates the OpenAPI spec)

@@ -6,9 +6,15 @@ interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   userEmail?: string | null;
+  onLogout?: () => void;
 }
 
-export function Sidebar({ isOpen, onToggle, userEmail }: SidebarProps) {
+export function Sidebar({
+  isOpen,
+  onToggle,
+  userEmail,
+  onLogout,
+}: SidebarProps) {
   const initials = userEmail
     ? userEmail
         .split("@")[0]
@@ -117,7 +123,18 @@ export function Sidebar({ isOpen, onToggle, userEmail }: SidebarProps) {
       >
         <div className={styles.userInfo}>
           <div className={styles.userAvatar}>{initials}</div>
-          <Text size="sm">{userEmail || "Guest"}</Text>
+          <div className={styles.userDetails}>
+            <Text size="sm">{userEmail || "Guest"}</Text>
+            {onLogout && (
+              <button
+                type="button"
+                className={styles.logoutButton}
+                onClick={onLogout}
+              >
+                Logout
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </aside>

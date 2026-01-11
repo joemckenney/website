@@ -34,6 +34,14 @@ export const statusDot = style({
   borderRadius: "50%",
 });
 
+export const errorBanner = style({
+  padding: `${vars.space[3]} ${vars.space[6]}`,
+  background: "#fee2e2",
+  color: "#991b1b",
+  fontSize: vars.fontSizes.sm.fontSize,
+  borderBottom: "1px solid #fecaca",
+});
+
 export const messagesContainer = style({
   flex: 1,
   overflowY: "auto",

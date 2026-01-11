@@ -26,6 +26,7 @@
     "@crow/text": "workspace:*",
     "@crow/textarea": "workspace:*",
     "@crow/theme": "workspace:*",
+    "@agent/sdk": "workspace:*",
     "@gateway/sdk": "workspace:*",
     "@generouted/react-router": "^1.20.0",
     "react": "^18.3.1",
