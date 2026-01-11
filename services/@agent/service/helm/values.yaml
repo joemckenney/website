@@ -1,7 +1,7 @@
-replicaCount: 2
+replicaCount: 1
 
 image:
-  repository: api-service
+  repository: agent-service
   pullPolicy: IfNotPresent
   tag: "latest"
 
@@ -30,36 +30,25 @@ securityContext:
 
 service:
   type: ClusterIP
-  port: 3000
-  targetPort: 3000
+  port: 3003
+  targetPort: 3003
 
+# No ingress - internal service only (accessed via gateway)
 ingress:
-  enabled: true
-  className: "nginx"
-  annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-  hosts:
-    - host: api.example.com
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - secretName: api-service-tls
-      hosts:
-        - api.example.com
+  enabled: false
 
 resources:
   limits:
     cpu: 500m
     memory: 512Mi
   requests:
-    cpu: 250m
-    memory: 256Mi
+    cpu: 100m
+    memory: 128Mi
 
 autoscaling:
   enabled: false
-  minReplicas: 2
-  maxReplicas: 10
+  minReplicas: 1
+  maxReplicas: 5
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
 
@@ -73,17 +62,18 @@ env:
   - name: NODE_ENV
     value: "production"
   - name: PORT
-    value: "3000"
+    value: "3003"
 
 secrets:
-  googleClientId: ""
-  googleClientSecret: ""
-  jwtSecret: ""
-  allowedEmail: ""
-  frontendUrl: ""
-  backendUrl: ""
-  userServiceUrl: ""
-  agentServiceUrl: ""
+  databaseUrl: ""
+  anthropicApiKey: ""
+  braveApiKey: ""
+
+# Agent configuration (non-sensitive)
+agent:
+  model: "claude-sonnet-4-20250514"
+  maxTokens: "4096"
+  systemPrompt: "You are a helpful AI assistant with access to web search. Be concise and helpful."
 
 # Prometheus metrics
 metrics:

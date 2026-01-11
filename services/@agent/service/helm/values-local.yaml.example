@@ -1,0 +1,35 @@
+# Local Minikube environment values for agent-service
+# Copy this file to values-local.yaml and fill in your API keys
+replicaCount: 1
+
+image:
+  repository: localhost:5000/agent-service
+  pullPolicy: Always
+  tag: "latest"
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+env:
+  - name: NODE_ENV
+    value: "production"
+  - name: PORT
+    value: "3003"
+
+# Agent configuration
+agent:
+  model: "claude-sonnet-4-20250514"
+  maxTokens: "4096"
+  systemPrompt: "You are a helpful AI assistant with access to web search. Be concise and helpful."
+
+# Secrets - fill in your API keys
+# Database URL points to PostgreSQL in cluster
+secrets:
+  databaseUrl: "postgresql://agent:devpassword@agent-postgres-postgresql:5432/agent"
+  anthropicApiKey: "sk-ant-your-api-key-here"  # Required: your Anthropic API key
+  braveApiKey: ""  # Optional: for web search

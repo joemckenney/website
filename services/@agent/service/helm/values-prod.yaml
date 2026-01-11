@@ -1,0 +1,54 @@
+# Production values for agent-service
+# Secrets are injected via GitHub Actions using --set flags
+replicaCount: 1
+
+image:
+  repository: crowprose/agent-service
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+
+service:
+  type: ClusterIP
+  port: 3003
+  targetPort: 3003
+
+# No ingress - internal service only (accessed via gateway)
+ingress:
+  enabled: false
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+env:
+  - name: NODE_ENV
+    value: "production"
+  - name: PORT
+    value: "3003"
+
+# Agent configuration
+agent:
+  model: "claude-sonnet-4-20250514"
+  maxTokens: "4096"
+  systemPrompt: "You are a helpful AI assistant with access to web search. Be concise and helpful."
+
+# Secrets - injected via GHA secrets (see cd.yml)
+# These are placeholder values that get overridden by --set flags
+secrets:
+  databaseUrl: ""
+  anthropicApiKey: ""
+  braveApiKey: ""
+
+# Prometheus metrics
+metrics:
+  enabled: true

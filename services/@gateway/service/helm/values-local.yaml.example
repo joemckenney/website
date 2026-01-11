@@ -34,3 +34,5 @@ secrets:
   allowedEmail: "your-email@example.com"
   frontendUrl: "http://app.local.com"
   backendUrl: "http://api.local.com"
+  userServiceUrl: "http://user-service:3002"
+  agentServiceUrl: "http://agent-service:3003"
