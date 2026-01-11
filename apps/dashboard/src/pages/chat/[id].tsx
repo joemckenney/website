@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "../../router";
 import { ChatInput } from "../../components/chat-input";
 import { DebugPanel } from "../../components/debug-panel";
 import {
@@ -8,6 +7,7 @@ import {
   ThinkingIndicator,
 } from "../../components/message";
 import { useAgent } from "../../hooks/useAgent";
+import { useParams } from "../../router";
 import * as styles from "../../styles/chat.css";
 
 export default function ChatPage() {

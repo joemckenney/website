@@ -1,8 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { ToolRegistry, ToolCall, ToolContext } from "@tools/core";
+import type { ToolCall, ToolContext, ToolRegistry } from "@tools/core";
 import {
-  toClaudeMessages,
   appendToolResults,
+  toClaudeMessages,
   truncateContext,
 } from "./context.js";
 import type {

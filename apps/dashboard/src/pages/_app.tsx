@@ -1,12 +1,12 @@
+import { gateway } from "@gateway/sdk";
 import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
-import { gateway } from "@gateway/sdk";
 import { Sidebar } from "../components/sidebar";
 import {
+  logout as authLogout,
   clearTokens,
   ensureValidToken,
   isAuthenticated,
-  logout as authLogout,
 } from "../lib/auth";
 import * as styles from "../styles/layout.css";
 

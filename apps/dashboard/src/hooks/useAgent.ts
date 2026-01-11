@@ -1,10 +1,5 @@
+import { agentService, type ChatStreamEventData, streamChat } from "@agent/sdk";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  agentService,
-  streamChat,
-  type ChatStreamEvent,
-  type ChatStreamEventData,
-} from "@agent/sdk";
 import { ensureValidToken } from "../lib/auth";
 
 export interface ToolCallInfo {
@@ -90,7 +85,7 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
       return;
     }
 
-    async function loadConversation() {
+    async function loadConversation(conversationId: string) {
       const token = await ensureValidToken();
       if (!token) {
         setError("Not authenticated");
@@ -100,7 +95,7 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
 
       try {
         const response = await agentService.getConversation({
-          path: { id: initialConversationId! },
+          path: { id: conversationId },
         });
 
         if (response.error || !response.data) {
@@ -137,7 +132,7 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
       }
     }
 
-    loadConversation();
+    loadConversation(initialConversationId);
   }, [initialConversationId]);
 
   const cancelStream = useCallback(() => {

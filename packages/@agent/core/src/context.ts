@@ -1,4 +1,4 @@
-import type { ConversationMessage, ClaudeMessage } from "./types.js";
+import type { ClaudeMessage, ConversationMessage } from "./types.js";
 
 /**
  * Configuration for context management

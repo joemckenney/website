@@ -1,9 +1,9 @@
-import { createAgent, formatSSE, SSE_HEADERS } from "@agent/core";
 import type { ConversationMessage } from "@agent/core";
+import { createAgent, formatSSE, SSE_HEADERS } from "@agent/core";
 import type { MessageRole } from "@agent/db";
+import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import { createToolRegistry } from "@tools/core";
 import { webSearchTool } from "@tools/web-search";
-import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import type { FastifyInstance } from "fastify";
 import { config } from "../config.js";
 import { prisma, serializeMessage } from "../db/client.js";

@@ -13,11 +13,14 @@ function ToolCallItem({ toolCall }: { toolCall: ToolCallInfo }) {
     ? toolCall.endTime.getTime() - toolCall.startTime.getTime()
     : null;
 
+  const handleToggle = () => setExpanded(!expanded);
+
   return (
     <div className={styles.toolCallItem}>
-      <div
+      <button
+        type="button"
         className={styles.toolCallHeader}
-        onClick={() => setExpanded(!expanded)}
+        onClick={handleToggle}
       >
         <span className={styles.toolCallName}>{toolCall.name}</span>
         <span
@@ -29,7 +32,7 @@ function ToolCallItem({ toolCall }: { toolCall: ToolCallInfo }) {
         >
           {isComplete ? `${duration}ms` : "running"}
         </span>
-      </div>
+      </button>
       {expanded && (
         <div className={styles.toolCallDetails}>
           <div className={styles.codeLabel}>Arguments</div>
@@ -60,6 +63,7 @@ export function DebugPanel({ debugInfo }: DebugPanelProps) {
   return (
     <>
       <button
+        type="button"
         className={`${styles.debugToggle} ${isOpen ? styles.debugToggleActive : ""}`}
         onClick={() => setIsOpen(!isOpen)}
         title="Toggle debug panel"
@@ -73,6 +77,7 @@ export function DebugPanel({ debugInfo }: DebugPanelProps) {
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
+          aria-hidden="true"
         >
           <path d="M12 20h9" />
           <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
@@ -84,6 +89,7 @@ export function DebugPanel({ debugInfo }: DebugPanelProps) {
           <div className={styles.debugHeader}>
             <span className={styles.debugTitle}>Debug</span>
             <button
+              type="button"
               className={styles.closeButton}
               onClick={() => setIsOpen(false)}
             >
@@ -96,6 +102,7 @@ export function DebugPanel({ debugInfo }: DebugPanelProps) {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                aria-hidden="true"
               >
                 <path d="M18 6 6 18" />
                 <path d="m6 6 12 12" />
