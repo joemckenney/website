@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatInput } from "../components/chat-input";
+import { DebugPanel } from "../components/debug-panel";
 import {
   Message,
   type MessageData,
@@ -14,6 +15,7 @@ export default function NewConversationPage() {
     isStreaming,
     currentToolCall,
     error,
+    debugInfo,
     sendMessage,
   } = useAgent({
     onConversationCreated: (id) => {
@@ -86,6 +88,8 @@ export default function NewConversationPage() {
         onSubmit={handleSubmit}
         disabled={isStreaming}
       />
+
+      <DebugPanel debugInfo={debugInfo} />
     </>
   );
 }

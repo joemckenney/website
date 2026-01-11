@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   agentService,
   streamChat,
@@ -7,16 +7,21 @@ import {
 } from "@agent/sdk";
 import { ensureValidToken } from "../lib/auth";
 
+export interface ToolCallInfo {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+  result?: unknown;
+  startTime: Date;
+  endTime?: Date;
+}
+
 export interface AgentMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
-  toolCalls?: Array<{
-    id: string;
-    name: string;
-    arguments: Record<string, unknown>;
-  }>;
+  toolCalls?: ToolCallInfo[];
   isStreaming?: boolean;
 }
 
@@ -27,6 +32,17 @@ export interface UseAgentOptions {
   onConversationCreated?: (id: string) => void;
 }
 
+export interface DebugInfo {
+  conversationId: string | null;
+  isStreaming: boolean;
+  isLoading: boolean;
+  currentToolCall: string | null;
+  error: string | null;
+  messageCount: number;
+  totalToolCalls: number;
+  allToolCalls: ToolCallInfo[];
+}
+
 export interface UseAgentReturn {
   messages: AgentMessage[];
   isStreaming: boolean;
@@ -34,6 +50,7 @@ export interface UseAgentReturn {
   currentToolCall: string | null;
   conversationId: string | null;
   error: string | null;
+  debugInfo: DebugInfo;
   sendMessage: (content: string) => Promise<void>;
   cancelStream: () => void;
   startNewConversation: () => void;
@@ -228,12 +245,30 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
                 m.id === assistantId
                   ? {
                       ...m,
-                      toolCalls: [...(m.toolCalls || []), data],
+                      toolCalls: [
+                        ...(m.toolCalls || []),
+                        { ...data, startTime: new Date() },
+                      ],
                     }
                   : m
               )
             );
           } else if (event.event === "tool_result") {
+            const data = event.data as ChatStreamEventData["tool_result"];
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId
+                  ? {
+                      ...m,
+                      toolCalls: m.toolCalls?.map((tc) =>
+                        tc.id === data.toolCallId
+                          ? { ...tc, result: data.result, endTime: new Date() }
+                          : tc
+                      ),
+                    }
+                  : m
+              )
+            );
             setCurrentToolCall(null);
           } else if (event.event === "done") {
             setMessages((prev) =>
@@ -281,6 +316,21 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
     [conversationId, isStreaming]
   );
 
+  // Compute debug info from messages
+  const debugInfo = useMemo((): DebugInfo => {
+    const allToolCalls = messages.flatMap((m) => m.toolCalls || []);
+    return {
+      conversationId,
+      isStreaming,
+      isLoading,
+      currentToolCall,
+      error,
+      messageCount: messages.length,
+      totalToolCalls: allToolCalls.length,
+      allToolCalls,
+    };
+  }, [messages, conversationId, isStreaming, isLoading, currentToolCall, error]);
+
   return {
     messages,
     isStreaming,
@@ -288,6 +338,7 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
     currentToolCall,
     conversationId,
     error,
+    debugInfo,
     sendMessage,
     cancelStream,
     startNewConversation,
