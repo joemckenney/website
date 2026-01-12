@@ -3,6 +3,8 @@ packages:
   - services/@*/*
   - packages/@website/*
   - packages/@crow/*
+  - packages/@agent/*
+  - packages/@tools/*
 
 catalog:
   '@biomejs/biome': 2.2.6

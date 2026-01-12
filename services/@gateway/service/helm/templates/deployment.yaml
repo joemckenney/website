@@ -95,6 +95,11 @@ spec:
             secretKeyRef:
               name: {{ include "app-server.fullname" . }}-secrets
               key: userServiceUrl
+        - name: AGENT_SERVICE_URL
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "app-server.fullname" . }}-secrets
+              key: agentServiceUrl
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

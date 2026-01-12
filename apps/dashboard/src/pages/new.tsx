@@ -1,26 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatInput } from "../components/chat-input";
+import { DebugPanel } from "../components/debug-panel";
 import {
   Message,
   type MessageData,
   ThinkingIndicator,
 } from "../components/message";
+import { useAgent } from "../hooks/useAgent";
 import * as styles from "../styles/chat.css";
 
-let messageIdCounter = 0;
-const generateId = () => `msg-${++messageIdCounter}`;
-
 export default function NewConversationPage() {
-  const [messages, setMessages] = useState<MessageData[]>([
-    {
-      id: generateId(),
-      role: "assistant",
-      content: "Ready.",
-      timestamp: new Date(),
+  const {
+    messages,
+    isStreaming,
+    currentToolCall,
+    error,
+    debugInfo,
+    sendMessage,
+  } = useAgent({
+    onConversationCreated: (id) => {
+      // Update URL without remounting - preserves streaming state
+      window.history.replaceState(null, "", `/chat/${id}`);
     },
-  ]);
+  });
+
   const [input, setInput] = useState("");
-  const [isThinking, setIsThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -33,32 +37,18 @@ export default function NewConversationPage() {
   }, [messages, scrollToBottom]);
 
   const handleSubmit = () => {
-    if (!input.trim()) return;
-
-    const userMessage: MessageData = {
-      id: generateId(),
-      role: "user",
-      content: input,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    if (!input.trim() || isStreaming) return;
+    sendMessage(input);
     setInput("");
-    setIsThinking(true);
-
-    // Simulate agent response
-    setTimeout(() => {
-      setIsThinking(false);
-      const assistantMessage: MessageData = {
-        id: generateId(),
-        role: "assistant",
-        content:
-          "This is a simulated response. Connect your agent backend to handle real interactions.",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-    }, 1500);
   };
+
+  // Convert agent messages to MessageData format
+  const messageData: MessageData[] = messages.map((msg) => ({
+    id: msg.id,
+    role: msg.role,
+    content: msg.content,
+    timestamp: msg.timestamp,
+  }));
 
   return (
     <>
@@ -66,16 +56,24 @@ export default function NewConversationPage() {
         <span className={styles.chatTitle}>Conversation</span>
         <span className={styles.chatStatus}>
           <span className={styles.statusDot} />
-          Connected
+          {isStreaming
+            ? currentToolCall
+              ? `Using ${currentToolCall}...`
+              : "Responding..."
+            : "Connected"}
         </span>
       </header>
 
+      {error && <div className={styles.errorBanner}>{error}</div>}
+
       <div className={styles.messagesContainer}>
-        {messages.map((msg) => (
+        {messageData.map((msg) => (
           <Message key={msg.id} message={msg} />
         ))}
 
-        {isThinking && <ThinkingIndicator />}
+        {isStreaming && !messages[messages.length - 1]?.content && (
+          <ThinkingIndicator />
+        )}
 
         <div ref={messagesEndRef} />
       </div>
@@ -84,8 +82,10 @@ export default function NewConversationPage() {
         value={input}
         onChange={setInput}
         onSubmit={handleSubmit}
-        disabled={isThinking}
+        disabled={isStreaming}
       />
+
+      <DebugPanel debugInfo={debugInfo} />
     </>
   );
 }

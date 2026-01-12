@@ -1,3 +1,4 @@
+import { client as agentClient } from "@agent/sdk";
 import { client } from "@gateway/sdk";
 import {
   clearTokens,
@@ -21,11 +22,18 @@ function addRefreshSubscriber(callback: (token: string | null) => void) {
   refreshSubscribers.push(callback);
 }
 
-// Configure the SDK client with interceptors
+// Configure the SDK clients with interceptors
 export function setupApiClient(baseUrl: string) {
+  // Gateway SDK client
   client.setConfig({
     baseUrl,
     credentials: "include", // Send cookies for refresh token
+  });
+
+  // Agent SDK client - routes through gateway at /agent/*
+  agentClient.setConfig({
+    baseUrl: `${baseUrl}/agent`,
+    credentials: "include",
   });
 
   // Request interceptor - Add auth token to every request (with proactive refresh)
@@ -114,5 +122,14 @@ export function setupApiClient(baseUrl: string) {
     }
 
     return response;
+  });
+
+  // Agent client request interceptor - Add auth token
+  agentClient.interceptors.request.use(async (request) => {
+    const token = await ensureValidToken();
+    if (token) {
+      request.headers.set("Authorization", `Bearer ${token}`);
+    }
+    return request;
   });
 }

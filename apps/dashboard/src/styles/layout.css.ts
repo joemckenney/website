@@ -173,10 +173,46 @@ export const userAvatar = style({
   fontSize: "11px",
   fontWeight: "500",
   letterSpacing: vars.letterSpacing.wide,
+  flexShrink: 0,
+});
+
+export const userDetails = style({
+  display: "flex",
+  flexDirection: "column",
+  gap: vars.space[1],
+  minWidth: 0,
+  flex: 1,
 });
 
 export const userName = style({
   fontSize: vars.fontSizes.sm.fontSize,
+});
+
+export const logoutButton = style({
+  background: "none",
+  border: "none",
+  padding: 0,
+  fontFamily: vars.fonts.mono,
+  fontSize: vars.fontSizes.xs.fontSize,
+  color: vars.colors.stone600,
+  cursor: "pointer",
+  textAlign: "left",
+  letterSpacing: vars.letterSpacing.wide,
+  ":hover": {
+    color: vars.colors.stone900,
+  },
+});
+
+export const loadingContainer = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  height: "100%",
+  width: "100%",
+  fontFamily: vars.fonts.mono,
+  fontSize: vars.fontSizes.sm.fontSize,
+  color: vars.colors.stone600,
+  letterSpacing: vars.letterSpacing.wide,
 });
 
 export const main = style({

@@ -7,6 +7,7 @@ import swaggerUi from "@fastify/swagger-ui";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
+import { registerAgentRoutes } from "./routes/agent.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerRoutes } from "./routes.js";
 
@@ -73,6 +74,7 @@ await fastify.register(swaggerUi, {
 });
 
 await registerAuthRoutes(fastify);
+await registerAgentRoutes(fastify);
 await registerRoutes(fastify, {});
 
 // Start server

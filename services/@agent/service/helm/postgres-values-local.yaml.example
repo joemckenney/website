@@ -1,0 +1,21 @@
+# Local Minikube PostgreSQL values for agent-service
+# Copy this file to postgres-values-local.yaml before deploying
+# Deploy with: helm install agent-postgres bitnami/postgresql -f postgres-values-local.yaml
+
+auth:
+  postgresPassword: devpassword
+  username: agent
+  password: devpassword
+  database: agent
+
+primary:
+  persistence:
+    enabled: true
+    size: 1Gi
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
