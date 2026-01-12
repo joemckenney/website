@@ -118,7 +118,20 @@ jobs:
             exit 0
           fi
 
+          # Verify BASE_REF exists (handles first commit edge case)
+          if ! git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
+            echo "BASE_REF '$BASE_REF' does not exist - building all images"
+            echo "www_web=true" >> $GITHUB_OUTPUT
+            echo "app_web=true" >> $GITHUB_OUTPUT
+            echo "api_service=true" >> $GITHUB_OUTPUT
+            echo "user_service=true" >> $GITHUB_OUTPUT
+            echo "agent_service=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
           echo "Detecting changes against: $BASE_REF"
+          echo "Changed files:"
+          git diff --name-only "$BASE_REF"..HEAD | head -20
 
           # Check if @app/www or its dependencies changed
           WWW_PACKAGES=$(pnpm turbo run build --filter='@app/www...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
