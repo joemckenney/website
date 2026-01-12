@@ -112,6 +112,22 @@ jobs:
         if: needs.build-production-images.outputs.api_service_built != 'true'
         run: echo "Skipping api-service deployment - no changes detected"
 
+      - name: Deploy agent-service
+        if: needs.build-production-images.outputs.agent_service_built == 'true'
+        run: |
+          helm upgrade --install agent-service services/@agent/service/helm \
+            -f services/@agent/service/helm/values-prod.yaml \
+            --set image.tag=sha-${{ github.sha }} \
+            --set secrets.databaseUrl="${{ secrets.AGENT_SERVICE_DATABASE_URL }}" \
+            --set secrets.anthropicApiKey="${{ secrets.ANTHROPIC_API_KEY }}" \
+            --set secrets.braveApiKey="${{ secrets.BRAVE_API_KEY }}" \
+            --wait \
+            --timeout=5m
+
+      - name: Skip agent-service deployment (no changes)
+        if: needs.build-production-images.outputs.agent_service_built != 'true'
+        run: echo "Skipping agent-service deployment - no changes detected"
+
       - name: Wait for rollout
         run: |
           # Only wait for deployments that were updated
@@ -127,6 +143,9 @@ jobs:
           if [ "${{ needs.build-production-images.outputs.user_service_built }}" == "true" ]; then
             kubectl rollout status deployment/user-service --timeout=3m
           fi
+          if [ "${{ needs.build-production-images.outputs.agent_service_built }}" == "true" ]; then
+            kubectl rollout status deployment/agent-service --timeout=3m
+          fi
 
       - name: Run production smoke tests
         run: |
@@ -136,6 +155,7 @@ jobs:
           kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=app-web --timeout=120s
           kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=api-service --timeout=120s
           kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=user-service --timeout=120s
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=agent-service --timeout=120s
 
           # Brief pause for ingress backend propagation
           sleep 5
@@ -171,6 +191,9 @@ jobs:
           if [ "${{ needs.build-production-images.outputs.user_service_built }}" == "true" ]; then
             helm rollback user-service 0 --wait || true
           fi
+          if [ "${{ needs.build-production-images.outputs.agent_service_built }}" == "true" ]; then
+            helm rollback agent-service 0 --wait || true
+          fi
 
       - name: Get deployment status
         if: always()
@@ -198,6 +221,7 @@ jobs:
           echo "| app-web | ${{ needs.build-production-images.outputs.app_web_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| api-service | ${{ needs.build-production-images.outputs.api_service_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| user-service | ${{ needs.build-production-images.outputs.user_service_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| agent-service | ${{ needs.build-production-images.outputs.agent_service_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
 
   deployment-notification:
     name: Deployment Notification
