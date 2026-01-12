@@ -36,7 +36,8 @@ export function getToolDefinitions(): ToolDefinition[] {
         properties: {
           per_page: {
             type: "number",
-            description: "Number of activities to return (default: 30, max: 200)",
+            description:
+              "Number of activities to return (default: 30, max: 200)",
           },
           page: {
             type: "number",
@@ -180,11 +181,9 @@ async function getActivityDetails(
 
   const includeAllEfforts = Boolean(args.include_all_efforts);
 
-  const activity = await stravaRequest<any>(
-    `/activities/${id}`,
-    accessToken,
-    { include_all_efforts: includeAllEfforts },
-  );
+  const activity = await stravaRequest<any>(`/activities/${id}`, accessToken, {
+    include_all_efforts: includeAllEfforts,
+  });
 
   return {
     id: activity.id,
@@ -219,13 +218,15 @@ async function getActivityDetails(
       average_speed: lap.average_speed,
       average_heartrate: lap.average_heartrate,
     })),
-    segment_efforts: activity.segment_efforts?.slice(0, 10).map((effort: any) => ({
-      name: effort.name,
-      distance: effort.distance,
-      elapsed_time: effort.elapsed_time,
-      moving_time: effort.moving_time,
-      pr_rank: effort.pr_rank,
-    })),
+    segment_efforts: activity.segment_efforts
+      ?.slice(0, 10)
+      .map((effort: any) => ({
+        name: effort.name,
+        distance: effort.distance,
+        elapsed_time: effort.elapsed_time,
+        moving_time: effort.moving_time,
+        pr_rank: effort.pr_rank,
+      })),
     splits_metric: activity.splits_metric?.map((split: any) => ({
       distance: split.distance,
       elapsed_time: split.elapsed_time,

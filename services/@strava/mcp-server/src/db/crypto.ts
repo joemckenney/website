@@ -1,8 +1,4 @@
-import {
-  createCipheriv,
-  createDecipheriv,
-  randomBytes,
-} from "node:crypto";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { config } from "../config.js";
 
 const ALGORITHM = "aes-256-gcm";
@@ -44,11 +40,7 @@ export function encrypt(text: string): string {
   const authTag = cipher.getAuthTag();
 
   // Combine IV + authTag + ciphertext
-  const combined = Buffer.concat([
-    iv,
-    authTag,
-    Buffer.from(encrypted, "hex"),
-  ]);
+  const combined = Buffer.concat([iv, authTag, Buffer.from(encrypted, "hex")]);
 
   return combined.toString("base64");
 }

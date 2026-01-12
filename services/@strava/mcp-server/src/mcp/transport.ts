@@ -1,12 +1,11 @@
-import { Type } from "typebox";
+import type { ServerResponse } from "node:http";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import type { FastifyInstance } from "fastify";
-import type { ServerResponse } from "http";
+import { Type } from "typebox";
 import { prisma } from "../db/client.js";
-import { decrypt } from "../db/crypto.js";
+import { decrypt, encrypt } from "../db/crypto.js";
 import { refreshAccessToken } from "../oauth/client.js";
-import { encrypt } from "../db/crypto.js";
-import { handleToolCall, getToolDefinitions } from "./tools.js";
+import { getToolDefinitions, handleToolCall } from "./tools.js";
 
 const ErrorResponse = Type.Object({
   error: Type.String(),
@@ -98,7 +97,10 @@ function sendSseResponse(userId: string, response: McpResponse): boolean {
   }
 
   const sseMessage = `event: message\ndata: ${JSON.stringify(response)}\n\n`;
-  console.log(`[MCP SSE] Sending response on SSE stream:`, JSON.stringify(response).slice(0, 200));
+  console.log(
+    `[MCP SSE] Sending response on SSE stream:`,
+    JSON.stringify(response).slice(0, 200),
+  );
   sseConnection.write(sseMessage);
   return true;
 }
@@ -140,7 +142,10 @@ export async function registerMcpRoutes(
       console.log(`[MCP MESSAGE] Method: ${mcpRequest.method}`);
       console.log(`[MCP MESSAGE] ID: ${mcpRequest.id}`);
       console.log(`[MCP MESSAGE] User: ${userId}`);
-      console.log(`[MCP MESSAGE] Params:`, JSON.stringify(mcpRequest.params || {}, null, 2));
+      console.log(
+        `[MCP MESSAGE] Params:`,
+        JSON.stringify(mcpRequest.params || {}, null, 2),
+      );
 
       // For tools/call, we need a valid access token
       // For other methods, we can proceed without it
@@ -158,9 +163,10 @@ export async function registerMcpRoutes(
       let response: McpResponse;
 
       switch (mcpRequest.method) {
-        case "initialize":
+        case "initialize": {
           // Echo back the client's protocol version for compatibility
-          const clientProtocolVersion = mcpRequest.params?.protocolVersion as string || "2024-11-05";
+          const clientProtocolVersion =
+            (mcpRequest.params?.protocolVersion as string) || "2024-11-05";
           response = {
             jsonrpc: "2.0",
             id: mcpRequest.id,
@@ -175,8 +181,12 @@ export async function registerMcpRoutes(
               },
             },
           };
-          console.log(`[MCP MESSAGE] Initialize response (protocol: ${clientProtocolVersion}):`, JSON.stringify(response.result, null, 2));
+          console.log(
+            `[MCP MESSAGE] Initialize response (protocol: ${clientProtocolVersion}):`,
+            JSON.stringify(response.result, null, 2),
+          );
           break;
+        }
 
         case "notifications/initialized":
         case "initialized":
@@ -185,7 +195,7 @@ export async function registerMcpRoutes(
           // Notifications don't need responses, just acknowledge the HTTP request
           return reply.status(202).send({});
 
-        case "tools/list":
+        case "tools/list": {
           const tools = getToolDefinitions();
           response = {
             jsonrpc: "2.0",
@@ -194,17 +204,34 @@ export async function registerMcpRoutes(
               tools,
             },
           };
-          console.log(`[MCP MESSAGE] Tools/list response - ${tools.length} tools:`, tools.map(t => t.name));
+          console.log(
+            `[MCP MESSAGE] Tools/list response - ${tools.length} tools:`,
+            tools.map((t) => t.name),
+          );
           break;
+        }
 
-        case "tools/call":
+        case "tools/call": {
           const toolName = mcpRequest.params?.name as string;
-          const toolArgs = mcpRequest.params?.arguments as Record<string, unknown>;
-          console.log(`[MCP] Tool call: ${toolName}`, JSON.stringify(toolArgs, null, 2));
+          const toolArgs = mcpRequest.params?.arguments as Record<
+            string,
+            unknown
+          >;
+          console.log(
+            `[MCP] Tool call: ${toolName}`,
+            JSON.stringify(toolArgs, null, 2),
+          );
 
           try {
-            const result = await handleToolCall(toolName, toolArgs, accessToken!);
-            console.log(`[MCP] Tool result:`, JSON.stringify(result, null, 2).slice(0, 500));
+            const result = await handleToolCall(
+              toolName,
+              toolArgs,
+              accessToken!,
+            );
+            console.log(
+              `[MCP] Tool result:`,
+              JSON.stringify(result, null, 2).slice(0, 500),
+            );
             response = {
               jsonrpc: "2.0",
               id: mcpRequest.id,
@@ -223,11 +250,15 @@ export async function registerMcpRoutes(
               id: mcpRequest.id,
               error: {
                 code: -32603,
-                message: error instanceof Error ? error.message : "Tool execution failed",
+                message:
+                  error instanceof Error
+                    ? error.message
+                    : "Tool execution failed",
               },
             };
           }
           break;
+        }
 
         default:
           console.log(`[MCP MESSAGE] Unknown method: ${mcpRequest.method}`);
@@ -244,7 +275,9 @@ export async function registerMcpRoutes(
       // Send response on SSE stream
       const sent = sendSseResponse(userId, response);
       if (!sent) {
-        console.log(`[MCP MESSAGE] Warning: Could not send response on SSE stream, sending via HTTP`);
+        console.log(
+          `[MCP MESSAGE] Warning: Could not send response on SSE stream, sending via HTTP`,
+        );
         // Fallback to HTTP response if SSE connection not found
         return reply.send(response);
       }
@@ -270,7 +303,10 @@ export async function registerMcpRoutes(
     async (request, reply) => {
       const userId = request.headers["x-user-id"];
       console.log(`[MCP SSE] Connection opened for user: ${userId}`);
-      console.log(`[MCP SSE] Request headers:`, JSON.stringify(request.headers, null, 2));
+      console.log(
+        `[MCP SSE] Request headers:`,
+        JSON.stringify(request.headers, null, 2),
+      );
 
       // Set SSE headers
       reply.raw.writeHead(200, {

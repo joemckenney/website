@@ -1,4 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.2.6/schema.json",
-  "extends": ["@website/config/biome"]
+  "extends": ["@website/config/biome"],
+  "files": {
+    "includes": ["**", "!spec", "!dist"]
+  }
 }

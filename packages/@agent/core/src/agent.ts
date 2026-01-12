@@ -1,4 +1,4 @@
-import { query, type SDKMessage } from "@anthropic-ai/claude-agent-sdk";
+import { query } from "@anthropic-ai/claude-agent-sdk";
 import type {
   AgentConfig,
   AgentContext,
@@ -7,7 +7,7 @@ import type {
   StreamEvent,
 } from "./types.js";
 
-const DEFAULT_CONFIG: AgentConfig = {
+const _DEFAULT_CONFIG: AgentConfig = {
   model: "claude-sonnet-4-20250514",
   maxTokens: 4096,
 };
@@ -32,11 +32,12 @@ export interface AgentStreamResult {
  * Agent that wraps the Claude Agent SDK with streaming support
  */
 export class Agent {
-  private config: AgentConfig;
   private queryOptions: AgentQueryOptions;
 
-  constructor(config: Partial<AgentConfig> = {}, options: AgentQueryOptions = {}) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
+  constructor(
+    _config: Partial<AgentConfig> = {},
+    options: AgentQueryOptions = {},
+  ) {
     this.queryOptions = {
       allowedTools: options.allowedTools ?? ["WebSearch"],
       mcpServers: options.mcpServers,
@@ -72,23 +73,34 @@ export class Agent {
         },
       };
 
-      console.log(`[Agent] Starting query with options:`, JSON.stringify({
-        prompt: prompt.slice(0, 100),
-        allowedTools: this.queryOptions.allowedTools,
-        permissionMode: this.queryOptions.permissionMode,
-        mcpServers: this.queryOptions.mcpServers ? Object.keys(this.queryOptions.mcpServers) : [],
-        mcpServersConfig: this.queryOptions.mcpServers,
-        hasSessionId: !!context.sessionId,
-      }, null, 2));
+      console.log(
+        `[Agent] Starting query with options:`,
+        JSON.stringify(
+          {
+            prompt: prompt.slice(0, 100),
+            allowedTools: this.queryOptions.allowedTools,
+            permissionMode: this.queryOptions.permissionMode,
+            mcpServers: this.queryOptions.mcpServers
+              ? Object.keys(this.queryOptions.mcpServers)
+              : [],
+            mcpServersConfig: this.queryOptions.mcpServers,
+            hasSessionId: !!context.sessionId,
+          },
+          null,
+          2,
+        ),
+      );
 
       for await (const message of query(queryOptions)) {
         // Log all messages from Agent SDK for debugging
-        console.log(`[Agent SDK] Message type: ${message.type}`,
-          'subtype' in message ? `subtype: ${message.subtype}` : '',
-          JSON.stringify(message, null, 2).slice(0, 300));
+        console.log(
+          `[Agent SDK] Message type: ${message.type}`,
+          "subtype" in message ? `subtype: ${message.subtype}` : "",
+          JSON.stringify(message, null, 2).slice(0, 300),
+        );
 
         // Extract session_id from any message that has it
-        if ('session_id' in message) {
+        if ("session_id" in message) {
           sessionId = message.session_id;
         }
 
@@ -135,7 +147,8 @@ export class Agent {
             }
           } else {
             // Error result
-            const errorMessage = message.errors?.join(", ") || "Agent execution failed";
+            const errorMessage =
+              message.errors?.join(", ") || "Agent execution failed";
             yield {
               type: "error",
               error: errorMessage,

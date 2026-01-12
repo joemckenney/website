@@ -1,8 +1,4 @@
-import type {
-  ConversationMessage,
-  AgentStreamResult,
-  McpServerConfig,
-} from "@agent/core";
+import type { AgentStreamResult, McpServerConfig } from "@agent/core";
 import { createAgent, formatSSE, SSE_HEADERS } from "@agent/core";
 import type { MessageRole } from "@agent/db";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
@@ -118,7 +114,10 @@ export async function registerChatRoutes(
       console.log(`[Chat] ====== Creating Agent ======`);
       console.log(`[Chat] Has MCP servers: ${hasStrava}`);
       console.log(`[Chat] MCP server names:`, Object.keys(mcpServers));
-      console.log(`[Chat] Full MCP config:`, JSON.stringify(mcpServers, null, 2));
+      console.log(
+        `[Chat] Full MCP config:`,
+        JSON.stringify(mcpServers, null, 2),
+      );
 
       const agent = createAgent(
         {
@@ -135,7 +134,7 @@ export async function registerChatRoutes(
         },
       );
 
-      let assistantContent = "";
+      let _assistantContent = "";
       let newSessionId: string | undefined;
 
       try {
@@ -147,8 +146,9 @@ export async function registerChatRoutes(
           sessionId: conversation.sessionId ?? undefined,
         });
 
-        let streamResult: IteratorResult<any, AgentStreamResult>;
-        while (!(streamResult = await stream.next()).done) {
+        let streamResult: IteratorResult<any, AgentStreamResult> =
+          await stream.next();
+        while (!streamResult.done) {
           const event = streamResult.value;
 
           // Write SSE event
@@ -156,7 +156,7 @@ export async function registerChatRoutes(
 
           // Track content for saving
           if (event.type === "text_delta") {
-            assistantContent += event.text;
+            _assistantContent += event.text;
           } else if (event.type === "message_complete") {
             // Save assistant message to database
             await prisma.message.create({
@@ -191,6 +191,8 @@ export async function registerChatRoutes(
               data: { updatedAt: new Date() },
             });
           }
+
+          streamResult = await stream.next();
         }
 
         // Get the session ID from the generator's return value

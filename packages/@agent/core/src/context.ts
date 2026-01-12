@@ -16,7 +16,7 @@ export interface ContextConfig {
   reserveTokens: number;
 }
 
-const DEFAULT_CONFIG: ContextConfig = {
+const _DEFAULT_CONFIG: ContextConfig = {
   maxContextTokens: 50000,
   reserveTokens: 4096,
 };

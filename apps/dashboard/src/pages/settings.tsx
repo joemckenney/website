@@ -120,6 +120,8 @@ export default function SettingsPage() {
                     height="24"
                     viewBox="0 0 24 24"
                     fill="currentColor"
+                    role="img"
+                    aria-label="Strava"
                   >
                     <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
                   </svg>
@@ -151,7 +153,8 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {!strava.isLoading && strava.configured !== false &&
+              {!strava.isLoading &&
+                strava.configured !== false &&
                 (strava.connected ? (
                   <button
                     type="button"
@@ -174,7 +177,13 @@ export default function SettingsPage() {
             </div>
 
             {strava.error && (
-              <div style={{ marginTop: "12px", color: "#991b1b", fontSize: "14px" }}>
+              <div
+                style={{
+                  marginTop: "12px",
+                  color: "#991b1b",
+                  fontSize: "14px",
+                }}
+              >
                 Error: {strava.error}
               </div>
             )}

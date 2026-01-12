@@ -18,15 +18,26 @@ export const config = {
 
   // Strava OAuth - use placeholders in dev if not set
   strava: {
-    clientId: getEnvVar("STRAVA_CLIENT_ID", isDev ? "dev-placeholder" : undefined),
-    clientSecret: getEnvVar("STRAVA_CLIENT_SECRET", isDev ? "dev-placeholder" : undefined),
-    redirectUri: getEnvVar("STRAVA_REDIRECT_URI", "http://localhost:3000/strava/auth/callback"),
+    clientId: getEnvVar(
+      "STRAVA_CLIENT_ID",
+      isDev ? "dev-placeholder" : undefined,
+    ),
+    clientSecret: getEnvVar(
+      "STRAVA_CLIENT_SECRET",
+      isDev ? "dev-placeholder" : undefined,
+    ),
+    redirectUri: getEnvVar(
+      "STRAVA_REDIRECT_URI",
+      "http://localhost:3000/strava/auth/callback",
+    ),
   },
 
   // Encryption for storing tokens - use dev key if not set
   encryptionKey: getEnvVar(
     "ENCRYPTION_KEY",
-    isDev ? "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" : undefined
+    isDev
+      ? "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      : undefined,
   ),
 
   // Frontend URL for OAuth redirects
@@ -35,9 +46,11 @@ export const config = {
   // Database URL (reuses @agent/db connection)
   databaseUrl: getEnvVar(
     "DATABASE_URL",
-    isDev ? "postgresql://agent:devpassword@localhost:5433/agent" : undefined
+    isDev ? "postgresql://agent:devpassword@localhost:5433/agent" : undefined,
   ),
 
   // Whether Strava integration is properly configured
-  isStravaConfigured: Boolean(process.env.STRAVA_CLIENT_ID && process.env.STRAVA_CLIENT_SECRET),
+  isStravaConfigured: Boolean(
+    process.env.STRAVA_CLIENT_ID && process.env.STRAVA_CLIENT_SECRET,
+  ),
 };

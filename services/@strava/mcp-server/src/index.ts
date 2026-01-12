@@ -50,14 +50,16 @@ await fastify.register(
     await registerOAuthRoutes(instance);
     await registerMcpRoutes(instance);
   },
-  { prefix: "/strava" }
+  { prefix: "/strava" },
 );
 
 // Start server
 const start = async () => {
   try {
     await fastify.listen({ port: config.port, host: "0.0.0.0" });
-    console.log(`Strava MCP Server listening on http://localhost:${config.port}`);
+    console.log(
+      `Strava MCP Server listening on http://localhost:${config.port}`,
+    );
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

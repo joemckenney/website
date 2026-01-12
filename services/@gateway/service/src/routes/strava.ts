@@ -12,30 +12,33 @@ import { authenticateRequest } from "../middleware/auth.js";
  */
 export async function registerStravaRoutes(fastify: FastifyInstance) {
   // OAuth callback - public route (Strava redirects here without auth)
-  fastify.get("/strava/auth/callback", async (request: FastifyRequest, reply: FastifyReply) => {
-    // Forward to Strava MCP service
-    const url = new URL(request.url, `http://${request.headers.host}`);
-    const targetUrl = `${config.stravaServiceUrl}/strava/auth/callback${url.search}`;
+  fastify.get(
+    "/strava/auth/callback",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      // Forward to Strava MCP service
+      const url = new URL(request.url, `http://${request.headers.host}`);
+      const targetUrl = `${config.stravaServiceUrl}/strava/auth/callback${url.search}`;
 
-    const response = await fetch(targetUrl, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      redirect: "manual", // Don't follow redirects, let the browser handle it
-    });
+      const response = await fetch(targetUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        redirect: "manual", // Don't follow redirects, let the browser handle it
+      });
 
-    // If it's a redirect, pass it through
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get("location");
-      if (location) {
-        return reply.redirect(location);
+      // If it's a redirect, pass it through
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get("location");
+        if (location) {
+          return reply.redirect(location);
+        }
       }
-    }
 
-    // Otherwise return the response
-    return reply.status(response.status).send(await response.text());
-  });
+      // Otherwise return the response
+      return reply.status(response.status).send(await response.text());
+    },
+  );
 
   // All other Strava routes - require authentication
   await fastify.register(httpProxy, {

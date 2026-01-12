@@ -1,10 +1,10 @@
-import { Type } from "typebox";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import type { FastifyInstance } from "fastify";
+import { Type } from "typebox";
 import { config } from "../config.js";
-import { createStravaClient, exchangeCodeForTokens, refreshAccessToken } from "./client.js";
 import { prisma } from "../db/client.js";
-import { encrypt, decrypt } from "../db/crypto.js";
+import { encrypt } from "../db/crypto.js";
+import { createStravaClient, exchangeCodeForTokens } from "./client.js";
 
 const ErrorResponse = Type.Object({
   error: Type.String(),
@@ -46,18 +46,23 @@ export async function registerOAuthRoutes(
       // Check if Strava is configured
       if (!config.isStravaConfigured) {
         return reply.status(503).send({
-          error: "Strava integration is not configured. Set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET environment variables.",
+          error:
+            "Strava integration is not configured. Set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET environment variables.",
         });
       }
 
       const userId = request.headers["x-user-id"];
 
       if (!userId) {
-        return reply.status(400).send({ error: "x-user-id header is required" });
+        return reply
+          .status(400)
+          .send({ error: "x-user-id header is required" });
       }
 
       const strava = createStravaClient();
-      const state = Buffer.from(JSON.stringify({ userId })).toString("base64url");
+      const state = Buffer.from(JSON.stringify({ userId })).toString(
+        "base64url",
+      );
       const scopes = ["read", "activity:read_all", "profile:read_all"];
 
       const authUrl = strava.createAuthorizationURL(state, scopes);
@@ -121,7 +126,9 @@ export async function registerOAuthRoutes(
       });
 
       // Redirect back to frontend with success
-      return reply.redirect(`${config.frontendUrl}/settings?strava_success=true`);
+      return reply.redirect(
+        `${config.frontendUrl}/settings?strava_success=true`,
+      );
     },
   );
 
