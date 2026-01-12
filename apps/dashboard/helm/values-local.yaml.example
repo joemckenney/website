@@ -3,9 +3,9 @@
 replicaCount: 1
 
 image:
-  repository: localhost:5000/app-client
+  repository: localhost:5000/app-web
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always  # Always pull for local dev with :latest tag
 
 ingress:
   enabled: true

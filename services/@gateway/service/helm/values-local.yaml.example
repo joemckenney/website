@@ -3,9 +3,9 @@
 replicaCount: 1
 
 image:
-  repository: localhost:5000/app-server  # Local registry
+  repository: localhost:5000/api-service  # Local registry
   tag: latest
-  pullPolicy: IfNotPresent  # Try local first, then registry
+  pullPolicy: Always  # Always pull for local dev with :latest tag
 
 ingress:
   enabled: true

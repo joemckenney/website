@@ -4,7 +4,7 @@ replicaCount: 1
 
 image:
   repository: localhost:5000/agent-service
-  pullPolicy: Always
+  pullPolicy: Always  # Always pull for local dev with :latest tag
   tag: "latest"
 
 resources:
