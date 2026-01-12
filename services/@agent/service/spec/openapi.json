@@ -12,7 +12,9 @@
     "/health": {
       "get": {
         "operationId": "healthCheck",
-        "tags": ["health"],
+        "tags": [
+          "health"
+        ],
         "description": "Health check endpoint",
         "responses": {
           "200": {
@@ -21,7 +23,10 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["status", "timestamp"],
+                  "required": [
+                    "status",
+                    "timestamp"
+                  ],
                   "properties": {
                     "status": {
                       "type": "string",
@@ -42,7 +47,9 @@
     "/conversations": {
       "post": {
         "operationId": "createConversation",
-        "tags": ["conversations"],
+        "tags": [
+          "conversations"
+        ],
         "description": "Create a new conversation",
         "requestBody": {
           "content": {
@@ -66,7 +73,12 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["id", "userId", "createdAt", "updatedAt"],
+                  "required": [
+                    "id",
+                    "userId",
+                    "createdAt",
+                    "updatedAt"
+                  ],
                   "properties": {
                     "id": {
                       "type": "string",
@@ -105,7 +117,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["error"],
+                  "required": [
+                    "error"
+                  ],
                   "properties": {
                     "error": {
                       "type": "string",
@@ -120,7 +134,9 @@
       },
       "get": {
         "operationId": "listConversations",
-        "tags": ["conversations"],
+        "tags": [
+          "conversations"
+        ],
         "description": "List conversations for the authenticated user",
         "parameters": [
           {
@@ -151,13 +167,21 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["conversations", "total"],
+                  "required": [
+                    "conversations",
+                    "total"
+                  ],
                   "properties": {
                     "conversations": {
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["id", "userId", "createdAt", "updatedAt"],
+                        "required": [
+                          "id",
+                          "userId",
+                          "createdAt",
+                          "updatedAt"
+                        ],
                         "properties": {
                           "id": {
                             "type": "string",
@@ -203,7 +227,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["error"],
+                  "required": [
+                    "error"
+                  ],
                   "properties": {
                     "error": {
                       "type": "string",
@@ -220,7 +246,9 @@
     "/conversations/{id}": {
       "get": {
         "operationId": "getConversation",
-        "tags": ["conversations"],
+        "tags": [
+          "conversations"
+        ],
         "description": "Get a conversation with its messages",
         "parameters": [
           {
@@ -298,15 +326,21 @@
                             "anyOf": [
                               {
                                 "type": "string",
-                                "enum": ["user"]
+                                "enum": [
+                                  "user"
+                                ]
                               },
                               {
                                 "type": "string",
-                                "enum": ["assistant"]
+                                "enum": [
+                                  "assistant"
+                                ]
                               },
                               {
                                 "type": "string",
-                                "enum": ["tool"]
+                                "enum": [
+                                  "tool"
+                                ]
                               }
                             ]
                           },
@@ -368,7 +402,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["error"],
+                  "required": [
+                    "error"
+                  ],
                   "properties": {
                     "error": {
                       "type": "string",
@@ -385,7 +421,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["error"],
+                  "required": [
+                    "error"
+                  ],
                   "properties": {
                     "error": {
                       "type": "string",
@@ -400,7 +438,9 @@
       },
       "patch": {
         "operationId": "updateConversation",
-        "tags": ["conversations"],
+        "tags": [
+          "conversations"
+        ],
         "description": "Update a conversation",
         "requestBody": {
           "content": {
@@ -442,7 +482,12 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["id", "userId", "createdAt", "updatedAt"],
+                  "required": [
+                    "id",
+                    "userId",
+                    "createdAt",
+                    "updatedAt"
+                  ],
                   "properties": {
                     "id": {
                       "type": "string",
@@ -481,7 +526,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["error"],
+                  "required": [
+                    "error"
+                  ],
                   "properties": {
                     "error": {
                       "type": "string",
@@ -498,7 +545,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["error"],
+                  "required": [
+                    "error"
+                  ],
                   "properties": {
                     "error": {
                       "type": "string",
@@ -513,7 +562,9 @@
       },
       "delete": {
         "operationId": "deleteConversation",
-        "tags": ["conversations"],
+        "tags": [
+          "conversations"
+        ],
         "description": "Delete a conversation",
         "parameters": [
           {
@@ -536,7 +587,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["error"],
+                  "required": [
+                    "error"
+                  ],
                   "properties": {
                     "error": {
                       "type": "string",
@@ -553,7 +606,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["error"],
+                  "required": [
+                    "error"
+                  ],
                   "properties": {
                     "error": {
                       "type": "string",
@@ -570,14 +625,18 @@
     "/conversations/{id}/chat": {
       "post": {
         "operationId": "chat",
-        "tags": ["chat"],
+        "tags": [
+          "chat"
+        ],
         "description": "Send a message and stream the agent response via Server-Sent Events",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["message"],
+                "required": [
+                  "message"
+                ],
                 "properties": {
                   "message": {
                     "type": "string",
@@ -607,7 +666,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["error"],
+                  "required": [
+                    "error"
+                  ],
                   "properties": {
                     "error": {
                       "type": "string",
@@ -624,7 +685,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["error"],
+                  "required": [
+                    "error"
+                  ],
                   "properties": {
                     "error": {
                       "type": "string",

@@ -1,7 +1,7 @@
-replicaCount: 2
+replicaCount: 1
 
 image:
-  repository: api-service
+  repository: strava-mcp-server
   pullPolicy: IfNotPresent
   tag: "latest"
 
@@ -30,36 +30,25 @@ securityContext:
 
 service:
   type: ClusterIP
-  port: 3000
-  targetPort: 3000
+  port: 3004
+  targetPort: 3004
 
+# No ingress - internal service only (accessed via agent-service)
 ingress:
-  enabled: true
-  className: "nginx"
-  annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-  hosts:
-    - host: api.example.com
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - secretName: api-service-tls
-      hosts:
-        - api.example.com
+  enabled: false
 
 resources:
   limits:
     cpu: 500m
     memory: 512Mi
   requests:
-    cpu: 250m
-    memory: 256Mi
+    cpu: 100m
+    memory: 128Mi
 
 autoscaling:
   enabled: false
-  minReplicas: 2
-  maxReplicas: 10
+  minReplicas: 1
+  maxReplicas: 5
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
 
@@ -73,18 +62,15 @@ env:
   - name: NODE_ENV
     value: "production"
   - name: PORT
-    value: "3000"
+    value: "3004"
 
 secrets:
-  googleClientId: ""
-  googleClientSecret: ""
-  jwtSecret: ""
-  allowedEmail: ""
+  databaseUrl: ""
+  stravaClientId: ""
+  stravaClientSecret: ""
+  stravaRedirectUri: ""
+  encryptionKey: ""
   frontendUrl: ""
-  backendUrl: ""
-  userServiceUrl: ""
-  agentServiceUrl: ""
-  stravaServiceUrl: ""
 
 # Prometheus metrics
 metrics:

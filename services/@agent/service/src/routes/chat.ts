@@ -1,12 +1,14 @@
-import type { ConversationMessage } from "@agent/core";
+import type {
+  ConversationMessage,
+  AgentStreamResult,
+  McpServerConfig,
+} from "@agent/core";
 import { createAgent, formatSSE, SSE_HEADERS } from "@agent/core";
 import type { MessageRole } from "@agent/db";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
-import { createToolRegistry } from "@tools/core";
-import { webSearchTool } from "@tools/web-search";
 import type { FastifyInstance } from "fastify";
 import { config } from "../config.js";
-import { prisma, serializeMessage } from "../db/client.js";
+import { prisma } from "../db/client.js";
 import { authMiddleware, getUser } from "../lib/auth.js";
 import {
   ChatRequestBody,
@@ -14,8 +16,30 @@ import {
   ErrorResponse,
 } from "../schemas.js";
 
-// Create tool registry with available tools
-const toolRegistry = createToolRegistry([webSearchTool]);
+/**
+ * Check if user has a valid Strava connection
+ */
+async function getStravaConnection(userId: string) {
+  const connection = await prisma.stravaConnection.findUnique({
+    where: { userId },
+    select: {
+      id: true,
+      athleteId: true,
+      expiresAt: true,
+    },
+  });
+
+  if (!connection) {
+    return null;
+  }
+
+  // Check if token is expired (Strava MCP service will refresh it)
+  // We just need to know if a connection exists
+  return {
+    connected: true,
+    athleteId: connection.athleteId,
+  };
+}
 
 export async function registerChatRoutes(
   app: FastifyInstance & { withTypeProvider: () => FastifyInstance },
@@ -64,7 +88,7 @@ export async function registerChatRoutes(
       reply.raw.writeHead(200, SSE_HEADERS);
 
       // Save user message
-      const userMessage = await prisma.message.create({
+      await prisma.message.create({
         data: {
           conversationId: id,
           role: "user" as MessageRole,
@@ -72,37 +96,61 @@ export async function registerChatRoutes(
         },
       });
 
-      // Convert DB messages to agent format
-      const conversationMessages: ConversationMessage[] =
-        conversation.messages.map((msg) => ({
-          role: msg.role as "user" | "assistant",
-          content: msg.content,
-          toolCalls:
-            msg.toolCalls as unknown as ConversationMessage["toolCalls"],
-          toolResults:
-            msg.toolResults as unknown as ConversationMessage["toolResults"],
-        }));
+      // Check if user has Strava connected
+      const stravaStatus = await getStravaConnection(user.id);
+      console.log(`[Chat] User ${user.id} Strava status:`, stravaStatus);
 
-      // Add the new user message
-      conversationMessages.push({
-        role: "user",
-        content: message,
-      });
+      // Build MCP servers config conditionally
+      const mcpServers: Record<string, McpServerConfig> = {};
+      if (stravaStatus?.connected) {
+        const stravaUrl = `${config.stravaServiceUrl}/strava/mcp/sse`;
+        console.log(`[Chat] Adding Strava MCP server: ${stravaUrl}`);
+        mcpServers.strava = {
+          type: "sse",
+          url: stravaUrl,
+          headers: { "x-user-id": user.id },
+        };
+      }
 
-      // Create agent and stream response
-      const agent = createAgent(toolRegistry, {
-        model: config.agent.model,
-        maxTokens: config.agent.maxTokens,
-        systemPrompt: config.agent.systemPrompt,
-      });
+      // Create agent with Agent SDK
+      // The Agent SDK handles tool execution internally
+      const hasStrava = Object.keys(mcpServers).length > 0;
+      console.log(`[Chat] ====== Creating Agent ======`);
+      console.log(`[Chat] Has MCP servers: ${hasStrava}`);
+      console.log(`[Chat] MCP server names:`, Object.keys(mcpServers));
+      console.log(`[Chat] Full MCP config:`, JSON.stringify(mcpServers, null, 2));
+
+      const agent = createAgent(
+        {
+          model: config.agent.model,
+          maxTokens: config.agent.maxTokens,
+          systemPrompt: hasStrava
+            ? `${config.agent.systemPrompt}\n\nIMPORTANT: You have access to the user's Strava fitness data via MCP tools. When the user asks about their runs, activities, or fitness data, use the Strava MCP tools (get-recent-activities, get-activity-details, get-athlete-stats) instead of searching for files.`
+            : config.agent.systemPrompt,
+        },
+        {
+          allowedTools: ["WebSearch"],
+          permissionMode: "bypassPermissions",
+          ...(hasStrava && { mcpServers }),
+        },
+      );
 
       let assistantContent = "";
+      let newSessionId: string | undefined;
 
       try {
-        for await (const event of agent.stream(conversationMessages, {
+        // Stream response from agent
+        // For continuing conversations, pass the sessionId to resume context
+        const stream = agent.stream(message, {
           userId: user.id,
           conversationId: id,
-        })) {
+          sessionId: conversation.sessionId ?? undefined,
+        });
+
+        let streamResult: IteratorResult<any, AgentStreamResult>;
+        while (!(streamResult = await stream.next()).done) {
+          const event = streamResult.value;
+
           // Write SSE event
           reply.raw.write(formatSSE(event));
 
@@ -111,7 +159,7 @@ export async function registerChatRoutes(
             assistantContent += event.text;
           } else if (event.type === "message_complete") {
             // Save assistant message to database
-            const assistantMessage = await prisma.message.create({
+            await prisma.message.create({
               data: {
                 conversationId: id,
                 role: "assistant" as MessageRole,
@@ -143,6 +191,17 @@ export async function registerChatRoutes(
               data: { updatedAt: new Date() },
             });
           }
+        }
+
+        // Get the session ID from the generator's return value
+        newSessionId = streamResult.value?.sessionId;
+
+        // Save session ID if this is a new conversation or session changed
+        if (newSessionId && newSessionId !== conversation.sessionId) {
+          await prisma.conversation.update({
+            where: { id },
+            data: { sessionId: newSessionId },
+          });
         }
       } catch (error) {
         const errorMessage =

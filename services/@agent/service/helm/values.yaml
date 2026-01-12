@@ -75,6 +75,10 @@ agent:
   maxTokens: "4096"
   systemPrompt: "You are a helpful AI assistant with access to web search. Be concise and helpful."
 
+# MCP service URLs
+strava:
+  serviceUrl: "http://strava-mcp-server:3004"
+
 # Prometheus metrics
 metrics:
   enabled: false

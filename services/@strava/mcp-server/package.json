@@ -1,21 +1,12 @@
 {
-  "name": "@agent/core",
+  "name": "@strava/mcp-server",
   "version": "0.0.0",
   "type": "module",
   "private": true,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
   "scripts": {
-    "dev": "tsgo --watch",
+    "dev": "tsx watch src/index.ts",
     "build": "tsgo",
     "clean": "rm -rf dist",
     "check": "biome check .",
@@ -23,15 +14,23 @@
     "format": "biome format --write ."
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.5",
-    "@tools/core": "workspace:*",
-    "zod": "^4.0.0"
+    "@agent/db": "workspace:*",
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^11.0.0",
+    "@fastify/type-provider-typebox": "^6.1.0",
+    "@modelcontextprotocol/sdk": "^1.9.0",
+    "typebox": "^1.0.13",
+    "arctic": "^3.7.0",
+    "dotenv": "^16.5.0",
+    "fastify": "^5.4.0",
+    "fastify-metrics": "^12.1.0"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
     "@types/node": "^22.15.21",
     "@typescript/native-preview": "catalog:",
     "@website/config": "workspace:*",
+    "tsx": "^4.19.4",
     "typescript": "^5.9.3"
   }
 }
