@@ -8,7 +8,14 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsgo",
+    "build:docker": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/strava-mcp-server:latest -f Dockerfile $REPO_ROOT",
+    "build:docker:local": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/strava-mcp-server:latest -f Dockerfile $REPO_ROOT",
+    "build:docker:prod": "REPO_ROOT=$(git rev-parse --show-toplevel) && docker build -t ${DOCKERHUB_USERNAME}/strava-mcp-server:${TAG:-latest} -f Dockerfile $REPO_ROOT",
+    "deploy:helm:local": "helm upgrade --install strava-mcp-server ./helm -f ./helm/values-local.yaml --wait --timeout=5m",
+    "deploy:helm:prod": "helm upgrade --install strava-mcp-server ./helm -f ./helm/values-prod.yaml --wait --timeout=5m",
     "clean": "rm -rf dist",
+    "clean:docker": "docker rmi localhost:5000/strava-mcp-server:latest || true",
+    "start": "node dist/index.js",
     "check": "biome check .",
     "lint": "biome check --write .",
     "format": "biome format --write ."

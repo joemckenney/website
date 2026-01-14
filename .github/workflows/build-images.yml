@@ -44,6 +44,9 @@ on:
       agent_service_built:
         description: 'Whether agent-service was built'
         value: ${{ jobs.build.outputs.agent_service_built }}
+      strava_service_built:
+        description: 'Whether strava-mcp-server was built'
+        value: ${{ jobs.build.outputs.strava_service_built }}
 
 env:
   DOCKERHUB_USERNAME: crowprose
@@ -61,6 +64,7 @@ jobs:
       api_service: ${{ steps.changes.outputs.api_service }}
       user_service: ${{ steps.changes.outputs.user_service }}
       agent_service: ${{ steps.changes.outputs.agent_service }}
+      strava_service: ${{ steps.changes.outputs.strava_service }}
 
     steps:
       - name: Checkout code
@@ -104,6 +108,7 @@ jobs:
             echo "api_service=true" >> $GITHUB_OUTPUT
             echo "user_service=true" >> $GITHUB_OUTPUT
             echo "agent_service=true" >> $GITHUB_OUTPUT
+            echo "strava_service=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -115,6 +120,7 @@ jobs:
             echo "api_service=true" >> $GITHUB_OUTPUT
             echo "user_service=true" >> $GITHUB_OUTPUT
             echo "agent_service=true" >> $GITHUB_OUTPUT
+            echo "strava_service=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -170,6 +176,16 @@ jobs:
             echo "@agent/service: no changes"
           fi
 
+          # Check if @strava/mcp-server or its dependencies changed
+          STRAVA_PACKAGES=$(pnpm turbo run build --filter='@strava/mcp-server...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
+          if [ -n "$STRAVA_PACKAGES" ]; then
+            echo "strava_service=true" >> $GITHUB_OUTPUT
+            echo "@strava/mcp-server affected packages: $STRAVA_PACKAGES"
+          else
+            echo "strava_service=false" >> $GITHUB_OUTPUT
+            echo "@strava/mcp-server: no changes"
+          fi
+
   build:
     name: Build & Push Images
     runs-on: ubuntu-latest
@@ -183,6 +199,7 @@ jobs:
       api_service_built: ${{ steps.build-api-service.outcome == 'success' }}
       user_service_built: ${{ steps.build-user-service.outcome == 'success' }}
       agent_service_built: ${{ steps.build-agent-service.outcome == 'success' }}
+      strava_service_built: ${{ steps.build-strava-service.outcome == 'success' }}
 
     steps:
       - name: Checkout code
@@ -327,6 +344,30 @@ jobs:
         if: needs.detect-changes.outputs.agent_service != 'true'
         run: echo "Skipping agent-service build - no changes detected"
 
+      - name: Build and push strava-mcp-server
+        id: build-strava-service
+        if: needs.detect-changes.outputs.strava_service == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/@strava/mcp-server/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/strava-mcp-server:${{ steps.meta.outputs.tag }}
+          build-args: |
+            TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
+            TURBO_TEAM=${{ secrets.TURBO_TEAM }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Skip strava-mcp-server (no changes)
+        if: needs.detect-changes.outputs.strava_service != 'true'
+        run: echo "Skipping strava-mcp-server build - no changes detected"
+
       - name: Summary
         run: |
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
@@ -338,3 +379,4 @@ jobs:
           echo "| api-service | ${{ needs.detect-changes.outputs.api_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| user-service | ${{ needs.detect-changes.outputs.user_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| agent-service | ${{ needs.detect-changes.outputs.agent_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| strava-mcp-server | ${{ needs.detect-changes.outputs.strava_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY

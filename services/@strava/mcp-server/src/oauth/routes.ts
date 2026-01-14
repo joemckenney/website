@@ -1,7 +1,7 @@
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import type { FastifyInstance } from "fastify";
 import { Type } from "typebox";
-import { config } from "../config.js";
+import { config, getFrontendUrl, isValidEnvironment } from "../config.js";
 import { prisma } from "../db/client.js";
 import { encrypt } from "../db/crypto.js";
 import { createStravaClient, exchangeCodeForTokens } from "./client.js";
@@ -30,6 +30,15 @@ export async function registerOAuthRoutes(
         operationId: "stravaConnect",
         description: "Get Strava OAuth authorization URL",
         tags: ["auth"],
+        querystring: Type.Object({
+          env: Type.Optional(
+            Type.Union([
+              Type.Literal("local"),
+              Type.Literal("minikube"),
+              Type.Literal("prod"),
+            ]),
+          ),
+        }),
         headers: Type.Object({
           "x-user-id": Type.String(),
         }),
@@ -59,8 +68,12 @@ export async function registerOAuthRoutes(
           .send({ error: "x-user-id header is required" });
       }
 
+      // Get target environment for OAuth redirect (defaults to "prod")
+      const env = request.query.env || "prod";
+
       const strava = createStravaClient();
-      const state = Buffer.from(JSON.stringify({ userId })).toString(
+      // Include environment in state for multi-env OAuth routing
+      const state = Buffer.from(JSON.stringify({ userId, env })).toString(
         "base64url",
       );
       const scopes = ["read", "activity:read_all", "profile:read_all"];
@@ -93,11 +106,13 @@ export async function registerOAuthRoutes(
     async (request, reply) => {
       const { code, state } = request.query;
 
-      // Decode state to get userId
+      // Decode state to get userId and target environment
       let userId: string;
+      let env: string | undefined;
       try {
         const decoded = JSON.parse(Buffer.from(state, "base64url").toString());
         userId = decoded.userId;
+        env = decoded.env;
       } catch {
         return reply.status(400).send({ error: "Invalid state parameter" });
       }
@@ -125,10 +140,9 @@ export async function registerOAuthRoutes(
         },
       });
 
-      // Redirect back to frontend with success
-      return reply.redirect(
-        `${config.frontendUrl}/settings?strava_success=true`,
-      );
+      // Redirect back to the appropriate frontend based on environment
+      const frontendUrl = getFrontendUrl(env);
+      return reply.redirect(`${frontendUrl}/settings?strava_success=true`);
     },
   );
 
