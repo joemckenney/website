@@ -139,66 +139,49 @@ jobs:
           echo "Detecting changes against: $BASE_REF"
           echo "Changed files:"
           git diff --name-only "$BASE_REF"..HEAD | head -20
+          echo ""
 
-          # Check if @app/www or its dependencies changed
-          WWW_PACKAGES=$(pnpm turbo run build --filter='@app/www...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
-          if [ -n "$WWW_PACKAGES" ]; then
-            echo "www_web=true" >> $GITHUB_OUTPUT
-            echo "@app/www affected packages: $WWW_PACKAGES"
-          else
-            echo "www_web=false" >> $GITHUB_OUTPUT
-            echo "@app/www: no changes"
-          fi
+          # Get all packages affected by changes since BASE_REF using pnpm filter
+          echo "Getting affected packages..."
+          AFFECTED_PACKAGES=$(pnpm ls -r --depth -1 --filter="...[$BASE_REF]" --json 2>/dev/null | jq -r '.[].name' 2>/dev/null || echo "")
+          echo "Affected packages:"
+          echo "$AFFECTED_PACKAGES"
+          echo ""
 
-          # Check if @app/dashboard or its dependencies changed
-          APP_PACKAGES=$(pnpm turbo run build --filter='@app/dashboard...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
-          if [ -n "$APP_PACKAGES" ]; then
-            echo "app_web=true" >> $GITHUB_OUTPUT
-            echo "@app/dashboard affected packages: $APP_PACKAGES"
-          else
-            echo "app_web=false" >> $GITHUB_OUTPUT
-            echo "@app/dashboard: no changes"
-          fi
+          # Helper function to check if a package or its dependencies are affected
+          check_package() {
+            local pkg=$1
+            local output_var=$2
 
-          # Check if @gateway/service or its dependencies changed
-          API_PACKAGES=$(pnpm turbo run build --filter='@gateway/service...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
-          if [ -n "$API_PACKAGES" ]; then
-            echo "api_service=true" >> $GITHUB_OUTPUT
-            echo "@gateway/service affected packages: $API_PACKAGES"
-          else
-            echo "api_service=false" >> $GITHUB_OUTPUT
-            echo "@gateway/service: no changes"
-          fi
+            # Get all packages that would trigger a rebuild of this package (itself + dependencies)
+            local trigger_packages=$(pnpm ls -r --depth -1 --filter="${pkg}..." --json 2>/dev/null | jq -r '.[].name' 2>/dev/null || echo "")
 
-          # Check if @users/service or its dependencies changed
-          USER_PACKAGES=$(pnpm turbo run build --filter='@users/service...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
-          if [ -n "$USER_PACKAGES" ]; then
-            echo "user_service=true" >> $GITHUB_OUTPUT
-            echo "@users/service affected packages: $USER_PACKAGES"
-          else
-            echo "user_service=false" >> $GITHUB_OUTPUT
-            echo "@users/service: no changes"
-          fi
+            # Check if any affected package is in the trigger list
+            local found=false
+            for affected in $AFFECTED_PACKAGES; do
+              for trigger in $trigger_packages; do
+                if [ "$affected" = "$trigger" ]; then
+                  found=true
+                  break 2
+                fi
+              done
+            done
 
-          # Check if @agent/service or its dependencies changed
-          AGENT_PACKAGES=$(pnpm turbo run build --filter='@agent/service...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
-          if [ -n "$AGENT_PACKAGES" ]; then
-            echo "agent_service=true" >> $GITHUB_OUTPUT
-            echo "@agent/service affected packages: $AGENT_PACKAGES"
-          else
-            echo "agent_service=false" >> $GITHUB_OUTPUT
-            echo "@agent/service: no changes"
-          fi
+            if [ "$found" = "true" ]; then
+              echo "${output_var}=true" >> $GITHUB_OUTPUT
+              echo "${pkg}: changes detected (will build)"
+            else
+              echo "${output_var}=false" >> $GITHUB_OUTPUT
+              echo "${pkg}: no changes"
+            fi
+          }
 
-          # Check if @strava/mcp-server or its dependencies changed
-          STRAVA_PACKAGES=$(pnpm turbo run build --filter='@strava/mcp-server...[$BASE_REF]' --dry-run=json 2>/dev/null | jq -r '.packages[]' 2>/dev/null || echo "")
-          if [ -n "$STRAVA_PACKAGES" ]; then
-            echo "strava_service=true" >> $GITHUB_OUTPUT
-            echo "@strava/mcp-server affected packages: $STRAVA_PACKAGES"
-          else
-            echo "strava_service=false" >> $GITHUB_OUTPUT
-            echo "@strava/mcp-server: no changes"
-          fi
+          check_package "@app/www" "www_web"
+          check_package "@app/dashboard" "app_web"
+          check_package "@gateway/service" "api_service"
+          check_package "@users/service" "user_service"
+          check_package "@agent/service" "agent_service"
+          check_package "@strava/mcp-server" "strava_service"
 
   build:
     name: Build & Push Images
