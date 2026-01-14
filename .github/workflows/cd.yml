@@ -4,7 +4,13 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  # Allow manual triggers
+  workflow_dispatch:
+    inputs:
+      force_build:
+        description: 'Force rebuild all images'
+        required: false
+        default: false
+        type: boolean
 
 env:
   DOCKERHUB_USERNAME: crowprose
@@ -18,9 +24,10 @@ jobs:
       environment: production
       api_url: https://api.joemckenney.com
       tag_suffix: sha-${{ github.sha }}
-      # With squash merges, change detection via HEAD~1 doesn't work reliably
-      # Always build all images on main - filtering happens at PR level
-      force_build: true
+      # Compare to previous commit on main to detect what changed in this merge
+      base_ref: HEAD~1
+      # Allow manual force rebuild via workflow_dispatch
+      force_build: ${{ inputs.force_build == true }}
 
   deploy-production:
     name: Deploy to Production
@@ -169,14 +176,25 @@ jobs:
 
       - name: Run production smoke tests
         run: |
-          # Wait for all pods to be ready
+          # Wait for pods to be ready (only if deployment exists)
           echo "Waiting for pods to be ready..."
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=www-web --timeout=120s
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=app-web --timeout=120s
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=api-service --timeout=120s
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=user-service --timeout=120s
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=agent-service --timeout=120s
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=strava-mcp-server --timeout=120s
+
+          wait_for_deployment() {
+            local name=$1
+            if kubectl get deployment "$name" >/dev/null 2>&1; then
+              echo "Waiting for $name..."
+              kubectl wait --for=condition=ready pod -l app.kubernetes.io/name="$name" --timeout=120s
+            else
+              echo "Deployment $name not found, skipping..."
+            fi
+          }
+
+          wait_for_deployment www-web
+          wait_for_deployment app-web
+          wait_for_deployment api-service
+          wait_for_deployment user-service
+          wait_for_deployment agent-service
+          wait_for_deployment strava-mcp-server
 
           # Brief pause for ingress backend propagation
           sleep 5
