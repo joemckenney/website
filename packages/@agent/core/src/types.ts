@@ -1,4 +1,3 @@
-import type Anthropic from "@anthropic-ai/sdk";
 import type { ToolExecutionResult } from "@tools/core";
 
 /**
@@ -58,15 +57,24 @@ export type StreamEvent =
 export interface AgentContext {
   userId: string;
   conversationId: string;
+  sessionId?: string; // Agent SDK session ID for multi-turn conversations
   abortSignal?: AbortSignal;
 }
 
 /**
- * Claude API message format
+ * MCP server configuration for HTTP/SSE transport
  */
-export type ClaudeMessage = Anthropic.MessageParam;
+export interface McpServerConfig {
+  type: "sse" | "http";
+  url: string;
+  headers?: Record<string, string>;
+}
 
 /**
- * Claude API content block
+ * MCP server configuration for stdio transport (spawning a process)
  */
-export type ClaudeContentBlock = Anthropic.ContentBlock;
+export interface McpServerStdioConfig {
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
+}

@@ -9,6 +9,7 @@ import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
 import { registerAgentRoutes } from "./routes/agent.js";
 import { registerAuthRoutes } from "./routes/auth.js";
+import { registerStravaRoutes } from "./routes/strava.js";
 import { registerRoutes } from "./routes.js";
 
 const fastify = Fastify({
@@ -75,6 +76,7 @@ await fastify.register(swaggerUi, {
 
 await registerAuthRoutes(fastify);
 await registerAgentRoutes(fastify);
+await registerStravaRoutes(fastify);
 await registerRoutes(fastify, {});
 
 // Start server

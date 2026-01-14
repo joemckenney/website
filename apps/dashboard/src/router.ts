@@ -9,6 +9,7 @@ export type Path =
   | `/history`
   | `/login`
   | `/new`
+  | `/settings`
 
 export type Params = {
   '/chat/:id': { id: string }

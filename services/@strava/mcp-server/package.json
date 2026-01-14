@@ -1,0 +1,43 @@
+{
+  "name": "@strava/mcp-server",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsgo",
+    "build:docker": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/strava-mcp-server:latest -f Dockerfile $REPO_ROOT",
+    "build:docker:local": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/strava-mcp-server:latest -f Dockerfile $REPO_ROOT",
+    "build:docker:prod": "REPO_ROOT=$(git rev-parse --show-toplevel) && docker build -t ${DOCKERHUB_USERNAME}/strava-mcp-server:${TAG:-latest} -f Dockerfile $REPO_ROOT",
+    "deploy:helm:local": "helm upgrade --install strava-mcp-server ./helm -f ./helm/values-local.yaml --wait --timeout=5m",
+    "deploy:helm:prod": "helm upgrade --install strava-mcp-server ./helm -f ./helm/values-prod.yaml --wait --timeout=5m",
+    "clean": "rm -rf dist",
+    "clean:docker": "docker rmi localhost:5000/strava-mcp-server:latest || true",
+    "start": "node dist/index.js",
+    "check": "biome check .",
+    "lint": "biome check --write .",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "@agent/db": "workspace:*",
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^11.0.0",
+    "@fastify/type-provider-typebox": "^6.1.0",
+    "@modelcontextprotocol/sdk": "^1.9.0",
+    "typebox": "^1.0.13",
+    "arctic": "^3.7.0",
+    "dotenv": "^16.5.0",
+    "fastify": "^5.4.0",
+    "fastify-metrics": "^12.1.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:",
+    "@types/node": "^22.15.21",
+    "@typescript/native-preview": "catalog:",
+    "@website/config": "workspace:*",
+    "tsx": "^4.19.4",
+    "typescript": "^5.9.3"
+  }
+}

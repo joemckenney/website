@@ -22,4 +22,5 @@ export const config = {
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:3001",
   userServiceUrl: process.env.USER_SERVICE_URL || "http://localhost:3002",
   agentServiceUrl: process.env.AGENT_SERVICE_URL || "http://localhost:3003",
+  stravaServiceUrl: process.env.STRAVA_SERVICE_URL || "http://localhost:3004",
 };

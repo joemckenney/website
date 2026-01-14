@@ -88,7 +88,7 @@ export function Sidebar({
 
         <div className={styles.navSection}>
           <div className={styles.navSectionTitle}>System</div>
-          <div className={styles.navItem}>
+          <Link to="/settings" className={styles.navItem}>
             <svg
               className={styles.navItemIcon}
               viewBox="0 0 24 24"
@@ -101,7 +101,7 @@ export function Sidebar({
               <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             Settings
-          </div>
+          </Link>
           <div className={styles.navItem}>
             <svg
               className={styles.navItemIcon}

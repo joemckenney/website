@@ -1,0 +1,21 @@
+replicaCount: 1
+
+image:
+  repository: crowprose/strava-mcp-server
+  pullPolicy: Always
+  tag: "latest"
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+secrets:
+  stravaRedirectUri: "https://api.joemckenney.com/strava/auth/callback"
+  frontendUrl: "https://app.joemckenney.com"
+
+metrics:
+  enabled: true
