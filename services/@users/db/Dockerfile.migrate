@@ -1,0 +1,13 @@
+# Lightweight migration runner for Kubernetes Jobs
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Install prisma CLI
+RUN npm install -g prisma@7.2.0
+
+# Copy prisma schema and migrations
+COPY services/@users/db/prisma ./prisma
+
+# Default command runs migrations
+CMD ["prisma", "migrate", "deploy"]
