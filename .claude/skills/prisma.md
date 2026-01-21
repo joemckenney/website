@@ -148,11 +148,31 @@ migration:
 }
 ```
 
+## TypeScript Configuration
+
+The generated Prisma client must be **excluded** from TypeScript compilation. The `tsconfig.json` should include:
+
+```json
+{
+  "include": ["src"],
+  "exclude": ["src/generated"]
+}
+```
+
+This is required because:
+1. The generated client has its own type definitions
+2. `tsgo` (native TypeScript) reports portability errors on the generated code
+3. The generated code doesn't need to be re-compiled
+
 ## Common Errors
 
 ### P1012: url property not supported
 **Cause**: `url = env("DATABASE_URL")` in schema.prisma
 **Fix**: Remove `url` from schema.prisma, use prisma.config.ts instead
+
+### Migration fails in Docker
+**Cause**: Missing prisma.config.ts or dependencies
+**Fix**: Ensure Dockerfile copies prisma.config.ts and installs pg adapter
 
 ### TS2742: The inferred type cannot be named without a reference
 **Cause**: `tsgo` is type-checking the generated Prisma client
