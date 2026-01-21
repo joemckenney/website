@@ -15,7 +15,7 @@
     "dist"
   ],
   "scripts": {
-    "dev": "tsc --watch",
+    "dev": "tsgo --watch",
     "build": "tsc",
     "clean": "rm -rf dist",
     "check": "biome check .",

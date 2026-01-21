@@ -8,25 +8,17 @@
   "author": "",
   "scripts": {
     "build": "turbo run build",
-    "build:docker:local": "turbo run build:docker:local",
     "check": "turbo run check",
     "clean": "turbo run clean",
-    "db:up": "docker compose up -d",
-    "db:down": "docker compose down",
-    "db:logs": "docker compose logs -f",
-    "deploy:helm:local": "turbo run deploy:helm:local",
-    "dev": "docker compose up -d && pnpm run migrate:all && turbo run dev",
-    "migrate:all": "pnpm --filter @users/db run migrate:deploy && pnpm --filter @agent/db run migrate:deploy",
-    "dev:setup": "./infra/scripts/dev-setup.sh",
-    "dev:start": "./infra/scripts/dev-start.sh",
-    "dev:status": "./infra/scripts/dev-status.sh",
-    "dev:stop": "./infra/scripts/dev-stop.sh",
+    "dev": "pnpm exec dev",
     "format": "turbo run format",
-    "lint": "turbo run lint",
-    "test": "echo \"No unit tests yet\" && exit 0"
+    "lint": "turbo run lint"
   },
   "devDependencies": {
     "@anthropic-ai/claude-code": "^2.0.76",
+    "@cli/cluster": "workspace:*",
+    "@cli/db": "workspace:*",
+    "@cli/dev": "workspace:*",
     "turbo": "^2.5.8"
   },
   "packageManager": "pnpm@10.18.1"
