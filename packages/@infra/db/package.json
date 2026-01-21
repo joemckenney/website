@@ -1,0 +1,17 @@
+{
+  "name": "@infra/db",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "db": "./bin/db.ts"
+  },
+  "scripts": {
+    "check": "bun run typecheck",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.14",
+    "typescript": "^5.9.3"
+  }
+}
