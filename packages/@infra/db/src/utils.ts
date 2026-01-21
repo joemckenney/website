@@ -1,6 +1,6 @@
 import type { Subprocess } from "bun";
 import type { DbConfig, Environment, ConnectionInfo } from "./types";
-import { getPassword } from "./config";
+import { expandHome, getPassword } from "./config";
 
 let portForwardProcess: Subprocess | null = null;
 
@@ -13,7 +13,8 @@ export async function startPortForward(
 ): Promise<void> {
   const isProd = env === "prod";
   const envConfig = isProd ? config.environments.prod : config.environments.minikube;
-  const kubeconfig = isProd ? config.environments.prod.kubeconfig : undefined;
+  const kubeconfigRaw = isProd ? config.environments.prod.kubeconfig : undefined;
+  const kubeconfig = kubeconfigRaw ? expandHome(kubeconfigRaw) : undefined;
 
   const args = [
     "kubectl",
@@ -124,11 +125,18 @@ export function printProdWarning(): void {
  */
 export async function confirmProdAccess(): Promise<boolean> {
   printProdWarning();
-  process.stdout.write("Type 'yes' to continue: ");
 
-  for await (const line of console) {
-    return line.trim().toLowerCase() === "yes";
-  }
+  // Use Node's readline which properly handles terminal state
+  const readline = await import("readline");
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
 
-  return false;
+  return new Promise((resolve) => {
+    rl.question("Type 'yes' to continue: ", (answer) => {
+      rl.close();
+      resolve(answer.trim().toLowerCase() === "yes");
+    });
+  });
 }

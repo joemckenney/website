@@ -8,7 +8,10 @@ import {
   printProdWarning,
 } from "../utils";
 
-export async function shell(env: Environment, config: DbConfig): Promise<void> {
+export async function shell(
+  env: Environment,
+  config: DbConfig
+): Promise<void> {
   // Confirm production access
   if (env === "prod") {
     const confirmed = await confirmProdAccess();

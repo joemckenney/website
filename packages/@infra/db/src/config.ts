@@ -1,8 +1,19 @@
 import { existsSync } from "fs";
+import { homedir } from "os";
 import { join } from "path";
 import type { DbConfig } from "./types";
 
 const CONFIG_FILENAME = "db.config.json";
+
+/**
+ * Expand ~ to home directory
+ */
+export function expandHome(path: string): string {
+  if (path.startsWith("~/")) {
+    return join(homedir(), path.slice(2));
+  }
+  return path;
+}
 
 /**
  * Find and load db.config.json from current directory or ancestors
@@ -39,10 +50,11 @@ export async function getPassword(
     return process.env.DB_PASSWORD || "devpassword";
   }
 
-  const kubeconfig =
+  const kubeconfigRaw =
     env === "prod"
       ? config.environments.prod.kubeconfig
       : undefined;
+  const kubeconfig = kubeconfigRaw ? expandHome(kubeconfigRaw) : undefined;
 
   const service =
     env === "prod"
