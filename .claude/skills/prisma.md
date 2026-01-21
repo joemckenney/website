@@ -101,14 +101,37 @@ pnpm --filter @users/db run studio
 pnpm --filter @users/db run studio:prod
 ```
 
-## Migration Docker Images
+## Kubernetes Migrations
 
-For Kubernetes migration jobs, the Dockerfile must include:
-- `prisma.config.ts` (for connection config)
-- `prisma/` directory (schema + migrations)
-- Required dependencies (`@prisma/adapter-pg`, `pg`)
+Migrations run as a Helm pre-upgrade hook using the **service image** (not a separate migration image). This avoids hardcoding package versions in a separate Dockerfile.
 
-The migration job runs: `npx prisma migrate deploy`
+The migration job template overrides the command:
+
+```yaml
+# helm/templates/migration-job.yaml
+containers:
+  - name: migrate
+    image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+    command: ["npx", "prisma", "migrate", "deploy"]
+    env:
+      - name: DATABASE_URL
+        valueFrom:
+          secretKeyRef:
+            name: {{ include "service.fullname" . }}-secrets
+            key: databaseUrl
+```
+
+**Why this approach:**
+- No separate `Dockerfile.migrate` with hardcoded package versions
+- Guaranteed version consistency between migration and service
+- Simpler CI/CD (one less image to build/push)
+- Service image already has all required dependencies
+
+**Enable migrations in values.yaml:**
+```yaml
+migration:
+  enabled: true
+```
 
 ## Dependencies Required
 
