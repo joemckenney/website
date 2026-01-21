@@ -21,6 +21,15 @@ importers:
       '@anthropic-ai/claude-code':
         specifier: ^2.0.76
         version: 2.0.76
+      '@cli/cluster':
+        specifier: workspace:*
+        version: link:packages/@cli/cluster
+      '@cli/db':
+        specifier: workspace:*
+        version: link:packages/@cli/db
+      '@cli/dev':
+        specifier: workspace:*
+        version: link:packages/@cli/dev
       turbo:
         specifier: ^2.5.8
         version: 2.7.2
@@ -159,6 +168,42 @@ importers:
       '@website/config':
         specifier: workspace:*
         version: link:../../@website/config
+
+  packages/@cli/cluster:
+    devDependencies:
+      '@biomejs/biome':
+        specifier: 'catalog:'
+        version: 2.2.6
+      '@types/bun':
+        specifier: ^1.1.14
+        version: 1.3.6
+      '@typescript/native-preview':
+        specifier: 'catalog:'
+        version: 7.0.0-dev.20251017.1
+
+  packages/@cli/db:
+    devDependencies:
+      '@biomejs/biome':
+        specifier: 'catalog:'
+        version: 2.2.6
+      '@types/bun':
+        specifier: ^1.1.14
+        version: 1.3.6
+      '@typescript/native-preview':
+        specifier: 'catalog:'
+        version: 7.0.0-dev.20251017.1
+
+  packages/@cli/dev:
+    devDependencies:
+      '@biomejs/biome':
+        specifier: 'catalog:'
+        version: 2.2.6
+      '@types/bun':
+        specifier: ^1.1.14
+        version: 1.3.6
+      '@typescript/native-preview':
+        specifier: 'catalog:'
+        version: 7.0.0-dev.20251017.1
 
   packages/@crow/box:
     dependencies:
@@ -444,18 +489,6 @@ importers:
         specifier: ^0.24.0
         version: 0.24.2
 
-  packages/@infra/db:
-    devDependencies:
-      '@biomejs/biome':
-        specifier: 'catalog:'
-        version: 2.2.6
-      '@types/bun':
-        specifier: ^1.1.14
-        version: 1.3.6
-      '@typescript/native-preview':
-        specifier: 'catalog:'
-        version: 7.0.0-dev.20251017.1
-
   packages/@tools/core:
     dependencies:
       typebox:
@@ -529,9 +562,9 @@ importers:
       '@biomejs/biome':
         specifier: 'catalog:'
         version: 2.2.6
-      '@infra/db':
+      '@cli/db':
         specifier: workspace:*
-        version: link:../../../packages/@infra/db
+        version: link:../../../packages/@cli/db
       '@types/pg':
         specifier: ^8.15.4
         version: 8.16.0
@@ -801,9 +834,9 @@ importers:
       '@biomejs/biome':
         specifier: 'catalog:'
         version: 2.2.6
-      '@infra/db':
+      '@cli/db':
         specifier: workspace:*
-        version: link:../../../packages/@infra/db
+        version: link:../../../packages/@cli/db
       '@types/pg':
         specifier: ^8.15.4
         version: 8.16.0
