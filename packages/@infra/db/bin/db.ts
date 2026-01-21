@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 
-import { parseArgs } from "util";
+import { parseArgs } from "node:util";
+import { dump, logs, shell, studio } from "../src/commands";
 import { loadConfig } from "../src/config";
-import { studio, shell, logs, dump } from "../src/commands";
-import type { Environment } from "../src/types";
+import type { DbConfig, Environment } from "../src/types";
 
 const HELP = `
 db - Database CLI for development and production
@@ -39,82 +39,86 @@ DUMP FLAGS:
   --schema-only         Dump only schema, no data
 `;
 
-function getEnvironment(args: { dev?: boolean; minikube?: boolean; prod?: boolean }): Environment {
-  if (args.prod) return "prod";
-  if (args.minikube) return "minikube";
-  return "dev"; // default
+function getEnvironment(args: {
+	dev?: boolean;
+	minikube?: boolean;
+	prod?: boolean;
+}): Environment {
+	if (args.prod) return "prod";
+	if (args.minikube) return "minikube";
+	return "dev"; // default
 }
 
 async function main() {
-  const { values, positionals } = parseArgs({
-    args: Bun.argv.slice(2),
-    options: {
-      // Environment flags
-      dev: { type: "boolean", short: "d" },
-      minikube: { type: "boolean", short: "m" },
-      prod: { type: "boolean", short: "p" },
-      // Help
-      help: { type: "boolean", short: "h" },
-      // Logs flags
-      follow: { type: "boolean", short: "f" },
-      tail: { type: "string", short: "t" },
-      // Dump flags
-      output: { type: "string", short: "o" },
-      "data-only": { type: "boolean" },
-      "schema-only": { type: "boolean" },
-    },
-    allowPositionals: true,
-  });
+	const { values, positionals } = parseArgs({
+		args: Bun.argv.slice(2),
+		options: {
+			// Environment flags
+			dev: { type: "boolean", short: "d" },
+			minikube: { type: "boolean", short: "m" },
+			prod: { type: "boolean", short: "p" },
+			// Help
+			help: { type: "boolean", short: "h" },
+			// Logs flags
+			follow: { type: "boolean", short: "f" },
+			tail: { type: "string", short: "t" },
+			// Dump flags
+			output: { type: "string", short: "o" },
+			"data-only": { type: "boolean" },
+			"schema-only": { type: "boolean" },
+		},
+		allowPositionals: true,
+	});
 
-  if (values.help || positionals.length === 0) {
-    console.log(HELP);
-    process.exit(0);
-  }
+	if (values.help || positionals.length === 0) {
+		console.log(HELP);
+		process.exit(0);
+	}
 
-  const command = positionals[0];
-  const env = getEnvironment(values);
+	const command = positionals[0];
+	const env = getEnvironment(values);
 
-  // Load config
-  let config;
-  try {
-    config = await loadConfig();
-  } catch (error) {
-    console.error((error as Error).message);
-    process.exit(1);
-  }
+	// Load config
+	let config: DbConfig;
+	try {
+		config = await loadConfig();
+	} catch (error) {
+		console.error((error as Error).message);
+		process.exit(1);
+	}
 
-  switch (command) {
-    case "studio":
-      await studio(env, config);
-      break;
+	switch (command) {
+		case "studio":
+			await studio(env, config);
+			break;
 
-    case "shell":
-      await shell(env, config);
-      break;
+		case "shell":
+			await shell(env, config);
+			break;
 
-    case "logs":
-      await logs(env, config, {
-        follow: values.follow,
-        tail: values.tail ? parseInt(values.tail, 10) : 100,
-      });
-      break;
+		case "logs":
+			await logs(env, config, {
+				follow: values.follow,
+				tail: values.tail ? parseInt(values.tail, 10) : 100,
+			});
+			break;
 
-    case "dump":
-      await dump(env, config, {
-        output: values.output,
-        dataOnly: values["data-only"],
-        schemaOnly: values["schema-only"],
-      });
-      break;
+		case "dump":
+			await dump(env, config, {
+				output: values.output,
+				dataOnly: values["data-only"],
+				schemaOnly: values["schema-only"],
+			});
+			break;
 
-    default:
-      console.error(`Unknown command: ${command}`);
-      console.log(HELP);
-      process.exit(1);
-  }
+		default:
+			console.error(`Unknown command: ${command}`);
+			console.log(HELP);
+			process.exit(1);
+	}
 }
 
 main().catch((error) => {
-  console.error(error);
-  process.exit(1);
+	console.error(error);
+	process.exit(1);
 });
