@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { setup, start, stop, status, deploy, logs } from "../src/commands";
+import { deploy, logs, setup, start, status, stop } from "../src/commands";
 import { colors } from "../src/utils/colors";
 
 const VERSION = "0.0.1";

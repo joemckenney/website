@@ -1,6 +1,6 @@
-import { header, step, success, error, info } from "../utils/colors";
-import { run, runInteractive } from "../utils/shell";
+import { error, header, info, step, success } from "../utils/colors";
 import { isMinikubeRunning, isRegistryForwardRunning } from "../utils/minikube";
+import { runInteractive } from "../utils/shell";
 
 export async function deploy(): Promise<void> {
 	header("Deploy to Local Cluster");

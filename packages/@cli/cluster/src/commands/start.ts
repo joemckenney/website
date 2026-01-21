@@ -1,14 +1,14 @@
-import { header, step, success, error, warning, info } from "../utils/colors";
+import { error, header, info, step, success, warning } from "../utils/colors";
 import {
-	isMinikubeRunning,
-	startMinikube,
-	isAddonEnabled,
 	enableAddon,
+	getKubectlContext,
+	getMinikubeIp,
+	isAddonEnabled,
+	isMinikubeRunning,
 	isRegistryForwardRunning,
+	startMinikube,
 	startRegistryForward,
 	waitForPod,
-	getMinikubeIp,
-	getKubectlContext,
 } from "../utils/minikube";
 
 export async function start(): Promise<void> {

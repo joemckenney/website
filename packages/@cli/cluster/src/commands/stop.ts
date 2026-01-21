@@ -1,8 +1,8 @@
 import { header, step, success, warning } from "../utils/colors";
 import {
 	isMinikubeRunning,
-	stopMinikube,
 	isRegistryForwardRunning,
+	stopMinikube,
 	stopRegistryForward,
 } from "../utils/minikube";
 

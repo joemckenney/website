@@ -1,6 +1,6 @@
-import { header, step, error, info, colors } from "../utils/colors";
-import { run, runInteractive } from "../utils/shell";
-import { isMinikubeRunning, getPods } from "../utils/minikube";
+import { colors, error, header, info } from "../utils/colors";
+import { getPods, isMinikubeRunning } from "../utils/minikube";
+import { runInteractive } from "../utils/shell";
 
 const SERVICE_MAP: Record<string, string> = {
 	api: "api-service",

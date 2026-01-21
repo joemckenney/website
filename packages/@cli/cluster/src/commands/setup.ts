@@ -1,24 +1,16 @@
 import { createInterface } from "node:readline";
+import { error, header, info, step, success, warning } from "../utils/colors";
 import {
-	header,
-	step,
-	success,
-	error,
-	warning,
-	info,
-	colors,
-} from "../utils/colors";
-import { commandExists, run } from "../utils/shell";
-import {
+	deleteMinikube,
+	enableAddon,
+	getKubectlContext,
+	getMinikubeIp,
+	isAddonEnabled,
 	isMinikubeRunning,
 	startMinikube,
-	deleteMinikube,
-	isAddonEnabled,
-	enableAddon,
 	waitForPod,
-	getMinikubeIp,
-	getKubectlContext,
 } from "../utils/minikube";
+import { commandExists, run } from "../utils/shell";
 
 async function confirm(question: string): Promise<boolean> {
 	const rl = createInterface({

@@ -1,22 +1,13 @@
+import { colors, header, step, symbols } from "../utils/colors";
 import {
-	header,
-	step,
-	success,
-	error,
-	warning,
-	info,
-	colors,
-	symbols,
-} from "../utils/colors";
-import {
-	isMinikubeRunning,
-	getMinikubeIp,
-	getKubectlContext,
-	isRegistryForwardRunning,
-	getHelmReleases,
 	getHelmReleaseStatus,
-	getPods,
+	getHelmReleases,
 	getIngresses,
+	getKubectlContext,
+	getMinikubeIp,
+	getPods,
+	isMinikubeRunning,
+	isRegistryForwardRunning,
 } from "../utils/minikube";
 
 export async function status(): Promise<void> {

@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
-import { run, runBackground, isProcessRunning, killProcess } from "./shell";
+import { isProcessRunning, killProcess, run, runBackground } from "./shell";
 
 const REGISTRY_PID_FILE = "/tmp/minikube-registry-forward.pid";
 
@@ -88,7 +88,10 @@ export function isRegistryForwardRunning(): { running: boolean; pid?: number } {
 		return { running: false };
 	}
 
-	const pid = Number.parseInt(readFileSync(REGISTRY_PID_FILE, "utf-8").trim());
+	const pid = Number.parseInt(
+		readFileSync(REGISTRY_PID_FILE, "utf-8").trim(),
+		10,
+	);
 	if (isProcessRunning(pid)) {
 		return { running: true, pid };
 	}
