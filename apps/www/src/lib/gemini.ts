@@ -3,7 +3,7 @@ import type { AudioParameters, WeatherData } from "../types/weather";
 // Chrome Prompt API types based on official documentation
 // https://developer.chrome.com/docs/ai/prompt-api
 
-type AIAvailability = "unavailable" | "downloading" | "available";
+type AIAvailability = "unavailable" | "downloadable" | "downloading" | "available";
 
 interface AIDownloadProgressEvent {
   loaded: number;
@@ -83,10 +83,11 @@ export async function checkGeminiAvailability(
 
     if (status === "available") {
       log?.("✓ Chrome AI is ready", "success");
-    } else if (status === "downloading" || status === "unavailable") {
-      // Both "downloading" and "unavailable" may mean the model needs to be downloaded
-      // Chrome returns "downloading" when flags are enabled but download hasn't started
-      // Calling create() is what actually triggers/continues the download
+    } else if (status === "downloadable" || status === "downloading" || status === "unavailable") {
+      // "downloadable" - model can be downloaded but hasn't started
+      // "downloading" - model is currently downloading
+      // "unavailable" - may need download or flags not enabled
+      // Calling create() triggers/continues the download
       log?.(
         "ℹ️  Chrome AI model not ready, initiating download (~1.7GB)...",
         "info",
@@ -124,7 +125,7 @@ export async function checkGeminiAvailability(
     return {
       available: status === "available",
       status,
-      downloading: status === "downloading",
+      downloading: status === "downloading" || status === "downloadable",
     };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : "Unknown error";
@@ -212,7 +213,7 @@ export async function generateAudioParameters(
     return getFallbackParameters(weather, previousParams);
   }
 
-  if (availability === "downloading") {
+  if (availability === "downloading" || availability === "downloadable") {
     log?.(
       "AI model is still downloading, cannot create session yet",
       "warning",
