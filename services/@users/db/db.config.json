@@ -1,0 +1,19 @@
+{
+  "database": "users",
+  "user": "users",
+  "environments": {
+    "dev": {
+      "host": "localhost",
+      "port": 5432
+    },
+    "minikube": {
+      "service": "user-postgres-postgresql",
+      "localPort": 5440
+    },
+    "prod": {
+      "service": "user-postgres-postgresql",
+      "localPort": 5440,
+      "kubeconfig": "~/.kube/vultr-prod-config"
+    }
+  }
+}

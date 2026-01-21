@@ -23,6 +23,7 @@
     "migrate:reset": "prisma migrate reset",
     "db:push": "prisma db push",
     "studio": "prisma studio",
+    "studio:prod": "./scripts/studio-prod.sh",
     "clean": "rm -rf dist",
     "check": "biome check .",
     "lint": "biome check --write .",
@@ -36,6 +37,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
+    "@infra/db": "workspace:*",
     "@types/pg": "^8.15.4",
     "@typescript/native-preview": "catalog:",
     "@website/config": "workspace:*",

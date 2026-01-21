@@ -5,6 +5,7 @@ packages:
   - packages/@crow/*
   - packages/@agent/*
   - packages/@tools/*
+  - packages/@infra/*
 
 catalog:
   '@biomejs/biome': 2.2.6
