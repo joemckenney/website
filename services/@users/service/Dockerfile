@@ -51,18 +51,11 @@ ENV NODE_ENV=production
 # Deploy production-ready output to /app/pruned with only prod dependencies
 RUN pnpm --filter=@users/service --prod deploy /app/pruned
 
-# Migration stage - includes prisma CLI for running migrations
+# Migration stage - runs from builder which has prisma CLI properly installed
 # Used by Helm pre-upgrade hooks before the main deployment
-FROM node:24-alpine AS migrator
+FROM builder AS migrator
 
-WORKDIR /app
-
-# Copy built output from builder (includes prisma CLI in node_modules)
-COPY --from=builder /app/services/@users/db/node_modules ./node_modules
-COPY --from=builder /app/services/@users/db/prisma ./prisma
-
-# Add npx for running prisma
-RUN corepack enable
+WORKDIR /app/services/@users/db
 
 CMD ["npx", "prisma", "migrate", "deploy"]
 
