@@ -191,12 +191,13 @@ jobs:
 
     outputs:
       image_tag: ${{ steps.meta.outputs.tag }}
-      www_web_built: ${{ steps.build-www-web.outcome == 'success' }}
-      app_web_built: ${{ steps.build-app-web.outcome == 'success' }}
-      api_service_built: ${{ steps.build-api-service.outcome == 'success' }}
-      user_service_built: ${{ steps.build-user-service.outcome == 'success' }}
-      agent_service_built: ${{ steps.build-agent-service.outcome == 'success' }}
-      strava_service_built: ${{ steps.build-strava-service.outcome == 'success' }}
+      # Output true if image was built OR already existed (available for deployment)
+      www_web_built: ${{ steps.build-www-web.outcome == 'success' || steps.check-images.outputs.www_web_exists == 'true' }}
+      app_web_built: ${{ steps.build-app-web.outcome == 'success' || steps.check-images.outputs.app_web_exists == 'true' }}
+      api_service_built: ${{ steps.build-api-service.outcome == 'success' || steps.check-images.outputs.api_service_exists == 'true' }}
+      user_service_built: ${{ steps.build-user-service.outcome == 'success' || steps.check-images.outputs.user_service_exists == 'true' }}
+      agent_service_built: ${{ steps.build-agent-service.outcome == 'success' || steps.check-images.outputs.agent_service_exists == 'true' }}
+      strava_service_built: ${{ steps.build-strava-service.outcome == 'success' || steps.check-images.outputs.strava_service_exists == 'true' }}
 
     steps:
       - name: Checkout code
@@ -211,6 +212,34 @@ jobs:
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
 
+      - name: Check existing images
+        id: check-images
+        run: |
+          # Helper function to check if image exists in DockerHub
+          check_image() {
+            local image=$1
+            local tag=$2
+            if docker manifest inspect "${image}:${tag}" > /dev/null 2>&1; then
+              echo "true"
+            else
+              echo "false"
+            fi
+          }
+
+          TAG="${{ inputs.tag_suffix }}"
+          USERNAME="${{ env.DOCKERHUB_USERNAME }}"
+
+          # Check each image
+          echo "www_web_exists=$(check_image ${USERNAME}/www-web ${TAG})" >> $GITHUB_OUTPUT
+          echo "app_web_exists=$(check_image ${USERNAME}/app-web ${TAG})" >> $GITHUB_OUTPUT
+          echo "api_service_exists=$(check_image ${USERNAME}/api-service ${TAG})" >> $GITHUB_OUTPUT
+          echo "user_service_exists=$(check_image ${USERNAME}/user-service ${TAG})" >> $GITHUB_OUTPUT
+          echo "user_service_migrate_exists=$(check_image ${USERNAME}/user-service-migrate ${TAG})" >> $GITHUB_OUTPUT
+          echo "agent_service_exists=$(check_image ${USERNAME}/agent-service ${TAG})" >> $GITHUB_OUTPUT
+          echo "strava_service_exists=$(check_image ${USERNAME}/strava-mcp-server ${TAG})" >> $GITHUB_OUTPUT
+
+          echo "Image existence check complete"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -222,7 +251,7 @@ jobs:
 
       - name: Build and push www-web
         id: build-www-web
-        if: needs.detect-changes.outputs.www_web == 'true'
+        if: needs.detect-changes.outputs.www_web == 'true' && steps.check-images.outputs.www_web_exists != 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -247,9 +276,13 @@ jobs:
         if: needs.detect-changes.outputs.www_web != 'true'
         run: echo "Skipping www-web build - no changes detected"
 
+      - name: Skip www-web (image exists)
+        if: needs.detect-changes.outputs.www_web == 'true' && steps.check-images.outputs.www_web_exists == 'true'
+        run: echo "Skipping www-web build - image already exists"
+
       - name: Build and push app-web
         id: build-app-web
-        if: needs.detect-changes.outputs.app_web == 'true'
+        if: needs.detect-changes.outputs.app_web == 'true' && steps.check-images.outputs.app_web_exists != 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -272,9 +305,13 @@ jobs:
         if: needs.detect-changes.outputs.app_web != 'true'
         run: echo "Skipping app-web build - no changes detected"
 
+      - name: Skip app-web (image exists)
+        if: needs.detect-changes.outputs.app_web == 'true' && steps.check-images.outputs.app_web_exists == 'true'
+        run: echo "Skipping app-web build - image already exists"
+
       - name: Build and push api-service
         id: build-api-service
-        if: needs.detect-changes.outputs.api_service == 'true'
+        if: needs.detect-changes.outputs.api_service == 'true' && steps.check-images.outputs.api_service_exists != 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -296,9 +333,13 @@ jobs:
         if: needs.detect-changes.outputs.api_service != 'true'
         run: echo "Skipping api-service build - no changes detected"
 
+      - name: Skip api-service (image exists)
+        if: needs.detect-changes.outputs.api_service == 'true' && steps.check-images.outputs.api_service_exists == 'true'
+        run: echo "Skipping api-service build - image already exists"
+
       - name: Build and push user-service
         id: build-user-service
-        if: needs.detect-changes.outputs.user_service == 'true'
+        if: needs.detect-changes.outputs.user_service == 'true' && steps.check-images.outputs.user_service_exists != 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -313,13 +354,35 @@ jobs:
             org.opencontainers.image.created=${{ steps.meta.outputs.date }}
             org.opencontainers.image.revision=${{ github.sha }}
 
+      - name: Build and push user-service-migrate
+        id: build-user-service-migrate
+        if: needs.detect-changes.outputs.user_service == 'true' && steps.check-images.outputs.user_service_migrate_exists != 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/@users/service/Dockerfile
+          target: migrator
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/user-service-migrate:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
       - name: Skip user-service (no changes)
         if: needs.detect-changes.outputs.user_service != 'true'
         run: echo "Skipping user-service build - no changes detected"
 
+      - name: Skip user-service (image exists)
+        if: needs.detect-changes.outputs.user_service == 'true' && steps.check-images.outputs.user_service_exists == 'true'
+        run: echo "Skipping user-service build - image already exists"
+
       - name: Build and push agent-service
         id: build-agent-service
-        if: needs.detect-changes.outputs.agent_service == 'true'
+        if: needs.detect-changes.outputs.agent_service == 'true' && steps.check-images.outputs.agent_service_exists != 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -341,9 +404,13 @@ jobs:
         if: needs.detect-changes.outputs.agent_service != 'true'
         run: echo "Skipping agent-service build - no changes detected"
 
+      - name: Skip agent-service (image exists)
+        if: needs.detect-changes.outputs.agent_service == 'true' && steps.check-images.outputs.agent_service_exists == 'true'
+        run: echo "Skipping agent-service build - image already exists"
+
       - name: Build and push strava-mcp-server
         id: build-strava-service
-        if: needs.detect-changes.outputs.strava_service == 'true'
+        if: needs.detect-changes.outputs.strava_service == 'true' && steps.check-images.outputs.strava_service_exists != 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -364,6 +431,10 @@ jobs:
       - name: Skip strava-mcp-server (no changes)
         if: needs.detect-changes.outputs.strava_service != 'true'
         run: echo "Skipping strava-mcp-server build - no changes detected"
+
+      - name: Skip strava-mcp-server (image exists)
+        if: needs.detect-changes.outputs.strava_service == 'true' && steps.check-images.outputs.strava_service_exists == 'true'
+        run: echo "Skipping strava-mcp-server build - image already exists"
 
       - name: Summary
         run: |

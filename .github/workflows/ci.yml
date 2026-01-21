@@ -89,8 +89,9 @@ jobs:
     with:
       environment: ci
       api_url: http://api.local.com
-      # Tag with PR number so CD can find these images after merge
-      tag_suffix: pr-${{ github.event.pull_request.number }}
+      # Tag with commit SHA for traceability and potential reuse
+      # (CD can skip building if this exact commit is merged without squash)
+      tag_suffix: sha-${{ github.event.pull_request.head.sha }}
       # Detect changes against the PR base branch
       base_ref: origin/${{ github.event.pull_request.base.ref }}
 

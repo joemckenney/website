@@ -1,4 +1,5 @@
 {{- if .Values.migration.enabled }}
+{{- $migrationTag := .Values.migration.image.tag | default .Values.image.tag }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -27,9 +28,8 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: migrate
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["npx", "prisma", "migrate", "deploy"]
+          image: "{{ .Values.migration.image.repository }}:{{ $migrationTag }}"
+          imagePullPolicy: {{ .Values.migration.image.pullPolicy }}
           env:
             - name: DATABASE_URL
               valueFrom:
