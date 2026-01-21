@@ -46,10 +46,6 @@ secrets:
 metrics:
   enabled: true
 
-# Database migrations
+# Database migrations (uses service image with command override)
 migration:
   enabled: true
-  image:
-    repository: crowprose/user-db-migrate
-    pullPolicy: IfNotPresent
-    tag: ""  # defaults to .Values.image.tag (set via --set image.tag=...)
