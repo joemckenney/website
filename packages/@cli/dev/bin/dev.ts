@@ -9,18 +9,11 @@ import {
 	step,
 	success,
 } from "../src/utils/colors";
-import {
-	composeDown,
-	composeUp,
-	isDockerRunning,
-	waitForHealthy,
-} from "../src/utils/docker";
-import { run, spawnWithPrefix } from "../src/utils/shell";
+import { isDockerRunning } from "../src/utils/docker";
+import { run } from "../src/utils/shell";
 
-const VERSION = "0.0.1";
+const VERSION = "0.0.2";
 
-// Track spawned processes for cleanup
-let dockerLogsProc: Subprocess | null = null;
 let turboProc: Subprocess | null = null;
 let isShuttingDown = false;
 
@@ -31,12 +24,8 @@ async function cleanup(): Promise<void> {
 	console.log();
 	header("Shutting down");
 
-	if (dockerLogsProc) {
-		dockerLogsProc.kill();
-	}
-
 	step("Stopping databases...");
-	await composeDown();
+	await run(["pnpm", "turbo", "run", "db:down", "--ui=stream"]);
 	success("Cleanup complete");
 }
 
@@ -58,81 +47,31 @@ async function start(): Promise<void> {
 		process.exit(1);
 	}
 	success("Docker is running");
-
-	// Start databases
-	step("Starting databases...");
-	const composeResult = await composeUp();
-	if (composeResult !== 0) {
-		error("Failed to start databases");
-		process.exit(1);
-	}
-	success("Databases starting");
-
-	// Wait for databases to be healthy
-	step("Waiting for databases to be healthy...");
-	const dbContainers = ["users-db", "agent-db"];
-
-	for (const container of dbContainers) {
-		const healthy = await waitForHealthy(container, 60000);
-		if (!healthy) {
-			error(`Database ${container} failed health check`);
-			await composeDown();
-			process.exit(1);
-		}
-		success(`${container} is healthy`);
-	}
 	console.log();
 
-	// Run migrations
-	step("Running migrations...");
-	const migrateResult = await run([
-		"pnpm",
-		"turbo",
-		"run",
-		"migrate:deploy",
-		"--ui=stream",
-	]);
-	if (migrateResult.exitCode !== 0) {
-		error("Migrations failed");
-		console.log(migrateResult.stderr);
-		await composeDown();
-		process.exit(1);
-	}
-	success("Migrations complete");
-	console.log();
-
-	// Start docker compose logs in background
+	// Turbo handles everything: db:up -> migrate:deploy -> dev
 	header("Starting services (Ctrl+C to stop)");
+	info("Turbo will start databases, run migrations, then start services");
 	console.log();
 
-	dockerLogsProc = spawnWithPrefix(
-		["docker", "compose", "logs", "-f"],
-		"db",
-		colors.magenta,
-	);
-
-	// Start turbo dev with streaming output
 	turboProc = Bun.spawn(["pnpm", "turbo", "run", "dev", "--ui=stream"], {
 		stdout: "inherit",
 		stderr: "inherit",
 		stdin: "inherit",
 	});
 
-	// Wait for turbo to exit
 	const exitCode = await turboProc.exited;
 
-	// Brief delay to let child processes finish flushing their output
-	// (tsx watch, vite, etc. may still be writing as they terminate)
+	// Brief delay to let child processes finish flushing output
 	await Bun.sleep(500);
 
-	// Cleanup on turbo exit
 	await cleanup();
 	process.exit(exitCode);
 }
 
 async function stop(): Promise<void> {
 	header("Stopping Development Environment");
-	await composeDown();
+	await run(["pnpm", "turbo", "run", "db:down", "--ui=stream"]);
 	success("Databases stopped");
 }
 
@@ -151,12 +90,13 @@ ${colors.yellow("Options:")}
   -h, --help     Show this help message
   -v, --version  Show version
 
-${colors.yellow("What it does:")}
-  1. Starts PostgreSQL databases via docker compose
-  2. Waits for health checks
-  3. Runs Prisma migrations
-  4. Starts all services via turbo (streaming logs)
-  5. On Ctrl+C, stops everything cleanly
+${colors.yellow("How it works:")}
+  Turbo orchestrates the startup via task dependencies:
+  1. db:up      - Starts PostgreSQL containers (waits for healthy)
+  2. migrate    - Runs Prisma migrations
+  3. dev        - Starts all services in watch mode
+
+  On Ctrl+C, databases are stopped automatically.
 `);
 }
 
