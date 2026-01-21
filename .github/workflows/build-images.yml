@@ -317,23 +317,6 @@ jobs:
         if: needs.detect-changes.outputs.user_service != 'true'
         run: echo "Skipping user-service build - no changes detected"
 
-      - name: Build and push user-db-migrate
-        id: build-user-db-migrate
-        if: needs.detect-changes.outputs.user_service == 'true'
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: services/@users/db/Dockerfile.migrate
-          push: true
-          tags: |
-            ${{ env.DOCKERHUB_USERNAME }}/user-db-migrate:${{ steps.meta.outputs.tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          labels: |
-            org.opencontainers.image.source=${{ github.repositoryUrl }}
-            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
-            org.opencontainers.image.revision=${{ github.sha }}
-
       - name: Build and push agent-service
         id: build-agent-service
         if: needs.detect-changes.outputs.agent_service == 'true'
@@ -357,23 +340,6 @@ jobs:
       - name: Skip agent-service (no changes)
         if: needs.detect-changes.outputs.agent_service != 'true'
         run: echo "Skipping agent-service build - no changes detected"
-
-      - name: Build and push agent-db-migrate
-        id: build-agent-db-migrate
-        if: needs.detect-changes.outputs.agent_service == 'true'
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: services/@agent/db/Dockerfile.migrate
-          push: true
-          tags: |
-            ${{ env.DOCKERHUB_USERNAME }}/agent-db-migrate:${{ steps.meta.outputs.tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          labels: |
-            org.opencontainers.image.source=${{ github.repositoryUrl }}
-            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
-            org.opencontainers.image.revision=${{ github.sha }}
 
       - name: Build and push strava-mcp-server
         id: build-strava-service
@@ -409,7 +375,5 @@ jobs:
           echo "| app-web | ${{ needs.detect-changes.outputs.app_web == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| api-service | ${{ needs.detect-changes.outputs.api_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| user-service | ${{ needs.detect-changes.outputs.user_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| user-db-migrate | ${{ needs.detect-changes.outputs.user_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| agent-service | ${{ needs.detect-changes.outputs.agent_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| agent-db-migrate | ${{ needs.detect-changes.outputs.agent_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| strava-mcp-server | ${{ needs.detect-changes.outputs.strava_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY

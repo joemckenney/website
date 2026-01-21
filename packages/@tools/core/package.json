@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "dev": "tsgo --watch",
-    "build": "tsc",
+    "build": "tsgo",
     "clean": "rm -rf dist",
     "check": "biome check .",
     "lint": "biome check --write .",
@@ -29,7 +29,6 @@
     "@biomejs/biome": "catalog:",
     "@types/node": "^22.15.21",
     "@typescript/native-preview": "catalog:",
-    "@website/config": "workspace:*",
-    "typescript": "^5.9.3"
+    "@website/config": "workspace:*"
   }
 }

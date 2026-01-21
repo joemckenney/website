@@ -168,9 +168,6 @@ importers:
       '@website/config':
         specifier: workspace:*
         version: link:../../@website/config
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
 
   packages/@cli/cluster:
     devDependencies:
@@ -510,9 +507,6 @@ importers:
       '@website/config':
         specifier: workspace:*
         version: link:../../@website/config
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
 
   packages/@tools/web-search:
     dependencies:
@@ -535,9 +529,6 @@ importers:
       '@website/config':
         specifier: workspace:*
         version: link:../../@website/config
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
 
   packages/@website/config: {}
 
@@ -586,9 +577,6 @@ importers:
       prisma:
         specifier: ^7.2.0
         version: 7.2.0(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
 
   services/@agent/sdk:
     dependencies:
@@ -827,9 +815,6 @@ importers:
       tsx:
         specifier: ^4.19.4
         version: 4.21.0
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
 
   services/@users/db:
     dependencies:
@@ -864,9 +849,6 @@ importers:
       prisma:
         specifier: ^7.2.0
         version: 7.2.0(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
 
   services/@users/sdk:
     dependencies:
