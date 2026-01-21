@@ -23,6 +23,7 @@
     "migrate:reset": "prisma migrate reset",
     "db:push": "prisma db push",
     "studio": "prisma studio",
+    "studio:prod": "./scripts/studio-prod.sh",
     "clean": "rm -rf dist",
     "check": "biome check .",
     "lint": "biome check --write .",
