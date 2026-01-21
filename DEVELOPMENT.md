@@ -28,6 +28,9 @@ The fastest way to develop. Uses Docker Compose for databases and Turbo for serv
 # Install dependencies
 pnpm install
 
+# Build packages (required before dev)
+pnpm run build
+
 # Start everything (databases, migrations, all services)
 pnpm run dev
 ```
@@ -111,7 +114,7 @@ pnpm exec cluster stop
 
 ### Accessing Services
 
-After `dev-cluster deploy`, services are available via minikube ingress:
+After `cluster deploy`, services are available via minikube ingress:
 
 ```bash
 # Get minikube IP
