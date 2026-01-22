@@ -83,40 +83,15 @@ export async function checkGeminiAvailability(
 
     if (status === "available") {
       log?.("✓ Chrome AI is ready", "success");
-    } else if (status === "downloadable" || status === "downloading" || status === "unavailable") {
-      // "downloadable" - model can be downloaded but hasn't started
-      // "downloading" - model is currently downloading
-      // "unavailable" - may need download or flags not enabled
-      // Calling create() triggers/continues the download
-      log?.(
-        "ℹ️  Chrome AI model not ready, initiating download (~1.7GB)...",
-        "info",
-      );
-
-      try {
-        const session = await languageModel.create({
-          monitor: (m) => {
-            m.addEventListener("downloadprogress", (e) => {
-              const progress = (e.loaded / e.total) * 100;
-              log?.(`   Download progress: ${progress.toFixed(1)}%`, "info");
-            });
-          },
-        });
-
-        // Clean up the session immediately
-        session.destroy();
-
-        log?.("✓ Download initiated successfully", "success");
-        log?.("   Model will download in background (~1.7GB)", "info");
-        log?.("   Check progress at chrome://components/", "info");
-      } catch (downloadError) {
-        const errorMsg =
-          downloadError instanceof Error
-            ? downloadError.message
-            : "Unknown error";
-        log?.(`Failed to initiate download: ${errorMsg}`, "error");
-        log?.("   Check chrome://flags settings and try again", "warning");
-      }
+    } else if (status === "downloadable") {
+      // Model can be downloaded but requires user gesture to start
+      log?.("Chrome AI model available for download (~1.7GB)", "info");
+      log?.("Click 'Download Model' button to start", "info");
+    } else if (status === "downloading") {
+      log?.("Chrome AI model is downloading...", "info");
+      log?.("Check progress at chrome://components/", "info");
+    } else if (status === "unavailable") {
+      log?.("Chrome AI not available - check chrome://flags", "warning");
     } else {
       // Unknown status
       log?.(`Chrome AI status: ${status}`, "warning");
@@ -135,6 +110,48 @@ export async function checkGeminiAvailability(
       status: "unavailable",
       downloading: false,
     };
+  }
+}
+
+/**
+ * Trigger model download - MUST be called from a user gesture (button click)
+ */
+export async function triggerModelDownload(
+  log?: (text: string, type?: "info" | "success" | "warning" | "error") => void,
+  onProgress?: (progress: number) => void,
+): Promise<boolean> {
+  const languageModel = window.LanguageModel || window.ai?.languageModel;
+
+  if (!languageModel) {
+    log?.("Chrome AI not available", "error");
+    return false;
+  }
+
+  try {
+    log?.("Initiating model download (~1.7GB)...", "info");
+
+    const session = await languageModel.create({
+      monitor: (m) => {
+        m.addEventListener("downloadprogress", (e) => {
+          const progress = (e.loaded / e.total) * 100;
+          log?.(`Download progress: ${progress.toFixed(1)}%`, "info");
+          onProgress?.(progress);
+        });
+      },
+    });
+
+    // Clean up session immediately - we just needed to trigger download
+    session.destroy();
+
+    log?.("✓ Download initiated successfully", "success");
+    log?.("Model will download in background", "info");
+    log?.("Check progress at chrome://components/", "info");
+    return true;
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : "Unknown error";
+    log?.(`Failed to initiate download: ${errorMsg}`, "error");
+    log?.("Check chrome://flags settings and try again", "warning");
+    return false;
   }
 }
 

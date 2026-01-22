@@ -10,6 +10,7 @@ import {
   type AvailabilityStatus,
   checkGeminiAvailability,
   generateAudioParameters,
+  triggerModelDownload,
 } from "./lib/gemini";
 import { getUserLocation } from "./lib/geolocation";
 import { getSetupInstructions, performSystemCheck } from "./lib/system-check";
@@ -151,11 +152,14 @@ function App() {
         "                     Optional: Provide coordinates (e.g., start 40.7128,-74.0060)",
         "output",
       );
-      addLog("  stop  - Stop weather station", "output");
-      addLog("  setup - Show Chrome AI setup instructions", "output");
-      addLog("  clear - Clear terminal output", "output");
-      addLog("  debug - Show system status and debug information", "output");
-      addLog("  help  - Show this help message", "output");
+      addLog("  stop     - Stop weather station", "output");
+      addLog("  download - Download Chrome AI model (~1.7GB)", "output");
+      addLog("  setup    - Show Chrome AI setup instructions", "output");
+      addLog("  clear    - Clear terminal output", "output");
+      addLog("  debug    - Show system status and debug information", "output");
+      addLog("  help     - Show this help message", "output");
+    } else if (cmd === "download") {
+      handleDownload();
     } else if (cmd === "setup") {
       handleSetup();
     } else if (cmd.startsWith("start")) {
@@ -214,6 +218,23 @@ function App() {
     } else {
       addLog(`Unknown command: ${command}`, "error");
       addLog('Type "help" for available commands.', "output");
+    }
+  };
+
+  const handleDownload = async () => {
+    addLog("Triggering Chrome AI model download...", "info");
+    const success = await triggerModelDownload((text, type) => {
+      if (type) addLog(text, type);
+      else addLog(text);
+    });
+
+    if (success) {
+      // Re-check availability after triggering download
+      const status = await checkGeminiAvailability((text, type) => {
+        if (type) addLog(text, type);
+        else addLog(text);
+      });
+      setAiStatus(status);
     }
   };
 
