@@ -15,7 +15,6 @@
     "lint": "turbo run lint"
   },
   "devDependencies": {
-    "@anthropic-ai/claude-code": "^2.0.76",
     "@cli/cluster": "workspace:*",
     "@cli/db": "workspace:*",
     "@cli/dev": "workspace:*",
