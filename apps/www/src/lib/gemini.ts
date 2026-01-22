@@ -86,7 +86,7 @@ export async function checkGeminiAvailability(
     } else if (status === "downloadable") {
       // Model can be downloaded but requires user gesture to start
       log?.("Chrome AI model available for download (~1.7GB)", "info");
-      log?.("Click 'Download Model' button to start", "info");
+      log?.("Type 'download' to start the download", "info");
     } else if (status === "downloading") {
       log?.("Chrome AI model is downloading...", "info");
       log?.("Check progress at chrome://components/", "info");
