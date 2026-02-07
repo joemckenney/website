@@ -10,6 +10,7 @@ import metricsPlugin from "fastify-metrics";
 import { registerAgentRoutes } from "./routes/agent.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerStravaRoutes } from "./routes/strava.js";
+import { registerTablesRoutes } from "./routes/tables.js";
 import { registerRoutes } from "./routes.js";
 
 const fastify = Fastify({
@@ -34,6 +35,9 @@ await fastify.register(cookie);
 await fastify.register(cors, {
   origin: true, // Allow all origins in development
   credentials: true, // Allow cookies to be sent
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  preflightContinue: false, // Don't pass preflight to next handler
 });
 
 // Prometheus metrics endpoint at /metrics
@@ -77,6 +81,7 @@ await fastify.register(swaggerUi, {
 await registerAuthRoutes(fastify);
 await registerAgentRoutes(fastify);
 await registerStravaRoutes(fastify);
+await registerTablesRoutes(fastify);
 await registerRoutes(fastify, {});
 
 // Start server

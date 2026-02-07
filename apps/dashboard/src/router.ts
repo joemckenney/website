@@ -10,9 +10,12 @@ export type Path =
   | `/login`
   | `/new`
   | `/settings`
+  | `/tables`
+  | `/tables/:tableId`
 
 export type Params = {
   '/chat/:id': { id: string }
+  '/tables/:tableId': { tableId: string }
 }
 
 export type ModalPath = never

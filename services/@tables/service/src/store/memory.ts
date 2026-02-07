@@ -1,0 +1,440 @@
+import Database from "better-sqlite3";
+import { prisma } from "../db/client.js";
+import type { ColumnType, TableEvent } from "../lib/events.js";
+import {
+  createTableSql,
+  sanitizeColumnId,
+  toSqliteType,
+} from "../lib/sqlite.js";
+import { wal } from "./wal.js";
+
+/**
+ * Column metadata stored in SQLite
+ */
+interface ColumnMeta {
+  id: string;
+  name: string;
+  dataType: ColumnType;
+  position: number;
+}
+
+/**
+ * In-memory table state
+ */
+interface TableState {
+  db: Database.Database;
+  columns: Map<string, ColumnMeta>;
+  userId: string;
+  name: string;
+}
+
+/**
+ * Memory Store Manager
+ *
+ * Uses SQLite in-memory databases for fast reads and writes.
+ * Each table gets its own SQLite database instance.
+ *
+ * On startup, state is recovered by replaying events from the WAL.
+ */
+class MemoryStore {
+  private tables = new Map<string, TableState>();
+  private eventListeners = new Map<string, Set<(event: TableEvent) => void>>();
+
+  /**
+   * Initialize the memory store by replaying WAL events
+   */
+  async initialize(): Promise<void> {
+    console.log("Initializing memory store from WAL...");
+
+    // Get all active tables from table metadata
+    const tableMetas = await prisma.tableMeta.findMany();
+
+    for (const meta of tableMetas) {
+      await this.replayTable(meta.id, meta.userId, meta.name);
+    }
+
+    console.log(`Memory store initialized with ${this.tables.size} tables`);
+  }
+
+  /**
+   * Replay events for a specific table
+   */
+  private async replayTable(
+    tableId: string,
+    userId: string,
+    name: string,
+  ): Promise<void> {
+    const checkpoint = await wal.getCheckpoint(tableId);
+    const events = await wal.getEventsSince(tableId, checkpoint ?? 0n);
+
+    if (events.length === 0 && !checkpoint) {
+      // No events for this table, create empty state
+      const db = new Database(":memory:");
+      db.exec(createTableSql());
+      this.tables.set(tableId, {
+        db,
+        columns: new Map(),
+        userId,
+        name,
+      });
+      return;
+    }
+
+    // Create fresh database and replay events
+    const db = new Database(":memory:");
+    db.exec(createTableSql());
+
+    const state: TableState = {
+      db,
+      columns: new Map(),
+      userId,
+      name,
+    };
+
+    for (const event of events) {
+      this.applyEventToSqlite(state, event.payload);
+    }
+
+    this.tables.set(tableId, state);
+
+    // Update checkpoint
+    if (events.length > 0) {
+      const lastEventId = events[events.length - 1].id;
+      await wal.updateCheckpoint(tableId, lastEventId);
+    }
+  }
+
+  /**
+   * Get or create a table's in-memory state
+   */
+  getTable(tableId: string): TableState | undefined {
+    return this.tables.get(tableId);
+  }
+
+  /**
+   * Check if a table exists
+   */
+  hasTable(tableId: string): boolean {
+    return this.tables.has(tableId);
+  }
+
+  /**
+   * Get all tables for a user
+   */
+  getTablesForUser(userId: string): Array<{ id: string; name: string }> {
+    const result: Array<{ id: string; name: string }> = [];
+    for (const [id, state] of this.tables) {
+      if (state.userId === userId) {
+        result.push({ id, name: state.name });
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Apply an event to the memory store and WAL
+   */
+  async applyEvent(event: TableEvent): Promise<void> {
+    // 1. Append to WAL first (durable write)
+    await wal.append(event);
+
+    // 2. Apply to SQLite (instant)
+    if (event.type === "TABLE_CREATED") {
+      // Create new table state
+      const db = new Database(":memory:");
+      db.exec(createTableSql());
+      this.tables.set(event.tableId, {
+        db,
+        columns: new Map(),
+        userId: event.userId,
+        name: event.name,
+      });
+    } else if (event.type === "TABLE_DELETED") {
+      // Remove table state
+      const state = this.tables.get(event.tableId);
+      if (state) {
+        state.db.close();
+        this.tables.delete(event.tableId);
+      }
+    } else {
+      // Apply to existing table
+      const state = this.tables.get(event.tableId);
+      if (state) {
+        this.applyEventToSqlite(state, event);
+      }
+    }
+
+    // 3. Broadcast to listeners
+    this.broadcast(event);
+  }
+
+  /**
+   * Apply an event to the SQLite database
+   */
+  private applyEventToSqlite(state: TableState, event: TableEvent): void {
+    const { db, columns } = state;
+
+    switch (event.type) {
+      case "TABLE_RENAMED":
+        state.name = event.name;
+        break;
+
+      case "COLUMN_ADDED": {
+        const colId = sanitizeColumnId(event.columnId);
+        const sqlType = toSqliteType(event.dataType);
+        db.exec(`ALTER TABLE data ADD COLUMN ${colId} ${sqlType}`);
+        columns.set(event.columnId, {
+          id: event.columnId,
+          name: event.name,
+          dataType: event.dataType,
+          position: event.position,
+        });
+        break;
+      }
+
+      case "COLUMN_RENAMED": {
+        const col = columns.get(event.columnId);
+        if (col) {
+          col.name = event.name;
+        }
+        break;
+      }
+
+      case "COLUMN_TYPE_CHANGED": {
+        const col = columns.get(event.columnId);
+        if (col) {
+          col.dataType = event.toType;
+        }
+        // Note: SQLite doesn't support ALTER COLUMN TYPE directly
+        // For now we just update metadata; data coercion happens on read
+        break;
+      }
+
+      case "COLUMN_DELETED": {
+        columns.delete(event.columnId);
+        // SQLite doesn't support DROP COLUMN in older versions
+        // We keep the column in the table but remove from metadata
+        break;
+      }
+
+      case "COLUMN_REORDERED": {
+        event.columnIds.forEach((colId, index) => {
+          const col = columns.get(colId);
+          if (col) {
+            col.position = index;
+          }
+        });
+        break;
+      }
+
+      case "ROW_INSERTED": {
+        const colIds = Array.from(columns.keys());
+        const colNames = colIds.map((id) => sanitizeColumnId(id));
+        const placeholders = colIds.map(() => "?").join(", ");
+
+        const values = [
+          event.rowId,
+          ...colIds.map((id) => {
+            const value = event.data[id];
+            return value === undefined ? null : value;
+          }),
+        ];
+
+        const sql =
+          colNames.length > 0
+            ? `INSERT INTO data (_id, ${colNames.join(", ")}) VALUES (?, ${placeholders})`
+            : `INSERT INTO data (_id) VALUES (?)`;
+
+        db.prepare(sql).run(values);
+        break;
+      }
+
+      case "ROW_UPDATED": {
+        const updates = Object.entries(event.data)
+          .map(([colId]) => `${sanitizeColumnId(colId)} = ?`)
+          .join(", ");
+
+        if (updates) {
+          const values = [
+            ...Object.values(event.data),
+            new Date().toISOString(),
+            event.rowId,
+          ];
+          db.prepare(
+            `UPDATE data SET ${updates}, _updated_at = ? WHERE _id = ?`,
+          ).run(values);
+        }
+        break;
+      }
+
+      case "CELL_UPDATED": {
+        const colId = sanitizeColumnId(event.columnId);
+        db.prepare(
+          `UPDATE data SET ${colId} = ?, _updated_at = ? WHERE _id = ?`,
+        ).run(event.value, new Date().toISOString(), event.rowId);
+        break;
+      }
+
+      case "ROW_DELETED": {
+        db.prepare("DELETE FROM data WHERE _id = ?").run(event.rowId);
+        break;
+      }
+
+      case "ROWS_BULK_DELETED": {
+        const placeholders = event.rowIds.map(() => "?").join(", ");
+        db.prepare(`DELETE FROM data WHERE _id IN (${placeholders})`).run(
+          event.rowIds,
+        );
+        break;
+      }
+    }
+  }
+
+  /**
+   * Query rows from a table
+   */
+  queryRows(
+    tableId: string,
+    options: {
+      offset?: number;
+      limit?: number;
+      sortBy?: string;
+      sortOrder?: "asc" | "desc";
+    } = {},
+  ): { rows: Array<Record<string, unknown>>; total: number } {
+    const state = this.tables.get(tableId);
+    if (!state) {
+      return { rows: [], total: 0 };
+    }
+
+    const { db, columns } = state;
+    const { offset = 0, limit = 50, sortBy, sortOrder = "asc" } = options;
+
+    // Build column list for SELECT
+    const colIds = Array.from(columns.keys());
+    const selectCols = [
+      "_id",
+      "_created_at",
+      "_updated_at",
+      ...colIds.map((id) => sanitizeColumnId(id)),
+    ].join(", ");
+
+    // Count total
+    const countResult = db
+      .prepare("SELECT COUNT(*) as count FROM data")
+      .get() as { count: number };
+    const total = countResult.count;
+
+    // Build ORDER BY
+    let orderBy = "_created_at DESC";
+    if (sortBy) {
+      const sortCol =
+        sortBy === "_created_at" || sortBy === "_updated_at"
+          ? sortBy
+          : sanitizeColumnId(sortBy);
+      orderBy = `${sortCol} ${sortOrder.toUpperCase()}`;
+    }
+
+    // Query with pagination
+    const sql = `SELECT ${selectCols} FROM data ORDER BY ${orderBy} LIMIT ? OFFSET ?`;
+    const rawRows = db.prepare(sql).all(limit, offset) as Array<
+      Record<string, unknown>
+    >;
+
+    // Transform rows to use column IDs as keys
+    const rows = rawRows.map((row) => {
+      const data: Record<string, unknown> = {};
+      for (const [colId, meta] of columns) {
+        const sqlCol = sanitizeColumnId(colId);
+        data[colId] = row[sqlCol];
+      }
+      return {
+        id: row._id as string,
+        data,
+        createdAt: row._created_at as string,
+        updatedAt: row._updated_at as string,
+      };
+    });
+
+    return { rows, total };
+  }
+
+  /**
+   * Get a single row by ID
+   */
+  getRow(tableId: string, rowId: string): Record<string, unknown> | null {
+    const state = this.tables.get(tableId);
+    if (!state) {
+      return null;
+    }
+
+    const { db, columns } = state;
+    const colIds = Array.from(columns.keys());
+    const selectCols = [
+      "_id",
+      "_created_at",
+      "_updated_at",
+      ...colIds.map((id) => sanitizeColumnId(id)),
+    ].join(", ");
+
+    const row = db
+      .prepare(`SELECT ${selectCols} FROM data WHERE _id = ?`)
+      .get(rowId) as Record<string, unknown> | undefined;
+
+    if (!row) {
+      return null;
+    }
+
+    const data: Record<string, unknown> = {};
+    for (const [colId] of columns) {
+      const sqlCol = sanitizeColumnId(colId);
+      data[colId] = row[sqlCol];
+    }
+
+    return {
+      id: row._id,
+      data,
+      createdAt: row._created_at,
+      updatedAt: row._updated_at,
+    };
+  }
+
+  /**
+   * Subscribe to events for a table (for real-time updates)
+   */
+  subscribe(
+    tableId: string,
+    callback: (event: TableEvent) => void,
+  ): () => void {
+    if (!this.eventListeners.has(tableId)) {
+      this.eventListeners.set(tableId, new Set());
+    }
+    this.eventListeners.get(tableId)!.add(callback);
+
+    // Return unsubscribe function
+    return () => {
+      this.eventListeners.get(tableId)?.delete(callback);
+    };
+  }
+
+  /**
+   * Broadcast an event to all listeners
+   */
+  private broadcast(event: TableEvent): void {
+    if (!("tableId" in event)) return;
+
+    const listeners = this.eventListeners.get(event.tableId);
+    if (listeners) {
+      for (const callback of listeners) {
+        try {
+          callback(event);
+        } catch (err) {
+          console.error("Error in event listener:", err);
+        }
+      }
+    }
+  }
+}
+
+// Singleton instance
+export const memoryStore = new MemoryStore();

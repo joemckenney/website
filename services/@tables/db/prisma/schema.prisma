@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Metadata for user-created tables
+model TableMeta {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+/// Write-ahead log for table mutations (source of truth for recovery)
+model TableEvent {
+  id          BigInt   @id @default(autoincrement())
+  tableId     String
+  eventType   String   // SCHEMA_CHANGE, ROW_INSERT, ROW_UPDATE, ROW_DELETE, etc.
+  payload     Json
+  createdAt   DateTime @default(now())
+  appliedToPg Boolean  @default(false)
+  appliedAt   DateTime?
+
+  @@index([tableId, appliedToPg])
+  @@index([appliedToPg, createdAt])
+}
+
+/// Checkpoint for WAL replay optimization
+model TableCheckpoint {
+  tableId      String   @id
+  lastEventId  BigInt
+  checkpointAt DateTime @default(now())
+}

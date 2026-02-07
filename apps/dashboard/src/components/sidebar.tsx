@@ -87,6 +87,23 @@ export function Sidebar({
         </div>
 
         <div className={styles.navSection}>
+          <div className={styles.navSectionTitle}>Data</div>
+          <Link to="/tables" className={styles.navItem}>
+            <svg
+              className={styles.navItemIcon}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              aria-hidden="true"
+            >
+              <path d="M3 10h18M3 14h18M10 3v18M14 3v18" />
+            </svg>
+            Tables
+          </Link>
+        </div>
+
+        <div className={styles.navSection}>
           <div className={styles.navSectionTitle}>System</div>
           <Link to="/settings" className={styles.navItem}>
             <svg
