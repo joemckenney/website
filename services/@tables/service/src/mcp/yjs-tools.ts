@@ -1,7 +1,9 @@
 /**
  * Tables MCP Tool implementations
  *
- * Tools for AI agent interaction with data tables:
+ * Tools for AI agent interaction with data tables using Yjs CRDTs.
+ *
+ * Tools:
  * - list-tables: List all user's tables
  * - get-table-schema: Get columns for a table
  * - query-rows: Query rows with pagination
@@ -14,9 +16,22 @@
  */
 
 import { randomUUID } from "node:crypto";
-import type { ColumnType } from "../lib/events.js";
-import { broadcastTableEvent } from "../routes/websocket.js";
-import { memoryStore } from "../store/memory.js";
+import { prisma } from "../db/client.js";
+import {
+  addColumn as yjsAddColumn,
+  deleteColumn as yjsDeleteColumn,
+  deleteRow as yjsDeleteRow,
+  deleteRows as yjsDeleteRows,
+  getColumns,
+  getRow,
+  getRows,
+  getTableMeta,
+  insertRow as yjsInsertRow,
+  renameColumn as yjsRenameColumn,
+  updateCell as yjsUpdateCell,
+  type ColumnType,
+} from "../yjs/schema.js";
+import { applyTableUpdate, getTableDoc } from "../yjs/server.js";
 
 /**
  * Tool definition for MCP
@@ -184,16 +199,21 @@ export function getToolDefinitions(): ToolDefinition[] {
 /**
  * Verify user has access to a table
  */
-function verifyTableAccess(tableId: string, userId: string): boolean {
-  const table = memoryStore.getTable(tableId);
-  if (!table) {
-    return false;
-  }
-  return table.userId === userId;
+async function verifyTableAccess(
+  tableId: string,
+  userId: string,
+): Promise<boolean> {
+  const tableMeta = await prisma.tableMeta.findFirst({
+    where: {
+      id: tableId,
+      userId,
+    },
+  });
+  return tableMeta !== null;
 }
 
 /**
- * Handle a tool call
+ * Handle a tool call using Yjs
  * @param contextTableId - Optional table ID from request header, used as default
  */
 export async function handleToolCall(
@@ -243,78 +263,100 @@ export async function handleToolCall(
 /**
  * List all tables for a user
  */
-function listTables(userId: string): unknown {
-  const tables = memoryStore.getTablesForUser(userId);
-
-  return tables.map((t) => {
-    const tableState = memoryStore.getTable(t.id);
-    const { total } = tableState
-      ? memoryStore.queryRows(t.id, { limit: 0 })
-      : { total: 0 };
-    return {
-      id: t.id,
-      name: t.name,
-      columnCount: tableState?.columns.size ?? 0,
-      rowCount: total,
-    };
+async function listTables(userId: string): Promise<unknown> {
+  const tableMetas = await prisma.tableMeta.findMany({
+    where: { userId },
+    orderBy: { updatedAt: "desc" },
   });
+
+  const results = await Promise.all(
+    tableMetas.map(async (meta) => {
+      try {
+        const doc = await getTableDoc(meta.id);
+        const columns = getColumns(doc);
+        const rows = getRows(doc);
+
+        return {
+          id: meta.id,
+          name: meta.name,
+          columnCount: columns.length,
+          rowCount: rows.length,
+        };
+      } catch {
+        return {
+          id: meta.id,
+          name: meta.name,
+          columnCount: 0,
+          rowCount: 0,
+        };
+      }
+    }),
+  );
+
+  return results;
 }
 
 /**
  * Get table schema (columns)
  */
-function getTableSchema(
+async function getTableSchema(
   args: Record<string, unknown>,
   userId: string,
-): unknown {
+): Promise<unknown> {
   const tableId = args.tableId as string;
   if (!tableId) {
     throw new Error("tableId is required");
   }
 
-  if (!verifyTableAccess(tableId, userId)) {
+  if (!(await verifyTableAccess(tableId, userId))) {
     throw new Error("Table not found or access denied");
   }
 
-  const table = memoryStore.getTable(tableId);
-  if (!table) {
-    throw new Error("Table not found");
-  }
-
-  const columns = Array.from(table.columns.values())
-    .sort((a, b) => a.position - b.position)
-    .map((col) => ({
-      id: col.id,
-      name: col.name,
-      dataType: col.dataType,
-    }));
+  const doc = await getTableDoc(tableId);
+  const meta = getTableMeta(doc);
+  const columns = getColumns(doc);
 
   return {
     tableId,
-    tableName: table.name,
-    columns,
+    tableName: meta.name,
+    columns: columns.map((col) => ({
+      id: col.id,
+      name: col.name,
+      dataType: col.dataType,
+    })),
   };
 }
 
 /**
  * Query rows from a table
  */
-function queryRows(args: Record<string, unknown>, userId: string): unknown {
+async function queryRows(
+  args: Record<string, unknown>,
+  userId: string,
+): Promise<unknown> {
   const tableId = args.tableId as string;
   if (!tableId) {
     throw new Error("tableId is required");
   }
 
-  if (!verifyTableAccess(tableId, userId)) {
+  if (!(await verifyTableAccess(tableId, userId))) {
     throw new Error("Table not found or access denied");
   }
 
   const limit = Math.min(Number(args.limit) || 50, 200);
   const offset = Number(args.offset) || 0;
 
-  const { rows, total } = memoryStore.queryRows(tableId, { limit, offset });
+  const doc = await getTableDoc(tableId);
+  const allRows = getRows(doc);
 
-  return { rows, total, limit, offset };
+  const paginatedRows = allRows.slice(offset, offset + limit);
+
+  return {
+    rows: paginatedRows,
+    total: allRows.length,
+    limit,
+    offset,
+  };
 }
 
 /**
@@ -333,19 +375,13 @@ async function updateCell(
     throw new Error("tableId, rowId, and columnId are required");
   }
 
-  if (!verifyTableAccess(tableId, userId)) {
+  if (!(await verifyTableAccess(tableId, userId))) {
     throw new Error("Table not found or access denied");
   }
 
-  const event = {
-    type: "CELL_UPDATED" as const,
-    tableId,
-    rowId,
-    columnId,
-    value,
-  };
-  await memoryStore.applyEvent(event);
-  broadcastTableEvent(event);
+  await applyTableUpdate(tableId, (doc) => {
+    yjsUpdateCell(doc, rowId, columnId, value);
+  });
 
   return { success: true };
 }
@@ -364,22 +400,20 @@ async function insertRow(
     throw new Error("tableId is required");
   }
 
-  if (!verifyTableAccess(tableId, userId)) {
+  if (!(await verifyTableAccess(tableId, userId))) {
     throw new Error("Table not found or access denied");
   }
 
   const rowId = randomUUID();
 
-  const event = {
-    type: "ROW_INSERTED" as const,
-    tableId,
-    rowId,
-    data,
-  };
-  await memoryStore.applyEvent(event);
-  broadcastTableEvent(event);
+  await applyTableUpdate(tableId, (doc) => {
+    yjsInsertRow(doc, rowId, data);
+  });
 
-  const row = memoryStore.getRow(tableId, rowId);
+  // Get the inserted row
+  const doc = await getTableDoc(tableId);
+  const row = getRow(doc, rowId);
+
   return { rowId, row };
 }
 
@@ -397,27 +431,17 @@ async function deleteRows(
     throw new Error("tableId and rowIds array are required");
   }
 
-  if (!verifyTableAccess(tableId, userId)) {
+  if (!(await verifyTableAccess(tableId, userId))) {
     throw new Error("Table not found or access denied");
   }
 
-  if (rowIds.length === 1) {
-    const event = {
-      type: "ROW_DELETED" as const,
-      tableId,
-      rowId: rowIds[0],
-    };
-    await memoryStore.applyEvent(event);
-    broadcastTableEvent(event);
-  } else if (rowIds.length > 1) {
-    const event = {
-      type: "ROWS_BULK_DELETED" as const,
-      tableId,
-      rowIds,
-    };
-    await memoryStore.applyEvent(event);
-    broadcastTableEvent(event);
-  }
+  await applyTableUpdate(tableId, (doc) => {
+    if (rowIds.length === 1) {
+      yjsDeleteRow(doc, rowIds[0]);
+    } else {
+      yjsDeleteRows(doc, rowIds);
+    }
+  });
 
   return { deleted: rowIds.length };
 }
@@ -450,32 +474,28 @@ async function addColumn(
     );
   }
 
-  if (!verifyTableAccess(tableId, userId)) {
+  if (!(await verifyTableAccess(tableId, userId))) {
     throw new Error("Table not found or access denied");
   }
 
-  const table = memoryStore.getTable(tableId);
-  if (!table) {
-    throw new Error("Table not found");
-  }
-
   const columnId = randomUUID();
-  const position = table.columns.size;
 
-  const event = {
-    type: "COLUMN_ADDED" as const,
-    tableId,
-    columnId,
-    name,
-    dataType,
-    position,
-  };
-  await memoryStore.applyEvent(event);
-  broadcastTableEvent(event);
+  await applyTableUpdate(tableId, (doc) => {
+    yjsAddColumn(doc, {
+      id: columnId,
+      name,
+      dataType,
+    });
+  });
+
+  // Get the column position
+  const doc = await getTableDoc(tableId);
+  const columns = getColumns(doc);
+  const column = columns.find((c) => c.id === columnId);
 
   return {
     columnId,
-    column: { id: columnId, name, dataType, position },
+    column: column ?? { id: columnId, name, dataType, position: columns.length - 1 },
   };
 }
 
@@ -494,18 +514,13 @@ async function renameColumn(
     throw new Error("tableId, columnId, and name are required");
   }
 
-  if (!verifyTableAccess(tableId, userId)) {
+  if (!(await verifyTableAccess(tableId, userId))) {
     throw new Error("Table not found or access denied");
   }
 
-  const event = {
-    type: "COLUMN_RENAMED" as const,
-    tableId,
-    columnId,
-    name,
-  };
-  await memoryStore.applyEvent(event);
-  broadcastTableEvent(event);
+  await applyTableUpdate(tableId, (doc) => {
+    yjsRenameColumn(doc, columnId, name);
+  });
 
   return { success: true };
 }
@@ -524,17 +539,13 @@ async function deleteColumn(
     throw new Error("tableId and columnId are required");
   }
 
-  if (!verifyTableAccess(tableId, userId)) {
+  if (!(await verifyTableAccess(tableId, userId))) {
     throw new Error("Table not found or access denied");
   }
 
-  const event = {
-    type: "COLUMN_DELETED" as const,
-    tableId,
-    columnId,
-  };
-  await memoryStore.applyEvent(event);
-  broadcastTableEvent(event);
+  await applyTableUpdate(tableId, (doc) => {
+    yjsDeleteColumn(doc, columnId);
+  });
 
   return { success: true };
 }

@@ -11,4 +11,6 @@
 export type * from './models/TableMeta.js'
 export type * from './models/TableEvent.js'
 export type * from './models/TableCheckpoint.js'
+export type * from './models/MaterializedColumn.js'
+export type * from './models/MaterializedRow.js'
 export type * from './commonInputTypes.js'

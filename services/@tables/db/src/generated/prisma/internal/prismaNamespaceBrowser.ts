@@ -53,7 +53,9 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   TableMeta: 'TableMeta',
   TableEvent: 'TableEvent',
-  TableCheckpoint: 'TableCheckpoint'
+  TableCheckpoint: 'TableCheckpoint',
+  MaterializedColumn: 'MaterializedColumn',
+  MaterializedRow: 'MaterializedRow'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -103,6 +105,31 @@ export const TableCheckpointScalarFieldEnum = {
 } as const
 
 export type TableCheckpointScalarFieldEnum = (typeof TableCheckpointScalarFieldEnum)[keyof typeof TableCheckpointScalarFieldEnum]
+
+
+export const MaterializedColumnScalarFieldEnum = {
+  id: 'id',
+  tableId: 'tableId',
+  name: 'name',
+  dataType: 'dataType',
+  position: 'position',
+  options: 'options',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type MaterializedColumnScalarFieldEnum = (typeof MaterializedColumnScalarFieldEnum)[keyof typeof MaterializedColumnScalarFieldEnum]
+
+
+export const MaterializedRowScalarFieldEnum = {
+  id: 'id',
+  tableId: 'tableId',
+  data: 'data',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type MaterializedRowScalarFieldEnum = (typeof MaterializedRowScalarFieldEnum)[keyof typeof MaterializedRowScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -3,7 +3,6 @@ import { mkdir, writeFile } from "node:fs/promises";
 import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
-import websocket from "@fastify/websocket";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
@@ -12,10 +11,8 @@ import { registerMcpRoutes } from "./mcp/transport.js";
 import { registerColumnRoutes } from "./routes/columns.js";
 import { registerRowRoutes } from "./routes/rows.js";
 import { registerTableRoutes } from "./routes/tables.js";
-import { registerWebSocketRoutes } from "./routes/websocket.js";
 import { HealthResponse } from "./schemas.js";
-import { Materializer } from "./store/materializer.js";
-import { memoryStore } from "./store/memory.js";
+import { startYjsServer, stopYjsServer } from "./yjs/server.js";
 
 const fastify = Fastify({
   logger:
@@ -52,7 +49,7 @@ await fastify.register(swagger, {
   openapi: {
     info: {
       title: "Tables Service API",
-      description: "Dynamic data tables API with memory-first architecture",
+      description: "Dynamic data tables API with Yjs CRDT real-time collaboration",
       version: "1.0.0",
     },
     servers: [
@@ -67,9 +64,6 @@ await fastify.register(swagger, {
 await fastify.register(swaggerUi, {
   routePrefix: "/docs",
 });
-
-// WebSocket support for real-time updates
-await fastify.register(websocket);
 
 // Health check endpoint
 fastify.get(
@@ -96,20 +90,13 @@ fastify.get(
 await registerTableRoutes(fastify);
 await registerColumnRoutes(fastify);
 await registerRowRoutes(fastify);
-await registerWebSocketRoutes(fastify);
 await registerMcpRoutes(fastify);
-
-// Initialize materializer for async PostgreSQL sync
-const materializer = new Materializer();
 
 // Start server
 const start = async () => {
   try {
-    // Initialize memory store (replays WAL on startup)
-    await memoryStore.initialize();
-
-    // Start the materializer background worker
-    materializer.start();
+    // Start Hocuspocus Yjs WebSocket server (port 3006)
+    await startYjsServer();
 
     await fastify.listen({ port: config.port, host: "0.0.0.0" });
 
@@ -134,14 +121,14 @@ const start = async () => {
 // Graceful shutdown
 process.on("SIGTERM", async () => {
   console.log("Received SIGTERM, shutting down...");
-  materializer.stop();
+  await stopYjsServer();
   await fastify.close();
   process.exit(0);
 });
 
 process.on("SIGINT", async () => {
   console.log("Received SIGINT, shutting down...");
-  materializer.stop();
+  await stopYjsServer();
   await fastify.close();
   process.exit(0);
 });

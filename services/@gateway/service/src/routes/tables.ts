@@ -132,6 +132,92 @@ export async function registerTablesRoutes(fastify: FastifyInstance) {
       });
     },
   );
+
+  // Yjs WebSocket proxy for real-time collaborative editing
+  // This handles Hocuspocus protocol connections
+  fastify.get(
+    "/yjs",
+    { websocket: true },
+    async (socket, req) => {
+      fastify.log.info("[Yjs Proxy] New connection");
+
+      // Authenticate WebSocket connection
+      const authResult = await authenticateWebSocket(req);
+      if (!authResult.success) {
+        fastify.log.warn({ error: authResult.error }, "[Yjs Proxy] Auth failed");
+        socket.close(1008, authResult.error);
+        return;
+      }
+
+      fastify.log.info({ userId: authResult.user.id }, "[Yjs Proxy] Auth success");
+
+      // Forward to Yjs server (Hocuspocus)
+      const upstreamUrl = config.yjsServiceUrl;
+      fastify.log.info({ upstreamUrl }, "[Yjs Proxy] Connecting to upstream");
+
+      const upstreamWs = new (await import("ws")).WebSocket(upstreamUrl, {
+        headers: {
+          "x-user-id": authResult.user.id,
+          "x-user-email": authResult.user.email,
+        },
+      });
+
+      // Handle upstream connection
+      upstreamWs.on("open", () => {
+        fastify.log.info("[Yjs Proxy] Upstream connected");
+      });
+
+      // Forward messages from upstream to client (binary for Yjs)
+      upstreamWs.on("message", (data: Buffer | ArrayBuffer | Buffer[], isBinary: boolean) => {
+        fastify.log.debug("[Yjs Proxy] Upstream -> Client");
+        if (socket.readyState === 1) {
+          // Send as binary buffer for Yjs protocol
+          socket.send(data as Buffer);
+        }
+      });
+
+      // Forward messages from client to upstream (binary for Yjs)
+      socket.on("message", (data: Buffer | ArrayBuffer | Buffer[]) => {
+        fastify.log.debug("[Yjs Proxy] Client -> Upstream");
+        if (upstreamWs.readyState === 1) {
+          // Forward as-is for Yjs protocol
+          upstreamWs.send(data as Buffer);
+        }
+      });
+
+      // Handle upstream close
+      upstreamWs.on("close", (code, reason) => {
+        fastify.log.info({ code }, "[Yjs Proxy] Upstream closed");
+        if (socket.readyState === 1) {
+          socket.close(code, reason.toString());
+        }
+      });
+
+      // Handle upstream error
+      upstreamWs.on("error", (err) => {
+        fastify.log.error({ err }, "[Yjs Proxy] Upstream error");
+        if (socket.readyState === 1) {
+          socket.close(1011, "Upstream error");
+        }
+      });
+
+      // Handle client close
+      socket.on("close", () => {
+        fastify.log.info("[Yjs Proxy] Client closed");
+        if (upstreamWs.readyState === 1) {
+          upstreamWs.close();
+        }
+      });
+
+      // Handle client error
+      socket.on("error", (err) => {
+        fastify.log.error({ err }, "[Yjs Proxy] Client error");
+        if (upstreamWs.readyState === 1) {
+          upstreamWs.close();
+        }
+      });
+    },
+  );
 }
 
 /**

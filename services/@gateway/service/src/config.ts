@@ -23,4 +23,5 @@ export const config = {
   userServiceUrl: process.env.USER_SERVICE_URL || "http://localhost:3002",
   agentServiceUrl: process.env.AGENT_SERVICE_URL || "http://localhost:3003",
   tablesServiceUrl: process.env.TABLES_SERVICE_URL || "http://localhost:3005",
+  yjsServiceUrl: process.env.YJS_SERVICE_URL || "ws://localhost:3006",
 };

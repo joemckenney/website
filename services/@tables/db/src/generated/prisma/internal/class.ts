@@ -20,7 +20,7 @@ const config: runtime.GetPrismaClientConfig = {
   "clientVersion": "7.3.0",
   "engineVersion": "9d6ad21cbbceab97458517b147a6a09ff43aa735",
   "activeProvider": "postgresql",
-  "inlineSchema": "generator client {\n  provider = \"prisma-client\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\n/// Metadata for user-created tables\nmodel TableMeta {\n  id        String   @id @default(uuid())\n  userId    String\n  name      String\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@index([userId])\n}\n\n/// Write-ahead log for table mutations (source of truth for recovery)\nmodel TableEvent {\n  id          BigInt    @id @default(autoincrement())\n  tableId     String\n  eventType   String // SCHEMA_CHANGE, ROW_INSERT, ROW_UPDATE, ROW_DELETE, etc.\n  payload     Json\n  createdAt   DateTime  @default(now())\n  appliedToPg Boolean   @default(false)\n  appliedAt   DateTime?\n\n  @@index([tableId, appliedToPg])\n  @@index([appliedToPg, createdAt])\n}\n\n/// Checkpoint for WAL replay optimization\nmodel TableCheckpoint {\n  tableId      String   @id\n  lastEventId  BigInt\n  checkpointAt DateTime @default(now())\n}\n",
+  "inlineSchema": "generator client {\n  provider = \"prisma-client\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\n/// Metadata for user-created tables\nmodel TableMeta {\n  id        String   @id @default(uuid())\n  userId    String\n  name      String\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@index([userId])\n}\n\n/// Write-ahead log for table mutations (source of truth for recovery)\nmodel TableEvent {\n  id          BigInt    @id @default(autoincrement())\n  tableId     String\n  eventType   String // SCHEMA_CHANGE, ROW_INSERT, ROW_UPDATE, ROW_DELETE, etc.\n  payload     Json\n  createdAt   DateTime  @default(now())\n  appliedToPg Boolean   @default(false)\n  appliedAt   DateTime?\n\n  @@index([tableId, appliedToPg])\n  @@index([appliedToPg, createdAt])\n}\n\n/// Checkpoint for WAL replay optimization\nmodel TableCheckpoint {\n  tableId      String   @id\n  lastEventId  BigInt\n  checkpointAt DateTime @default(now())\n}\n\n/// Materialized columns (synced from Yjs)\nmodel MaterializedColumn {\n  id        String   @id\n  tableId   String\n  name      String\n  dataType  String\n  position  Int\n  options   String[] @default([])\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@index([tableId])\n}\n\n/// Materialized rows (synced from Yjs)\nmodel MaterializedRow {\n  id        String   @id\n  tableId   String\n  data      Json\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@index([tableId])\n  @@index([tableId, createdAt])\n}\n",
   "runtimeDataModel": {
     "models": {},
     "enums": {},
@@ -28,7 +28,7 @@ const config: runtime.GetPrismaClientConfig = {
   }
 }
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"TableMeta\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"userId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"TableEvent\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"BigInt\"},{\"name\":\"tableId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"eventType\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"payload\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"appliedToPg\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"appliedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"TableCheckpoint\":{\"fields\":[{\"name\":\"tableId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"lastEventId\",\"kind\":\"scalar\",\"type\":\"BigInt\"},{\"name\":\"checkpointAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"TableMeta\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"userId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"TableEvent\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"BigInt\"},{\"name\":\"tableId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"eventType\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"payload\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"appliedToPg\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"appliedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"TableCheckpoint\":{\"fields\":[{\"name\":\"tableId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"lastEventId\",\"kind\":\"scalar\",\"type\":\"BigInt\"},{\"name\":\"checkpointAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"MaterializedColumn\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"tableId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"dataType\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"position\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"options\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"MaterializedRow\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"tableId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"data\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 
 async function decodeBase64AsWasm(wasmBase64: string): Promise<WebAssembly.Module> {
   const { Buffer } = await import('node:buffer')
@@ -205,6 +205,26 @@ export interface PrismaClient<
     * ```
     */
   get tableCheckpoint(): Prisma.TableCheckpointDelegate<ExtArgs, { omit: OmitOpts }>;
+
+  /**
+   * `prisma.materializedColumn`: Exposes CRUD operations for the **MaterializedColumn** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more MaterializedColumns
+    * const materializedColumns = await prisma.materializedColumn.findMany()
+    * ```
+    */
+  get materializedColumn(): Prisma.MaterializedColumnDelegate<ExtArgs, { omit: OmitOpts }>;
+
+  /**
+   * `prisma.materializedRow`: Exposes CRUD operations for the **MaterializedRow** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more MaterializedRows
+    * const materializedRows = await prisma.materializedRow.findMany()
+    * ```
+    */
+  get materializedRow(): Prisma.MaterializedRowDelegate<ExtArgs, { omit: OmitOpts }>;
 }
 
 export function getPrismaClientClass(): PrismaClientConstructor {

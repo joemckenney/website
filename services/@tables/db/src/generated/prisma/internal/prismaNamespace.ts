@@ -386,7 +386,9 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   TableMeta: 'TableMeta',
   TableEvent: 'TableEvent',
-  TableCheckpoint: 'TableCheckpoint'
+  TableCheckpoint: 'TableCheckpoint',
+  MaterializedColumn: 'MaterializedColumn',
+  MaterializedRow: 'MaterializedRow'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -402,7 +404,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "tableMeta" | "tableEvent" | "tableCheckpoint"
+    modelProps: "tableMeta" | "tableEvent" | "tableCheckpoint" | "materializedColumn" | "materializedRow"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -628,6 +630,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    MaterializedColumn: {
+      payload: Prisma.$MaterializedColumnPayload<ExtArgs>
+      fields: Prisma.MaterializedColumnFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.MaterializedColumnFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedColumnPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.MaterializedColumnFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedColumnPayload>
+        }
+        findFirst: {
+          args: Prisma.MaterializedColumnFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedColumnPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.MaterializedColumnFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedColumnPayload>
+        }
+        findMany: {
+          args: Prisma.MaterializedColumnFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedColumnPayload>[]
+        }
+        create: {
+          args: Prisma.MaterializedColumnCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedColumnPayload>
+        }
+        createMany: {
+          args: Prisma.MaterializedColumnCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.MaterializedColumnCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedColumnPayload>[]
+        }
+        delete: {
+          args: Prisma.MaterializedColumnDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedColumnPayload>
+        }
+        update: {
+          args: Prisma.MaterializedColumnUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedColumnPayload>
+        }
+        deleteMany: {
+          args: Prisma.MaterializedColumnDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.MaterializedColumnUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.MaterializedColumnUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedColumnPayload>[]
+        }
+        upsert: {
+          args: Prisma.MaterializedColumnUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedColumnPayload>
+        }
+        aggregate: {
+          args: Prisma.MaterializedColumnAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateMaterializedColumn>
+        }
+        groupBy: {
+          args: Prisma.MaterializedColumnGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MaterializedColumnGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.MaterializedColumnCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MaterializedColumnCountAggregateOutputType> | number
+        }
+      }
+    }
+    MaterializedRow: {
+      payload: Prisma.$MaterializedRowPayload<ExtArgs>
+      fields: Prisma.MaterializedRowFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.MaterializedRowFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedRowPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.MaterializedRowFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedRowPayload>
+        }
+        findFirst: {
+          args: Prisma.MaterializedRowFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedRowPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.MaterializedRowFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedRowPayload>
+        }
+        findMany: {
+          args: Prisma.MaterializedRowFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedRowPayload>[]
+        }
+        create: {
+          args: Prisma.MaterializedRowCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedRowPayload>
+        }
+        createMany: {
+          args: Prisma.MaterializedRowCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.MaterializedRowCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedRowPayload>[]
+        }
+        delete: {
+          args: Prisma.MaterializedRowDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedRowPayload>
+        }
+        update: {
+          args: Prisma.MaterializedRowUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedRowPayload>
+        }
+        deleteMany: {
+          args: Prisma.MaterializedRowDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.MaterializedRowUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.MaterializedRowUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedRowPayload>[]
+        }
+        upsert: {
+          args: Prisma.MaterializedRowUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MaterializedRowPayload>
+        }
+        aggregate: {
+          args: Prisma.MaterializedRowAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateMaterializedRow>
+        }
+        groupBy: {
+          args: Prisma.MaterializedRowGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MaterializedRowGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.MaterializedRowCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MaterializedRowCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -698,6 +848,31 @@ export const TableCheckpointScalarFieldEnum = {
 } as const
 
 export type TableCheckpointScalarFieldEnum = (typeof TableCheckpointScalarFieldEnum)[keyof typeof TableCheckpointScalarFieldEnum]
+
+
+export const MaterializedColumnScalarFieldEnum = {
+  id: 'id',
+  tableId: 'tableId',
+  name: 'name',
+  dataType: 'dataType',
+  position: 'position',
+  options: 'options',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type MaterializedColumnScalarFieldEnum = (typeof MaterializedColumnScalarFieldEnum)[keyof typeof MaterializedColumnScalarFieldEnum]
+
+
+export const MaterializedRowScalarFieldEnum = {
+  id: 'id',
+  tableId: 'tableId',
+  data: 'data',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type MaterializedRowScalarFieldEnum = (typeof MaterializedRowScalarFieldEnum)[keyof typeof MaterializedRowScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -934,6 +1109,8 @@ export type GlobalOmitConfig = {
   tableMeta?: Prisma.TableMetaOmit
   tableEvent?: Prisma.TableEventOmit
   tableCheckpoint?: Prisma.TableCheckpointOmit
+  materializedColumn?: Prisma.MaterializedColumnOmit
+  materializedRow?: Prisma.MaterializedRowOmit
 }
 
 /* Types for Logging */

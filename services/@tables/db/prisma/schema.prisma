@@ -38,3 +38,29 @@ model TableCheckpoint {
   lastEventId  BigInt
   checkpointAt DateTime @default(now())
 }
+
+/// Materialized columns (synced from Yjs)
+model MaterializedColumn {
+  id        String   @id
+  tableId   String
+  name      String
+  dataType  String
+  position  Int
+  options   String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tableId])
+}
+
+/// Materialized rows (synced from Yjs)
+model MaterializedRow {
+  id        String   @id
+  tableId   String
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tableId])
+  @@index([tableId, createdAt])
+}

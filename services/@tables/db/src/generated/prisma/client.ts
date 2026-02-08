@@ -54,3 +54,13 @@ export type TableEvent = Prisma.TableEventModel
  * Checkpoint for WAL replay optimization
  */
 export type TableCheckpoint = Prisma.TableCheckpointModel
+/**
+ * Model MaterializedColumn
+ * Materialized columns (synced from Yjs)
+ */
+export type MaterializedColumn = Prisma.MaterializedColumnModel
+/**
+ * Model MaterializedRow
+ * Materialized rows (synced from Yjs)
+ */
+export type MaterializedRow = Prisma.MaterializedRowModel
