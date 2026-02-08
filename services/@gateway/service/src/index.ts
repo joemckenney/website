@@ -4,6 +4,7 @@ import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import websocket from "@fastify/websocket";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
@@ -77,6 +78,9 @@ await fastify.register(swagger, {
 await fastify.register(swaggerUi, {
   routePrefix: "/docs",
 });
+
+// WebSocket support for real-time features
+await fastify.register(websocket);
 
 await registerAuthRoutes(fastify);
 await registerAgentRoutes(fastify);

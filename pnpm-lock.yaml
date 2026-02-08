@@ -668,7 +668,7 @@ importers:
     devDependencies:
       '@agent/service':
         specifier: workspace:*
-        version: link:../service
+        version: file:services/@agent/service
 
   services/@gateway/sdk:
     devDependencies:
@@ -717,6 +717,9 @@ importers:
       '@fastify/type-provider-typebox':
         specifier: ^6.1.0
         version: 6.1.0(typebox@1.0.81)
+      '@fastify/websocket':
+        specifier: ^11.0.2
+        version: 11.2.0
       '@users/sdk':
         specifier: workspace:*
         version: link:../../@users/sdk
@@ -738,6 +741,9 @@ importers:
       typebox:
         specifier: ^1.0.13
         version: 1.0.81
+      ws:
+        specifier: ^8.18.0
+        version: 8.19.0
     devDependencies:
       '@biomejs/biome':
         specifier: 'catalog:'
@@ -748,6 +754,9 @@ importers:
       '@types/node':
         specifier: ^20.14.0
         version: 20.19.32
+      '@types/ws':
+        specifier: ^8.5.10
+        version: 8.18.1
       '@typescript/native-preview':
         specifier: 'catalog:'
         version: 7.0.0-dev.20251017.1
@@ -934,7 +943,7 @@ importers:
     devDependencies:
       '@tables/service':
         specifier: workspace:*
-        version: link:../service
+        version: file:services/@tables/service
 
   services/@users/db:
     dependencies:
@@ -1048,9 +1057,18 @@ importers:
     devDependencies:
       '@users/service':
         specifier: workspace:*
-        version: link:../service
+        version: file:services/@users/service
 
 packages:
+
+  '@agent/core@file:packages/@agent/core':
+    resolution: {directory: packages/@agent/core, type: directory}
+
+  '@agent/db@file:services/@agent/db':
+    resolution: {directory: services/@agent/db, type: directory}
+
+  '@agent/service@file:services/@agent/service':
+    resolution: {directory: services/@agent/service, type: directory}
 
   '@anthropic-ai/claude-agent-sdk@0.2.37':
     resolution: {integrity: sha512-0TCAUuGXiWYV2JK+j2SiakGzPA7aoR5DNRxZ0EA571loGIqN3FRfiO1kipeBpEc+cRQ03a/4Kt5YAjMx0KBW+A==}
@@ -2310,6 +2328,18 @@ packages:
   '@swc/helpers@0.5.18':
     resolution: {integrity: sha512-TXTnIcNJQEKwThMMqBXsZ4VGAza6bvN4pa41Rkqoio6QBKMvo+5lexeTMScGCIxtzgQJzElcvIltani+adC5PQ==}
 
+  '@tables/db@file:services/@tables/db':
+    resolution: {directory: services/@tables/db, type: directory}
+
+  '@tables/service@file:services/@tables/service':
+    resolution: {directory: services/@tables/service, type: directory}
+
+  '@tools/core@file:packages/@tools/core':
+    resolution: {directory: packages/@tools/core, type: directory}
+
+  '@tools/web-search@file:packages/@tools/web-search':
+    resolution: {directory: packages/@tools/web-search, type: directory}
+
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
 
@@ -2366,6 +2396,9 @@ packages:
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
 
+  '@types/ws@8.18.1':
+    resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
+
   '@typescript/native-preview-darwin-arm64@7.0.0-dev.20251017.1':
     resolution: {integrity: sha512-P2Anvpgb1TOxP1jsPuJlde+ipkETWMfn0UGiydP8332ctq7dS/3cfUzM52PFiH5kx9zoa6vqv+IW1gaSUBPtmw==}
     cpu: [arm64]
@@ -2404,6 +2437,12 @@ packages:
   '@typescript/native-preview@7.0.0-dev.20251017.1':
     resolution: {integrity: sha512-awfunrvMGHxKdkqTRbcsrLQMaVkAAZWR0BrlOOJiy+JRnE/I/uhGBQ9oLvvUr1bGt4QnkXz3mybCdn2pFgSy5g==}
     hasBin: true
+
+  '@users/db@file:services/@users/db':
+    resolution: {directory: services/@users/db, type: directory}
+
+  '@users/service@file:services/@users/service':
+    resolution: {directory: services/@users/service, type: directory}
 
   '@vanilla-extract/babel-plugin-debug-ids@1.2.2':
     resolution: {integrity: sha512-MeDWGICAF9zA/OZLOKwhoRlsUW+fiMwnfuOAqFVohL31Agj7Q/RBWAYweqjHLgFBCsdnr6XIfwjJnmb2znEWxw==}
@@ -4135,6 +4174,43 @@ packages:
 
 snapshots:
 
+  '@agent/core@file:packages/@agent/core':
+    dependencies:
+      '@anthropic-ai/claude-agent-sdk': 0.2.37(zod@4.3.6)
+      '@tools/core': file:packages/@tools/core
+      zod: 4.3.6
+
+  '@agent/db@file:services/@agent/db(prisma@7.3.0(@types/react@18.3.28)(better-sqlite3@11.10.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(typescript@5.9.3)':
+    dependencies:
+      '@prisma/adapter-pg': 7.3.0
+      '@prisma/client': 7.3.0(prisma@7.3.0(@types/react@18.3.28)(better-sqlite3@11.10.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(typescript@5.9.3)
+      '@prisma/client-runtime-utils': 7.3.0
+      pg: 8.18.0
+    transitivePeerDependencies:
+      - pg-native
+      - prisma
+      - typescript
+
+  '@agent/service@file:services/@agent/service':
+    dependencies:
+      '@agent/core': file:packages/@agent/core
+      '@agent/db': file:services/@agent/db(prisma@7.3.0(@types/react@18.3.28)(better-sqlite3@11.10.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(typescript@5.9.3)
+      '@fastify/cors': 11.2.0
+      '@fastify/swagger': 9.7.0
+      '@fastify/swagger-ui': 5.2.5
+      '@fastify/type-provider-typebox': 6.1.0(typebox@1.0.81)
+      '@tools/core': file:packages/@tools/core
+      '@tools/web-search': file:packages/@tools/web-search
+      dotenv: 17.2.4
+      fastify: 5.7.4
+      fastify-metrics: 12.1.0(fastify@5.7.4)
+      typebox: 1.0.81
+    transitivePeerDependencies:
+      - pg-native
+      - prisma
+      - supports-color
+      - typescript
+
   '@anthropic-ai/claude-agent-sdk@0.2.37(zod@4.3.6)':
     dependencies:
       zod: 4.3.6
@@ -5224,6 +5300,47 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
+  '@tables/db@file:services/@tables/db(prisma@7.3.0(@types/react@18.3.28)(better-sqlite3@11.10.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(typescript@5.9.3)':
+    dependencies:
+      '@prisma/adapter-pg': 7.3.0
+      '@prisma/client': 7.3.0(prisma@7.3.0(@types/react@18.3.28)(better-sqlite3@11.10.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(typescript@5.9.3)
+      '@prisma/client-runtime-utils': 7.3.0
+      pg: 8.18.0
+    transitivePeerDependencies:
+      - pg-native
+      - prisma
+      - typescript
+
+  '@tables/service@file:services/@tables/service':
+    dependencies:
+      '@fastify/cors': 11.2.0
+      '@fastify/swagger': 9.7.0
+      '@fastify/swagger-ui': 5.2.5
+      '@fastify/type-provider-typebox': 6.1.0(typebox@1.0.81)
+      '@fastify/websocket': 11.2.0
+      '@tables/db': file:services/@tables/db(prisma@7.3.0(@types/react@18.3.28)(better-sqlite3@11.10.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(typescript@5.9.3)
+      better-sqlite3: 11.10.0
+      dotenv: 17.2.4
+      fastify: 5.7.4
+      fastify-metrics: 12.1.0(fastify@5.7.4)
+      typebox: 1.0.81
+    transitivePeerDependencies:
+      - bufferutil
+      - pg-native
+      - prisma
+      - supports-color
+      - typescript
+      - utf-8-validate
+
+  '@tools/core@file:packages/@tools/core':
+    dependencies:
+      typebox: 1.0.81
+
+  '@tools/web-search@file:packages/@tools/web-search':
+    dependencies:
+      '@tools/core': file:packages/@tools/core
+      typebox: 1.0.81
+
   '@types/babel__core@7.20.5':
     dependencies:
       '@babel/parser': 7.29.0
@@ -5294,6 +5411,10 @@ snapshots:
   '@types/trusted-types@2.0.7':
     optional: true
 
+  '@types/ws@8.18.1':
+    dependencies:
+      '@types/node': 22.19.9
+
   '@typescript/native-preview-darwin-arm64@7.0.0-dev.20251017.1':
     optional: true
 
@@ -5324,6 +5445,34 @@ snapshots:
       '@typescript/native-preview-linux-x64': 7.0.0-dev.20251017.1
       '@typescript/native-preview-win32-arm64': 7.0.0-dev.20251017.1
       '@typescript/native-preview-win32-x64': 7.0.0-dev.20251017.1
+
+  '@users/db@file:services/@users/db(prisma@7.3.0(@types/react@18.3.28)(better-sqlite3@11.10.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(typescript@5.9.3)':
+    dependencies:
+      '@prisma/adapter-pg': 7.3.0
+      '@prisma/client': 7.3.0(prisma@7.3.0(@types/react@18.3.28)(better-sqlite3@11.10.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(typescript@5.9.3)
+      '@prisma/client-runtime-utils': 7.3.0
+      pg: 8.18.0
+    transitivePeerDependencies:
+      - pg-native
+      - prisma
+      - typescript
+
+  '@users/service@file:services/@users/service':
+    dependencies:
+      '@fastify/cors': 11.2.0
+      '@fastify/swagger': 9.7.0
+      '@fastify/swagger-ui': 5.2.5
+      '@fastify/type-provider-typebox': 6.1.0(typebox@1.0.81)
+      '@users/db': file:services/@users/db(prisma@7.3.0(@types/react@18.3.28)(better-sqlite3@11.10.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(typescript@5.9.3)
+      dotenv: 17.2.4
+      fastify: 5.7.4
+      fastify-metrics: 12.1.0(fastify@5.7.4)
+      typebox: 1.0.81
+    transitivePeerDependencies:
+      - pg-native
+      - prisma
+      - supports-color
+      - typescript
 
   '@vanilla-extract/babel-plugin-debug-ids@1.2.2':
     dependencies:

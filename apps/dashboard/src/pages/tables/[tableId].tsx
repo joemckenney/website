@@ -1,8 +1,10 @@
 import { tablesService } from "@tables/sdk";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { AddColumnModal } from "../../components/tables/AddColumnModal";
 import { TableGrid } from "../../components/tables/TableGrid";
+import { useDebouncedCellUpdate } from "../../hooks/useDebouncedCellUpdate";
+import { useTableSocket, type TableEvent } from "../../hooks/useTableSocket";
 import { ensureValidToken } from "../../lib/auth";
 import * as styles from "../../styles/tables.css";
 
@@ -36,6 +38,125 @@ export default function TableViewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAddingColumn, setIsAddingColumn] = useState(false);
+
+  // Store previous row values for rollback
+  const previousRowValues = useRef<Map<string, Map<string, unknown>>>(new Map());
+
+  // Handle real-time events from other users
+  const handleEvent = useCallback((event: TableEvent) => {
+    switch (event.type) {
+      case "CELL_UPDATED":
+        setRows((prev) =>
+          prev.map((row) =>
+            row.id === event.rowId
+              ? { ...row, data: { ...row.data, [event.columnId]: event.value } }
+              : row,
+          ),
+        );
+        break;
+
+      case "ROW_INSERTED":
+        // Add the new row if it doesn't exist
+        setRows((prev) => {
+          if (prev.some((r) => r.id === event.rowId)) return prev;
+          return [
+            ...prev,
+            {
+              id: event.rowId,
+              data: event.data,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          ];
+        });
+        break;
+
+      case "ROW_DELETED":
+        setRows((prev) => prev.filter((row) => row.id !== event.rowId));
+        break;
+
+      case "COLUMN_ADDED":
+        setTable((prev) => {
+          if (!prev) return prev;
+          if (prev.columns.some((c) => c.id === event.columnId)) return prev;
+          return {
+            ...prev,
+            columns: [
+              ...prev.columns,
+              {
+                id: event.columnId,
+                name: event.name,
+                dataType: event.dataType as Column["dataType"],
+                position: event.position,
+              },
+            ],
+          };
+        });
+        break;
+
+      case "COLUMN_RENAMED":
+        setTable((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            columns: prev.columns.map((col) =>
+              col.id === event.columnId ? { ...col, name: event.name } : col,
+            ),
+          };
+        });
+        break;
+
+      case "COLUMN_DELETED":
+        setTable((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            columns: prev.columns.filter((col) => col.id !== event.columnId),
+          };
+        });
+        break;
+    }
+  }, []);
+
+  // Handle row insert success (we need the server-assigned row data)
+  const handleRowInserted = useCallback(
+    (
+      _clientSeq: number,
+      msg: { rowId: string; row: Row },
+    ) => {
+      // Replace the optimistic row with the server-confirmed one
+      setRows((prev) => {
+        // Check if we already have a row with a temp ID that matches
+        // For now, just add the row if it doesn't exist
+        if (prev.some((r) => r.id === msg.rowId)) {
+          return prev.map((r) => (r.id === msg.rowId ? msg.row : r));
+        }
+        return [...prev, msg.row];
+      });
+    },
+    [],
+  );
+
+  // Handle errors from WebSocket
+  const handleSocketError = useCallback((error: { code: string; message: string }) => {
+    console.error("WebSocket error:", error);
+    // Could show a toast notification here
+  }, []);
+
+  // WebSocket connection (only when we have a tableId)
+  const socket = useTableSocket({
+    tableId: tableId ?? "",
+    onEvent: handleEvent,
+    onRowInserted: handleRowInserted,
+    onError: handleSocketError,
+    autoReconnect: true,
+  });
+
+  // Debounced cell updates
+  const { updateCell, flush } = useDebouncedCellUpdate({
+    sendCellUpdate: socket.sendCellUpdate,
+    debounceMs: 300,
+  });
 
   const loadTable = useCallback(async () => {
     if (!tableId) return;
@@ -75,67 +196,87 @@ export default function TableViewPage() {
     loadTable();
   }, [loadTable]);
 
-  const handleAddRow = async () => {
+  // Flush pending updates when unmounting or navigating away
+  useEffect(() => {
+    return () => {
+      flush();
+    };
+  }, [flush]);
+
+  const handleAddRow = useCallback(() => {
     if (!tableId || !table) return;
 
-    try {
-      const response = await tablesService.insertRow({
-        path: { tableId },
-        body: { data: {} },
-      });
+    // Send via WebSocket for real-time sync
+    socket.sendRowInsert({});
+  }, [tableId, table, socket]);
 
-      if (response.data) {
-        setRows((prev) => [...prev, response.data as Row]);
+  const handleCellUpdate = useCallback(
+    (rowId: string, columnId: string, value: unknown) => {
+      if (!tableId) return;
+
+      // Store previous value for rollback
+      const row = rows.find((r) => r.id === rowId);
+      if (row) {
+        if (!previousRowValues.current.has(rowId)) {
+          previousRowValues.current.set(rowId, new Map());
+        }
+        const rowPrevValues = previousRowValues.current.get(rowId)!;
+        if (!rowPrevValues.has(columnId)) {
+          rowPrevValues.set(columnId, row.data[columnId]);
+        }
       }
-    } catch (err) {
-      console.error("Failed to add row:", err);
-    }
-  };
 
-  const handleCellUpdate = async (
-    rowId: string,
-    columnId: string,
-    value: unknown,
-  ) => {
-    if (!tableId) return;
+      // Optimistic update
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === rowId ? { ...r, data: { ...r.data, [columnId]: value } } : r,
+        ),
+      );
 
-    // Optimistic update
-    setRows((prev) =>
-      prev.map((row) =>
-        row.id === rowId
-          ? { ...row, data: { ...row.data, [columnId]: value } }
-          : row,
-      ),
-    );
+      // Create rollback function
+      const rollback = () => {
+        const prevValue = previousRowValues.current.get(rowId)?.get(columnId);
+        setRows((prev) =>
+          prev.map((r) =>
+            r.id === rowId
+              ? { ...r, data: { ...r.data, [columnId]: prevValue } }
+              : r,
+          ),
+        );
+        previousRowValues.current.get(rowId)?.delete(columnId);
+      };
 
-    try {
-      await tablesService.updateRow({
-        path: { tableId, rowId },
-        body: { data: { [columnId]: value } },
-      });
-    } catch (err) {
-      console.error("Failed to update cell:", err);
-      // Revert on error
-      loadTable();
-    }
-  };
+      // Send via debounced WebSocket
+      updateCell(rowId, columnId, value, rollback);
 
-  const handleDeleteRow = async (rowId: string) => {
-    if (!tableId) return;
+      // Clear stored previous value on success (after debounce completes)
+      // This happens automatically when the ACK is received
+    },
+    [tableId, rows, updateCell],
+  );
 
-    // Optimistic update
-    setRows((prev) => prev.filter((row) => row.id !== rowId));
+  const handleDeleteRow = useCallback(
+    (rowId: string) => {
+      if (!tableId) return;
 
-    try {
-      await tablesService.deleteRow({
-        path: { tableId, rowId },
-      });
-    } catch (err) {
-      console.error("Failed to delete row:", err);
-      // Revert on error
-      loadTable();
-    }
-  };
+      // Store the row for rollback
+      const deletedRow = rows.find((r) => r.id === rowId);
+
+      // Optimistic update
+      setRows((prev) => prev.filter((row) => row.id !== rowId));
+
+      // Create rollback function
+      const rollback = () => {
+        if (deletedRow) {
+          setRows((prev) => [...prev, deletedRow]);
+        }
+      };
+
+      // Send via WebSocket
+      socket.sendRowDelete(rowId, rollback);
+    },
+    [tableId, rows, socket],
+  );
 
   const handleAddColumn = async (
     name: string,
@@ -227,7 +368,23 @@ export default function TableViewPage() {
     <>
       <header className={styles.header}>
         <span className={styles.title}>{table.name}</span>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          {/* Connection status indicator */}
+          <span
+            style={{
+              display: "inline-block",
+              width: "8px",
+              height: "8px",
+              borderRadius: "50%",
+              backgroundColor:
+                socket.status === "connected"
+                  ? "#22c55e"
+                  : socket.status === "connecting"
+                    ? "#eab308"
+                    : "#ef4444",
+            }}
+            title={`WebSocket: ${socket.status}`}
+          />
           <button
             type="button"
             className={styles.toolbarButton}
