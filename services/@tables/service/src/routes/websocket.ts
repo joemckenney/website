@@ -60,6 +60,27 @@ export function getConnectionCount(tableId: string): number {
 }
 
 /**
+ * Broadcast a table event to all WebSocket clients
+ * Used by MCP tools to notify clients of changes
+ */
+export function broadcastTableEvent(event: TableEvent): void {
+  if (!("tableId" in event)) return;
+
+  const tableId = event.tableId;
+  const connections = tableConnections.get(tableId);
+  if (!connections || connections.size === 0) return;
+
+  const msg = serverMessage.event(event, "agent");
+  const data = JSON.stringify(msg);
+
+  for (const conn of connections) {
+    if (conn.socket.readyState === 1) {
+      conn.socket.send(data);
+    }
+  }
+}
+
+/**
  * Register WebSocket routes for real-time table updates
  */
 export async function registerWebSocketRoutes(

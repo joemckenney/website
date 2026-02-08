@@ -15,6 +15,7 @@
 
 import { randomUUID } from "node:crypto";
 import type { ColumnType } from "../lib/events.js";
+import { broadcastTableEvent } from "../routes/websocket.js";
 import { memoryStore } from "../store/memory.js";
 
 /**
@@ -336,13 +337,15 @@ async function updateCell(
     throw new Error("Table not found or access denied");
   }
 
-  await memoryStore.applyEvent({
-    type: "CELL_UPDATED",
+  const event = {
+    type: "CELL_UPDATED" as const,
     tableId,
     rowId,
     columnId,
     value,
-  });
+  };
+  await memoryStore.applyEvent(event);
+  broadcastTableEvent(event);
 
   return { success: true };
 }
@@ -367,12 +370,14 @@ async function insertRow(
 
   const rowId = randomUUID();
 
-  await memoryStore.applyEvent({
-    type: "ROW_INSERTED",
+  const event = {
+    type: "ROW_INSERTED" as const,
     tableId,
     rowId,
     data,
-  });
+  };
+  await memoryStore.applyEvent(event);
+  broadcastTableEvent(event);
 
   const row = memoryStore.getRow(tableId, rowId);
   return { rowId, row };
@@ -397,17 +402,21 @@ async function deleteRows(
   }
 
   if (rowIds.length === 1) {
-    await memoryStore.applyEvent({
-      type: "ROW_DELETED",
+    const event = {
+      type: "ROW_DELETED" as const,
       tableId,
       rowId: rowIds[0],
-    });
+    };
+    await memoryStore.applyEvent(event);
+    broadcastTableEvent(event);
   } else if (rowIds.length > 1) {
-    await memoryStore.applyEvent({
-      type: "ROWS_BULK_DELETED",
+    const event = {
+      type: "ROWS_BULK_DELETED" as const,
       tableId,
       rowIds,
-    });
+    };
+    await memoryStore.applyEvent(event);
+    broadcastTableEvent(event);
   }
 
   return { deleted: rowIds.length };
@@ -453,14 +462,16 @@ async function addColumn(
   const columnId = randomUUID();
   const position = table.columns.size;
 
-  await memoryStore.applyEvent({
-    type: "COLUMN_ADDED",
+  const event = {
+    type: "COLUMN_ADDED" as const,
     tableId,
     columnId,
     name,
     dataType,
     position,
-  });
+  };
+  await memoryStore.applyEvent(event);
+  broadcastTableEvent(event);
 
   return {
     columnId,
@@ -487,12 +498,14 @@ async function renameColumn(
     throw new Error("Table not found or access denied");
   }
 
-  await memoryStore.applyEvent({
-    type: "COLUMN_RENAMED",
+  const event = {
+    type: "COLUMN_RENAMED" as const,
     tableId,
     columnId,
     name,
-  });
+  };
+  await memoryStore.applyEvent(event);
+  broadcastTableEvent(event);
 
   return { success: true };
 }
@@ -515,11 +528,13 @@ async function deleteColumn(
     throw new Error("Table not found or access denied");
   }
 
-  await memoryStore.applyEvent({
-    type: "COLUMN_DELETED",
+  const event = {
+    type: "COLUMN_DELETED" as const,
     tableId,
     columnId,
-  });
+  };
+  await memoryStore.applyEvent(event);
+  broadcastTableEvent(event);
 
   return { success: true };
 }

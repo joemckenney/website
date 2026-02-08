@@ -114,7 +114,9 @@ export async function registerMcpRoutes(
       console.log(`[MCP MESSAGE] ID: ${mcpRequest.id}`);
       console.log(`[MCP MESSAGE] User: ${userId}`);
       console.log(`[MCP MESSAGE] Table ID from header: ${headerTableId}`);
-      console.log(`[MCP MESSAGE] Table ID from stored context: ${storedTableId}`);
+      console.log(
+        `[MCP MESSAGE] Table ID from stored context: ${storedTableId}`,
+      );
       console.log(`[MCP MESSAGE] Using Context Table ID: ${contextTableId}`);
       console.log(
         `[MCP MESSAGE] Params:`,
@@ -277,7 +279,9 @@ export async function registerMcpRoutes(
       // Store table context for this user (used by POST requests)
       if (tableId) {
         userTableContext.set(userId, tableId);
-        console.log(`[MCP SSE] Stored table context for user ${userId}: ${tableId}`);
+        console.log(
+          `[MCP SSE] Stored table context for user ${userId}: ${tableId}`,
+        );
       }
 
       // Set SSE headers
