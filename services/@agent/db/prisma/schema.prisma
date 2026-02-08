@@ -47,17 +47,3 @@ enum MessageRole {
   assistant
   tool
 }
-
-model StravaConnection {
-  id           String   @id @default(uuid())
-  userId       String   @unique
-  athleteId    String   // Strava athlete ID
-  accessToken  String   // AES-256-GCM encrypted
-  refreshToken String   // AES-256-GCM encrypted
-  expiresAt    DateTime
-  scope        String   // Granted scopes
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@index([userId])
-}

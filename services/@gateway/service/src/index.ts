@@ -10,7 +10,6 @@ import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
 import { registerAgentRoutes } from "./routes/agent.js";
 import { registerAuthRoutes } from "./routes/auth.js";
-import { registerStravaRoutes } from "./routes/strava.js";
 import { registerTablesRoutes } from "./routes/tables.js";
 import { registerRoutes } from "./routes.js";
 
@@ -37,7 +36,13 @@ await fastify.register(cors, {
   origin: true, // Allow all origins in development
   credentials: true, // Allow cookies to be sent
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "x-table-id",
+    "x-table-name",
+    "x-table-columns",
+  ],
   preflightContinue: false, // Don't pass preflight to next handler
 });
 
@@ -84,7 +89,6 @@ await fastify.register(websocket);
 
 await registerAuthRoutes(fastify);
 await registerAgentRoutes(fastify);
-await registerStravaRoutes(fastify);
 await registerTablesRoutes(fastify);
 await registerRoutes(fastify, {});
 

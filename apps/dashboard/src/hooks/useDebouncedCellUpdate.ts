@@ -63,7 +63,9 @@ export function useDebouncedCellUpdate(
 ): UseDebouncedCellUpdateReturn {
   const { debounceMs = 300, sendCellUpdate } = options;
 
-  const debounceTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const debounceTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
   const pendingValues = useRef<Map<string, DebouncedValue>>(new Map());
   const sendCellUpdateRef = useRef(sendCellUpdate);
   sendCellUpdateRef.current = sendCellUpdate;
@@ -94,7 +96,12 @@ export function useDebouncedCellUpdate(
         if (pending) {
           pendingValues.current.delete(key);
           debounceTimers.current.delete(key);
-          sendCellUpdateRef.current(rowId, columnId, pending.value, pending.onRollback);
+          sendCellUpdateRef.current(
+            rowId,
+            columnId,
+            pending.value,
+            pending.onRollback,
+          );
         }
       }, debounceMs);
 
@@ -113,7 +120,12 @@ export function useDebouncedCellUpdate(
       if (pending) {
         const [rowId, columnId] = key.split(":");
         pendingValues.current.delete(key);
-        sendCellUpdateRef.current(rowId, columnId, pending.value, pending.onRollback);
+        sendCellUpdateRef.current(
+          rowId,
+          columnId,
+          pending.value,
+          pending.onRollback,
+        );
       }
     }
   }, []);

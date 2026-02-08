@@ -1,5 +1,5 @@
 import { vars } from "@crow/theme";
-import { style } from "@vanilla-extract/css";
+import { keyframes, style } from "@vanilla-extract/css";
 
 // Page header
 export const header = style({
@@ -371,3 +371,282 @@ export const modalButtonSecondary = style([
     },
   },
 ]);
+
+// Split pane layout for table + chat
+export const splitPane = style({
+  flex: 1,
+  display: "flex",
+  overflow: "hidden",
+});
+
+export const tablePane = style({
+  flex: 1,
+  display: "flex",
+  flexDirection: "column",
+  overflow: "hidden",
+  minWidth: 0,
+});
+
+// Chat Panel
+export const chatPanel = style({
+  width: "360px",
+  display: "flex",
+  flexDirection: "column",
+  borderLeft: `1px solid ${vars.colors.stone300}`,
+  background: vars.colors.stone50,
+});
+
+export const chatPanelHeader = style({
+  padding: `${vars.space[3]} ${vars.space[4]}`,
+  borderBottom: `1px solid ${vars.colors.stone300}`,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  background: "white",
+});
+
+export const chatPanelTitle = style({
+  fontFamily: vars.fonts.display,
+  fontSize: vars.fontSizes.sm.fontSize,
+  fontWeight: "500",
+  letterSpacing: vars.letterSpacing.wide,
+  textTransform: "uppercase",
+});
+
+export const chatPanelHeaderRight = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space[3],
+});
+
+export const chatPanelStatus = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space[1],
+  fontSize: vars.fontSizes.xs.fontSize,
+  color: vars.colors.stone600,
+});
+
+export const chatPanelStatusDot = style({
+  width: "6px",
+  height: "6px",
+  borderRadius: "50%",
+  background: vars.colors.stone400,
+  selectors: {
+    '&[data-status="active"]': {
+      background: vars.colors.sage500,
+    },
+  },
+});
+
+export const chatPanelCloseBtn = style({
+  width: "24px",
+  height: "24px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "transparent",
+  border: "none",
+  cursor: "pointer",
+  color: vars.colors.stone600,
+  borderRadius: "4px",
+  transition: "all 0.15s ease",
+  ":hover": {
+    background: vars.colors.stone200,
+    color: vars.colors.stone900,
+  },
+});
+
+export const chatPanelError = style({
+  padding: `${vars.space[2]} ${vars.space[4]}`,
+  background: "#fee2e2",
+  color: "#991b1b",
+  fontSize: vars.fontSizes.xs.fontSize,
+  borderBottom: "1px solid #fecaca",
+});
+
+export const chatPanelMessages = style({
+  flex: 1,
+  overflowY: "auto",
+  padding: vars.space[4],
+  "::-webkit-scrollbar": {
+    width: "4px",
+  },
+  "::-webkit-scrollbar-track": {
+    background: "transparent",
+  },
+  "::-webkit-scrollbar-thumb": {
+    background: vars.colors.stone300,
+  },
+});
+
+export const chatPanelLoading = style({
+  textAlign: "center",
+  color: vars.colors.stone600,
+  fontSize: vars.fontSizes.sm.fontSize,
+  padding: vars.space[4],
+});
+
+export const chatPanelMessageUser = style({
+  marginBottom: vars.space[3],
+});
+
+export const chatPanelMessageAssistant = style({
+  marginBottom: vars.space[3],
+});
+
+export const chatPanelMessageRole = style({
+  fontSize: "9px",
+  letterSpacing: vars.letterSpacing.widest,
+  textTransform: "uppercase",
+  color: vars.colors.stone600,
+  marginBottom: vars.space[1],
+});
+
+export const chatPanelMessageContent = style({
+  fontSize: vars.fontSizes.sm.fontSize,
+  lineHeight: "1.5",
+  color: vars.colors.stone900,
+  wordBreak: "break-word",
+});
+
+export const chatPanelToolCalls = style({
+  marginTop: vars.space[2],
+  display: "flex",
+  flexDirection: "column",
+  gap: vars.space[1],
+});
+
+export const chatPanelToolCall = style({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: vars.space[2],
+  padding: `${vars.space[1]} ${vars.space[2]}`,
+  background: vars.colors.stone200,
+  borderRadius: "4px",
+  fontSize: vars.fontSizes.xs.fontSize,
+});
+
+export const chatPanelToolCallName = style({
+  fontFamily: vars.fonts.mono,
+  color: vars.colors.stone700,
+});
+
+export const chatPanelToolCallStatus = style({
+  color: vars.colors.sage600,
+  fontSize: "10px",
+  textTransform: "uppercase",
+  letterSpacing: vars.letterSpacing.wide,
+});
+
+const pulse = keyframes({
+  "0%, 100%": {
+    opacity: 0.3,
+    transform: "scale(1)",
+  },
+  "50%": {
+    opacity: 1,
+    transform: "scale(1.2)",
+  },
+});
+
+export const chatPanelThinking = style({
+  display: "flex",
+  alignItems: "center",
+  gap: "4px",
+  padding: vars.space[2],
+});
+
+export const chatPanelThinkingDot = style({
+  width: "4px",
+  height: "4px",
+  background: vars.colors.stone600,
+  borderRadius: "50%",
+  animation: `${pulse} 1.2s ease-in-out infinite`,
+  selectors: {
+    "&:nth-child(2)": {
+      animationDelay: "0.2s",
+    },
+    "&:nth-child(3)": {
+      animationDelay: "0.4s",
+    },
+  },
+});
+
+export const chatPanelInputArea = style({
+  padding: vars.space[3],
+  borderTop: `1px solid ${vars.colors.stone300}`,
+  background: "white",
+  display: "flex",
+  gap: vars.space[2],
+});
+
+export const chatPanelInput = style({
+  flex: 1,
+  fontFamily: vars.fonts.mono,
+  fontSize: vars.fontSizes.sm.fontSize,
+  padding: `${vars.space[2]} ${vars.space[3]}`,
+  border: `1px solid ${vars.colors.stone300}`,
+  background: vars.colors.stone50,
+  color: vars.colors.stone900,
+  resize: "none",
+  outline: "none",
+  minHeight: "36px",
+  maxHeight: "100px",
+  transition: "border-color 0.15s ease",
+  ":focus": {
+    borderColor: vars.colors.stone900,
+  },
+  "::placeholder": {
+    color: vars.colors.stone500,
+  },
+});
+
+export const chatPanelSendBtn = style({
+  width: "36px",
+  height: "36px",
+  background: vars.colors.stone900,
+  border: "none",
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: vars.colors.stone50,
+  transition: "opacity 0.15s ease",
+  flexShrink: 0,
+  ":hover": {
+    opacity: 0.85,
+  },
+  ":disabled": {
+    opacity: 0.4,
+    cursor: "not-allowed",
+  },
+});
+
+// Chat toggle button in toolbar
+export const chatToggleBtn = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space[1],
+  fontSize: vars.fontSizes.xs.fontSize,
+  color: vars.colors.stone700,
+  background: "transparent",
+  padding: `${vars.space[1]} ${vars.space[3]}`,
+  border: `1px solid ${vars.colors.stone300}`,
+  cursor: "pointer",
+  fontFamily: vars.fonts.mono,
+  letterSpacing: vars.letterSpacing.wide,
+  transition: "all 0.15s ease",
+  marginLeft: "auto",
+  ":hover": {
+    background: vars.colors.stone100,
+    borderColor: vars.colors.stone400,
+  },
+  selectors: {
+    '&[data-active="true"]': {
+      background: vars.colors.stone900,
+      color: vars.colors.stone50,
+      borderColor: vars.colors.stone900,
+    },
+  },
+});

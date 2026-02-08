@@ -50,25 +50,54 @@ type ServerMessage =
 
 // Table events (from other users)
 export type TableEvent =
-  | { type: "CELL_UPDATED"; tableId: string; rowId: string; columnId: string; value: unknown }
-  | { type: "ROW_INSERTED"; tableId: string; rowId: string; data: Record<string, unknown> }
+  | {
+      type: "CELL_UPDATED";
+      tableId: string;
+      rowId: string;
+      columnId: string;
+      value: unknown;
+    }
+  | {
+      type: "ROW_INSERTED";
+      tableId: string;
+      rowId: string;
+      data: Record<string, unknown>;
+    }
   | { type: "ROW_DELETED"; tableId: string; rowId: string }
-  | { type: "COLUMN_ADDED"; tableId: string; columnId: string; name: string; dataType: string; position: number }
+  | {
+      type: "COLUMN_ADDED";
+      tableId: string;
+      columnId: string;
+      name: string;
+      dataType: string;
+      position: number;
+    }
   | { type: "COLUMN_RENAMED"; tableId: string; columnId: string; name: string }
   | { type: "COLUMN_DELETED"; tableId: string; columnId: string };
 
-export type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
+export type ConnectionStatus =
+  | "connecting"
+  | "connected"
+  | "disconnected"
+  | "error";
 
 interface UseTableSocketOptions {
   tableId: string;
   /** Called when an event from another user is received */
   onEvent: (event: TableEvent) => void;
   /** Called when a row insert succeeds */
-  onRowInserted?: (clientSeq: number, row: ServerMessage & { type: "ROW_INSERTED" }) => void;
+  onRowInserted?: (
+    clientSeq: number,
+    row: ServerMessage & { type: "ROW_INSERTED" },
+  ) => void;
   /** Called when an operation is acknowledged */
   onAck?: (clientSeq: number, eventId: string) => void;
   /** Called when an error occurs */
-  onError?: (error: { code: string; message: string; clientSeq?: number }) => void;
+  onError?: (error: {
+    code: string;
+    message: string;
+    clientSeq?: number;
+  }) => void;
   /** Whether to automatically reconnect on disconnect */
   autoReconnect?: boolean;
 }
@@ -98,7 +127,9 @@ export interface UseTableSocketReturn {
   reconnect: () => void;
 }
 
-export function useTableSocket(options: UseTableSocketOptions): UseTableSocketReturn {
+export function useTableSocket(
+  options: UseTableSocketOptions,
+): UseTableSocketReturn {
   const {
     tableId,
     onEvent,
@@ -112,7 +143,9 @@ export function useTableSocket(options: UseTableSocketOptions): UseTableSocketRe
   const wsRef = useRef<WebSocket | null>(null);
   const seqRef = useRef(0);
   const pendingRef = useRef<Map<number, PendingOperation>>(new Map());
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const reconnectAttemptsRef = useRef(0);
   const isMountedRef = useRef(true);
 
@@ -139,7 +172,10 @@ export function useTableSocket(options: UseTableSocketOptions): UseTableSocketRe
     const token = await ensureValidToken();
     if (!token) {
       setStatus("error");
-      onErrorRef.current?.({ code: "AUTH_FAILED", message: "Not authenticated" });
+      onErrorRef.current?.({
+        code: "AUTH_FAILED",
+        message: "Not authenticated",
+      });
       return;
     }
 
@@ -175,7 +211,10 @@ export function useTableSocket(options: UseTableSocketOptions): UseTableSocketRe
 
         // Attempt reconnection with exponential backoff
         if (autoReconnect && isMountedRef.current) {
-          const delay = Math.min(1000 * 2 ** reconnectAttemptsRef.current, 30000);
+          const delay = Math.min(
+            1000 * 2 ** reconnectAttemptsRef.current,
+            30000,
+          );
           reconnectAttemptsRef.current++;
           reconnectTimeoutRef.current = setTimeout(() => {
             if (isMountedRef.current) {

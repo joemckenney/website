@@ -8,6 +8,7 @@ import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
 import { config } from "./config.js";
+import { registerMcpRoutes } from "./mcp/transport.js";
 import { registerColumnRoutes } from "./routes/columns.js";
 import { registerRowRoutes } from "./routes/rows.js";
 import { registerTableRoutes } from "./routes/tables.js";
@@ -96,6 +97,7 @@ await registerTableRoutes(fastify);
 await registerColumnRoutes(fastify);
 await registerRowRoutes(fastify);
 await registerWebSocketRoutes(fastify);
+await registerMcpRoutes(fastify);
 
 // Initialize materializer for async PostgreSQL sync
 const materializer = new Materializer();

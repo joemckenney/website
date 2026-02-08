@@ -1,10 +1,15 @@
+/**
+ * MCP SSE Transport for Tables Service
+ *
+ * Implements the MCP SSE transport protocol:
+ * - GET /mcp/sse - SSE connection for receiving responses
+ * - POST /mcp/message - JSON-RPC 2.0 message handler
+ */
+
 import type { ServerResponse } from "node:http";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import type { FastifyInstance } from "fastify";
 import { Type } from "typebox";
-import { prisma } from "../db/client.js";
-import { decrypt, encrypt } from "../db/crypto.js";
-import { refreshAccessToken } from "../oauth/client.js";
 import { getToolDefinitions, handleToolCall } from "./tools.js";
 
 const ErrorResponse = Type.Object({
@@ -17,48 +22,10 @@ const ErrorResponse = Type.Object({
 const sseConnections = new Map<string, ServerResponse>();
 
 /**
- * Get valid access token for user, refreshing if needed
+ * Store table context from SSE connection by user ID
+ * This is needed because POST requests might not include the headers
  */
-async function getValidAccessToken(userId: string): Promise<string | null> {
-  const connection = await prisma.stravaConnection.findUnique({
-    where: { userId },
-  });
-
-  if (!connection) {
-    return null;
-  }
-
-  // Check if token is expired or about to expire (5 min buffer)
-  const now = new Date();
-  const expiresAt = new Date(connection.expiresAt);
-  const bufferMs = 5 * 60 * 1000; // 5 minutes
-
-  if (expiresAt.getTime() - now.getTime() > bufferMs) {
-    // Token is still valid
-    return decrypt(connection.accessToken);
-  }
-
-  // Token expired or expiring soon - refresh it
-  try {
-    const refreshToken = decrypt(connection.refreshToken);
-    const newTokens = await refreshAccessToken(refreshToken);
-
-    // Update tokens in database
-    await prisma.stravaConnection.update({
-      where: { userId },
-      data: {
-        accessToken: encrypt(newTokens.access_token),
-        refreshToken: encrypt(newTokens.refresh_token),
-        expiresAt: new Date(newTokens.expires_at * 1000),
-      },
-    });
-
-    return newTokens.access_token;
-  } catch (error) {
-    console.error("Failed to refresh Strava token:", error);
-    return null;
-  }
-}
+const userTableContext = new Map<string, string>();
 
 /**
  * MCP JSON-RPC request structure
@@ -135,29 +102,24 @@ export async function registerMcpRoutes(
       },
     },
     async (request, reply) => {
-      const userId = request.headers["x-user-id"];
+      const userId = request.headers["x-user-id"] as string;
+      // Try to get tableId from request header first, then fall back to stored context
+      const headerTableId = request.headers["x-table-id"] as string | undefined;
+      const storedTableId = userTableContext.get(userId);
+      const contextTableId = headerTableId || storedTableId;
       const mcpRequest = request.body as McpRequest;
 
       console.log(`[MCP MESSAGE] ====== Incoming request ======`);
       console.log(`[MCP MESSAGE] Method: ${mcpRequest.method}`);
       console.log(`[MCP MESSAGE] ID: ${mcpRequest.id}`);
       console.log(`[MCP MESSAGE] User: ${userId}`);
+      console.log(`[MCP MESSAGE] Table ID from header: ${headerTableId}`);
+      console.log(`[MCP MESSAGE] Table ID from stored context: ${storedTableId}`);
+      console.log(`[MCP MESSAGE] Using Context Table ID: ${contextTableId}`);
       console.log(
         `[MCP MESSAGE] Params:`,
         JSON.stringify(mcpRequest.params || {}, null, 2),
       );
-
-      // For tools/call, we need a valid access token
-      // For other methods, we can proceed without it
-      let accessToken: string | null = null;
-      if (mcpRequest.method === "tools/call") {
-        accessToken = await getValidAccessToken(userId);
-        if (!accessToken) {
-          return reply.status(401).send({
-            error: "Strava not connected or token refresh failed",
-          });
-        }
-      }
 
       // Handle MCP methods
       let response: McpResponse;
@@ -176,7 +138,7 @@ export async function registerMcpRoutes(
                 tools: {},
               },
               serverInfo: {
-                name: "strava-mcp-server",
+                name: "tables-mcp-server",
                 version: "1.0.0",
               },
             },
@@ -223,10 +185,12 @@ export async function registerMcpRoutes(
           );
 
           try {
+            // Pass contextTableId so tools can use it as default
             const result = await handleToolCall(
               toolName,
-              toolArgs,
-              accessToken!,
+              toolArgs || {},
+              userId,
+              contextTableId,
             );
             console.log(
               `[MCP] Tool result:`,
@@ -301,12 +265,20 @@ export async function registerMcpRoutes(
       },
     },
     async (request, reply) => {
-      const userId = request.headers["x-user-id"];
+      const userId = request.headers["x-user-id"] as string;
+      const tableId = request.headers["x-table-id"] as string | undefined;
       console.log(`[MCP SSE] Connection opened for user: ${userId}`);
+      console.log(`[MCP SSE] Table ID from header: ${tableId}`);
       console.log(
         `[MCP SSE] Request headers:`,
         JSON.stringify(request.headers, null, 2),
       );
+
+      // Store table context for this user (used by POST requests)
+      if (tableId) {
+        userTableContext.set(userId, tableId);
+        console.log(`[MCP SSE] Stored table context for user ${userId}: ${tableId}`);
+      }
 
       // Set SSE headers
       reply.raw.writeHead(200, {
@@ -322,7 +294,8 @@ export async function registerMcpRoutes(
 
       // Send MCP endpoint event - tells the client where to POST JSON-RPC messages
       // This is required by the MCP SSE transport specification
-      const endpointUrl = "/strava/mcp/message";
+      // Note: This must be the path relative to this service since agent connects directly
+      const endpointUrl = "/mcp/message";
       console.log(`[MCP SSE] Sending endpoint event: ${endpointUrl}`);
       reply.raw.write(`event: endpoint\ndata: ${endpointUrl}\n\n`);
 
@@ -336,6 +309,7 @@ export async function registerMcpRoutes(
         console.log(`[MCP SSE] Connection closed for user: ${userId}`);
         clearInterval(heartbeat);
         sseConnections.delete(userId);
+        userTableContext.delete(userId);
       });
     },
   );

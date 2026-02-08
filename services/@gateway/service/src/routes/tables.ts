@@ -25,13 +25,12 @@ export async function registerTablesRoutes(fastify: FastifyInstance) {
     replyOptions: {
       rewriteRequestHeaders: (originalRequest, headers) => {
         // Get user from request (set by authenticateRequest)
-        const user = (
-          originalRequest as { user?: { id: string; email: string } }
-        ).user;
+        const user = (originalRequest as { user?: { email: string } }).user;
         if (user) {
           return {
             ...headers,
-            "x-user-id": user.id,
+            // Use email as the user ID (consistent with agent proxy)
+            "x-user-id": user.email,
             "x-user-email": user.email,
           };
         }

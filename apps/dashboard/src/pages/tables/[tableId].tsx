@@ -2,6 +2,7 @@ import { tablesService } from "@tables/sdk";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { AddColumnModal } from "../../components/tables/AddColumnModal";
+import { ChatPanel } from "../../components/tables/ChatPanel";
 import { TableGrid } from "../../components/tables/TableGrid";
 import { useDebouncedCellUpdate } from "../../hooks/useDebouncedCellUpdate";
 import { useTableSocket, type TableEvent } from "../../hooks/useTableSocket";
@@ -38,9 +39,12 @@ export default function TableViewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAddingColumn, setIsAddingColumn] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Store previous row values for rollback
-  const previousRowValues = useRef<Map<string, Map<string, unknown>>>(new Map());
+  const previousRowValues = useRef<Map<string, Map<string, unknown>>>(
+    new Map(),
+  );
 
   // Handle real-time events from other users
   const handleEvent = useCallback((event: TableEvent) => {
@@ -120,10 +124,7 @@ export default function TableViewPage() {
 
   // Handle row insert success (we need the server-assigned row data)
   const handleRowInserted = useCallback(
-    (
-      _clientSeq: number,
-      msg: { rowId: string; row: Row },
-    ) => {
+    (_clientSeq: number, msg: { rowId: string; row: Row }) => {
       // Replace the optimistic row with the server-confirmed one
       setRows((prev) => {
         // Check if we already have a row with a temp ID that matches
@@ -138,10 +139,13 @@ export default function TableViewPage() {
   );
 
   // Handle errors from WebSocket
-  const handleSocketError = useCallback((error: { code: string; message: string }) => {
-    console.error("WebSocket error:", error);
-    // Could show a toast notification here
-  }, []);
+  const handleSocketError = useCallback(
+    (error: { code: string; message: string }) => {
+      console.error("WebSocket error:", error);
+      // Could show a toast notification here
+    },
+    [],
+  );
 
   // WebSocket connection (only when we have a tableId)
   const socket = useTableSocket({
@@ -395,32 +399,61 @@ export default function TableViewPage() {
         </div>
       </header>
 
-      <div className={styles.tableContainer}>
-        <div className={styles.toolbar}>
-          <button
-            type="button"
-            className={styles.toolbarButton}
-            onClick={() => setIsAddingColumn(true)}
-          >
-            + Add Column
-          </button>
-          <button
-            type="button"
-            className={styles.toolbarButton}
-            onClick={handleAddRow}
-          >
-            + Add Row
-          </button>
+      <div className={styles.splitPane}>
+        <div className={styles.tablePane}>
+          <div className={styles.toolbar}>
+            <button
+              type="button"
+              className={styles.toolbarButton}
+              onClick={() => setIsAddingColumn(true)}
+            >
+              + Add Column
+            </button>
+            <button
+              type="button"
+              className={styles.toolbarButton}
+              onClick={handleAddRow}
+            >
+              + Add Row
+            </button>
+            <button
+              type="button"
+              className={styles.chatToggleBtn}
+              data-active={isChatOpen}
+              onClick={() => setIsChatOpen(!isChatOpen)}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              AI
+            </button>
+          </div>
+
+          <TableGrid
+            columns={table.columns}
+            rows={rows}
+            onCellUpdate={handleCellUpdate}
+            onAddRow={handleAddRow}
+            onDeleteRow={handleDeleteRow}
+            onDeleteColumn={handleDeleteColumn}
+          />
         </div>
 
-        <TableGrid
-          columns={table.columns}
-          rows={rows}
-          onCellUpdate={handleCellUpdate}
-          onAddRow={handleAddRow}
-          onDeleteRow={handleDeleteRow}
-          onDeleteColumn={handleDeleteColumn}
-        />
+        {isChatOpen && (
+          <ChatPanel
+            tableId={tableId ?? ""}
+            tableName={table.name}
+            columns={table.columns}
+            onClose={() => setIsChatOpen(false)}
+          />
+        )}
       </div>
 
       {isAddingColumn && (
