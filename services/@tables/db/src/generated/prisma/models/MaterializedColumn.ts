@@ -14,7 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 
 /**
  * Model MaterializedColumn
- * Materialized columns (synced from Yjs)
+ * Materialized columns (legacy - now using dynamic PostgreSQL tables)
  */
 export type MaterializedColumnModel = runtime.Types.Result.DefaultSelection<Prisma.$MaterializedColumnPayload>
 

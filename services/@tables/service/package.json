@@ -27,7 +27,6 @@
     "@fastify/swagger-ui": "^5.2.3",
     "@fastify/type-provider-typebox": "^6.1.0",
     "@fastify/websocket": "^11.0.2",
-    "@hocuspocus/server": "^3.4.4",
     "@tables/db": "workspace:*",
     "@types/jsonwebtoken": "^9.0.10",
     "better-sqlite3": "^11.9.1",
@@ -36,9 +35,7 @@
     "fastify-metrics": "^12.1.0",
     "jsonwebtoken": "^9.0.3",
     "typebox": "^1.0.13",
-    "ws": "^8.19.0",
-    "y-leveldb": "^0.2.0",
-    "yjs": "^13.6.29"
+    "ws": "^8.19.0"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",

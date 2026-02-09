@@ -34,11 +34,11 @@ export type TableEvent = Prisma.TableEventModel
 export type TableCheckpoint = Prisma.TableCheckpointModel
 /**
  * Model MaterializedColumn
- * Materialized columns (synced from Yjs)
+ * Materialized columns (legacy - now using dynamic PostgreSQL tables)
  */
 export type MaterializedColumn = Prisma.MaterializedColumnModel
 /**
  * Model MaterializedRow
- * Materialized rows (synced from Yjs)
+ * Materialized rows (legacy - now using dynamic PostgreSQL tables)
  */
 export type MaterializedRow = Prisma.MaterializedRowModel

@@ -10,7 +10,7 @@ import type { ServerResponse } from "node:http";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import type { FastifyInstance } from "fastify";
 import { Type } from "typebox";
-import { getToolDefinitions, handleToolCall } from "./yjs-tools.js";
+import { getToolDefinitions, handleToolCall } from "./tools.js";
 
 const ErrorResponse = Type.Object({
   error: Type.String(),

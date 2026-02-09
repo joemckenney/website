@@ -2,6 +2,7 @@ import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import type { FastifyInstance } from "fastify";
 import { Type } from "typebox";
 import { prisma } from "../db/client.js";
+import type { ColumnType } from "../lib/events.js";
 import {
   AddColumnBody,
   Column,
@@ -11,14 +12,7 @@ import {
   TableIdParams,
   UpdateColumnBody,
 } from "../schemas.js";
-import {
-  addColumn,
-  deleteColumn,
-  getColumns,
-  renameColumn,
-  type ColumnType,
-} from "../yjs/schema.js";
-import { applyTableUpdate, getTableDoc } from "../yjs/server.js";
+import { memoryStore } from "../store/memory.js";
 
 export async function registerColumnRoutes(
   app: FastifyInstance & { withTypeProvider: () => FastifyInstance },
@@ -53,17 +47,23 @@ export async function registerColumnRoutes(
         return reply.status(404).send({ error: "Table not found" });
       }
 
-      const doc = await getTableDoc(tableId);
-      const existingColumns = getColumns(doc);
-      const position = existingColumns.length;
+      const table = memoryStore.getTable(tableId);
+      const position = table ? table.columns.size : 0;
       const columnId = crypto.randomUUID();
 
-      await applyTableUpdate(tableId, (doc) => {
-        addColumn(doc, {
-          id: columnId,
-          name,
-          dataType: dataType as ColumnType,
-        });
+      await memoryStore.applyEvent({
+        type: "COLUMN_ADDED",
+        tableId,
+        columnId,
+        name,
+        dataType: dataType as ColumnType,
+        position,
+      });
+
+      // Update table's updatedAt
+      await prisma.tableMeta.update({
+        where: { id: tableId },
+        data: { updatedAt: new Date() },
       });
 
       return reply.status(201).send({
@@ -103,31 +103,41 @@ export async function registerColumnRoutes(
         return reply.status(404).send({ error: "Table not found" });
       }
 
-      const doc = await getTableDoc(tableId);
-      const columns = getColumns(doc);
-      const column = columns.find((c) => c.id === columnId);
+      const table = memoryStore.getTable(tableId);
+      if (!table) {
+        return reply.status(404).send({ error: "Table not found" });
+      }
 
+      const column = table.columns.get(columnId);
       if (!column) {
         return reply.status(404).send({ error: "Column not found" });
       }
 
       // Apply rename if provided
       if (name !== undefined) {
-        await applyTableUpdate(tableId, (doc) => {
-          renameColumn(doc, columnId, name);
+        await memoryStore.applyEvent({
+          type: "COLUMN_RENAMED",
+          tableId,
+          columnId,
+          name,
         });
       }
 
+      // Update table's updatedAt
+      await prisma.tableMeta.update({
+        where: { id: tableId },
+        data: { updatedAt: new Date() },
+      });
+
       // Get updated column state
-      const updatedDoc = await getTableDoc(tableId);
-      const updatedColumns = getColumns(updatedDoc);
-      const updatedColumn = updatedColumns.find((c) => c.id === columnId)!;
+      const updatedTable = memoryStore.getTable(tableId);
+      const updatedColumn = updatedTable?.columns.get(columnId);
 
       return {
         id: columnId,
-        name: updatedColumn.name,
-        dataType: updatedColumn.dataType,
-        position: updatedColumn.position,
+        name: updatedColumn?.name ?? column.name,
+        dataType: updatedColumn?.dataType ?? column.dataType,
+        position: updatedColumn?.position ?? column.position,
       };
     },
   );
@@ -158,16 +168,21 @@ export async function registerColumnRoutes(
         return reply.status(404).send({ error: "Table not found" });
       }
 
-      const doc = await getTableDoc(tableId);
-      const columns = getColumns(doc);
-      const column = columns.find((c) => c.id === columnId);
-
-      if (!column) {
+      const table = memoryStore.getTable(tableId);
+      if (!table || !table.columns.has(columnId)) {
         return reply.status(404).send({ error: "Column not found" });
       }
 
-      await applyTableUpdate(tableId, (doc) => {
-        deleteColumn(doc, columnId);
+      await memoryStore.applyEvent({
+        type: "COLUMN_DELETED",
+        tableId,
+        columnId,
+      });
+
+      // Update table's updatedAt
+      await prisma.tableMeta.update({
+        where: { id: tableId },
+        data: { updatedAt: new Date() },
       });
 
       return reply.status(204).send(null);
@@ -203,37 +218,39 @@ export async function registerColumnRoutes(
         return reply.status(404).send({ error: "Table not found" });
       }
 
-      const doc = await getTableDoc(tableId);
-      const columns = getColumns(doc);
+      const table = memoryStore.getTable(tableId);
+      if (!table) {
+        return reply.status(404).send({ error: "Table not found" });
+      }
 
       // Validate all column IDs exist
       for (const colId of columnIds) {
-        if (!columns.find((c) => c.id === colId)) {
+        if (!table.columns.has(colId)) {
           return reply.status(400).send({ error: `Column ${colId} not found` });
         }
       }
 
-      // Update positions in Yjs
-      await applyTableUpdate(tableId, (doc) => {
-        const columnsMap = doc.getMap("columns");
-        columnIds.forEach((colId, index) => {
-          const col = columnsMap.get(colId) as Record<string, unknown>;
-          if (col) {
-            columnsMap.set(colId, { ...col, position: index });
-          }
-        });
+      // Apply reorder event
+      await memoryStore.applyEvent({
+        type: "COLUMN_REORDERED",
+        tableId,
+        columnIds,
+      });
+
+      // Update table's updatedAt
+      await prisma.tableMeta.update({
+        where: { id: tableId },
+        data: { updatedAt: new Date() },
       });
 
       // Return updated columns in new order
-      const updatedDoc = await getTableDoc(tableId);
-      const updatedColumns = getColumns(updatedDoc);
-
+      const updatedTable = memoryStore.getTable(tableId);
       return columnIds.map((id, index) => {
-        const col = updatedColumns.find((c) => c.id === id)!;
+        const col = updatedTable?.columns.get(id);
         return {
           id,
-          name: col.name,
-          dataType: col.dataType,
+          name: col?.name ?? "",
+          dataType: col?.dataType ?? "text",
           position: index,
         };
       });

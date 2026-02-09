@@ -10,13 +10,7 @@ import {
   TableListItem,
   UpdateTableBody,
 } from "../schemas.js";
-import { addColumn, getColumns, updateTableName } from "../yjs/schema.js";
-import {
-  applyTableUpdate,
-  createTableDoc,
-  deleteTableDoc,
-  getTableDoc,
-} from "../yjs/server.js";
+import { memoryStore } from "../store/memory.js";
 
 export async function registerTableRoutes(
   app: FastifyInstance & { withTypeProvider: () => FastifyInstance },
@@ -45,29 +39,47 @@ export async function registerTableRoutes(
       // Generate table ID
       const tableId = crypto.randomUUID();
 
-      // Create table with Yjs (creates Y.Doc + PostgreSQL metadata)
-      await createTableDoc(tableId, userId, name);
+      // Create table metadata in PostgreSQL
+      await prisma.tableMeta.create({
+        data: {
+          id: tableId,
+          userId,
+          name,
+        },
+      });
+
+      // Create table in memory store via event
+      await memoryStore.applyEvent({
+        type: "TABLE_CREATED",
+        tableId,
+        userId,
+        name,
+      });
 
       // Add initial columns if provided
-      if (columns.length > 0) {
-        await applyTableUpdate(tableId, (doc) => {
-          for (const col of columns) {
-            addColumn(doc, {
-              id: crypto.randomUUID(),
-              name: col.name,
-              dataType: col.dataType,
-            });
-          }
+      const columnMetas = [];
+      for (let i = 0; i < columns.length; i++) {
+        const col = columns[i];
+        const columnId = crypto.randomUUID();
+        await memoryStore.applyEvent({
+          type: "COLUMN_ADDED",
+          tableId,
+          columnId,
+          name: col.name,
+          dataType: col.dataType,
+          position: i,
+        });
+        columnMetas.push({
+          id: columnId,
+          name: col.name,
+          dataType: col.dataType,
+          position: i,
         });
       }
 
-      // Get the created table to return
       const tableMeta = await prisma.tableMeta.findUnique({
         where: { id: tableId },
       });
-
-      const doc = await getTableDoc(tableId);
-      const columnMetas = getColumns(doc);
 
       return reply.status(201).send({
         id: tableId,
@@ -136,8 +148,17 @@ export async function registerTableRoutes(
         return reply.status(404).send({ error: "Table not found" });
       }
 
-      const doc = await getTableDoc(tableId);
-      const columns = getColumns(doc);
+      const table = memoryStore.getTable(tableId);
+      const columns = table
+        ? Array.from(table.columns.values())
+            .sort((a, b) => a.position - b.position)
+            .map((col) => ({
+              id: col.id,
+              name: col.name,
+              dataType: col.dataType,
+              position: col.position,
+            }))
+        : [];
 
       return {
         id: tableMeta.id,
@@ -178,26 +199,38 @@ export async function registerTableRoutes(
         return reply.status(404).send({ error: "Table not found" });
       }
 
-      // Update via Yjs (will also update PostgreSQL metadata)
-      await applyTableUpdate(tableId, (doc) => {
-        updateTableName(doc, name);
+      // Apply rename event
+      await memoryStore.applyEvent({
+        type: "TABLE_RENAMED",
+        tableId,
+        name,
       });
 
-      const doc = await getTableDoc(tableId);
-      const columns = getColumns(doc);
-
-      // Get updated metadata
-      const updated = await prisma.tableMeta.findUnique({
+      // Update metadata
+      const updated = await prisma.tableMeta.update({
         where: { id: tableId },
+        data: { name, updatedAt: new Date() },
       });
+
+      const table = memoryStore.getTable(tableId);
+      const columns = table
+        ? Array.from(table.columns.values())
+            .sort((a, b) => a.position - b.position)
+            .map((col) => ({
+              id: col.id,
+              name: col.name,
+              dataType: col.dataType,
+              position: col.position,
+            }))
+        : [];
 
       return {
         id: tableId,
         userId: tableMeta.userId,
         name,
         columns,
-        createdAt: updated?.createdAt.toISOString() ?? tableMeta.createdAt.toISOString(),
-        updatedAt: updated?.updatedAt.toISOString() ?? new Date().toISOString(),
+        createdAt: updated.createdAt.toISOString(),
+        updatedAt: updated.updatedAt.toISOString(),
       };
     },
   );
@@ -228,8 +261,16 @@ export async function registerTableRoutes(
         return reply.status(404).send({ error: "Table not found" });
       }
 
-      // Delete via Yjs (removes Y.Doc + PostgreSQL metadata)
-      await deleteTableDoc(tableId);
+      // Apply delete event
+      await memoryStore.applyEvent({
+        type: "TABLE_DELETED",
+        tableId,
+      });
+
+      // Delete metadata
+      await prisma.tableMeta.delete({
+        where: { id: tableId },
+      });
 
       return reply.status(204).send(null);
     },

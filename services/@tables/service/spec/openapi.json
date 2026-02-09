@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Tables Service API",
-    "description": "Dynamic data tables API with Yjs CRDT real-time collaboration",
+    "description": "Dynamic data tables API with WAL + in-memory SQLite architecture",
     "version": "1.0.0"
   },
   "components": {

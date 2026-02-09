@@ -29,12 +29,10 @@
     "@crow/theme": "workspace:*",
     "@gateway/sdk": "workspace:*",
     "@generouted/react-router": "^1.20.0",
-    "@hocuspocus/provider": "^3.4.4",
     "@tables/sdk": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router": "^7.11.0",
-    "yjs": "^13.6.29"
+    "react-router": "^7.11.0"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",

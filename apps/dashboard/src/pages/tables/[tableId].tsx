@@ -1,18 +1,40 @@
 import { tablesService } from "@tables/sdk";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { AddColumnModal } from "../../components/tables/AddColumnModal";
 import { ChatPanel } from "../../components/tables/ChatPanel";
 import { TableGrid } from "../../components/tables/TableGrid";
-import { useYjsTable, type Column } from "../../hooks/useYjsTable";
+import {
+  useTableSocket,
+  type TableEvent,
+  type ConnectionStatus,
+} from "../../hooks/useTableSocket";
 import * as styles from "../../styles/tables.css";
 
 /**
- * Table view page with real-time collaboration using Yjs CRDTs
+ * Column type definition
+ */
+type ColumnType = "text" | "number" | "boolean" | "date" | "select";
+
+interface Column {
+  id: string;
+  name: string;
+  dataType: ColumnType;
+  position: number;
+}
+
+interface Row {
+  id: string;
+  data: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Table view page with real-time collaboration using WebSocket
  *
- * With Yjs, state is automatically synchronized across all clients.
- * No need for manual optimistic updates or event handling - Yjs handles
- * conflict resolution and state merging automatically.
+ * Uses REST API for initial data load and CRUD operations,
+ * with WebSocket for real-time updates from other users.
  */
 export default function TableViewPage() {
   const { tableId } = useParams<{ tableId: string }>();
@@ -20,55 +42,252 @@ export default function TableViewPage() {
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Use Yjs for real-time collaborative editing
-  const yjs = useYjsTable({
+  // Local state for table data
+  const [tableName, setTableName] = useState("Untitled");
+  const [columns, setColumns] = useState<Column[]>([]);
+  const [rows, setRows] = useState<Row[]>([]);
+
+  // Handle incoming real-time events from other users
+  const handleTableEvent = useCallback((event: TableEvent) => {
+    switch (event.type) {
+      case "CELL_UPDATED":
+        setRows((prev) =>
+          prev.map((row) =>
+            row.id === event.rowId
+              ? {
+                  ...row,
+                  data: { ...row.data, [event.columnId]: event.value },
+                  updatedAt: new Date().toISOString(),
+                }
+              : row
+          )
+        );
+        break;
+
+      case "ROW_INSERTED":
+        setRows((prev) => [
+          ...prev,
+          {
+            id: event.rowId,
+            data: event.data,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        ]);
+        break;
+
+      case "ROW_DELETED":
+        setRows((prev) => prev.filter((row) => row.id !== event.rowId));
+        break;
+
+      case "COLUMN_ADDED":
+        setColumns((prev) => [
+          ...prev,
+          {
+            id: event.columnId,
+            name: event.name,
+            dataType: event.dataType as ColumnType,
+            position: event.position,
+          },
+        ]);
+        break;
+
+      case "COLUMN_RENAMED":
+        setColumns((prev) =>
+          prev.map((col) =>
+            col.id === event.columnId ? { ...col, name: event.name } : col
+          )
+        );
+        break;
+
+      case "COLUMN_DELETED":
+        setColumns((prev) => prev.filter((col) => col.id !== event.columnId));
+        break;
+    }
+  }, []);
+
+  // Handle successful row insert
+  const handleRowInserted = useCallback(
+    (
+      clientSeq: number,
+      msg: { rowId: string; row: Row }
+    ) => {
+      // Replace optimistic row with server-confirmed data
+      setRows((prev) => {
+        const existing = prev.find((r) => r.id === msg.rowId);
+        if (existing) return prev;
+        return [...prev, msg.row];
+      });
+    },
+    []
+  );
+
+  // WebSocket connection for real-time updates
+  const socket = useTableSocket({
     tableId: tableId ?? "",
-    onError: (err) => setError(err.message),
+    onEvent: handleTableEvent,
+    onRowInserted: handleRowInserted,
+    onError: (err) => {
+      console.error("WebSocket error:", err);
+    },
   });
 
-  const handleAddRow = useCallback(() => {
-    if (!tableId || yjs.status !== "connected") return;
-    yjs.insertRow({});
-  }, [tableId, yjs]);
+  // Load initial table data via REST
+  useEffect(() => {
+    if (!tableId) return;
+
+    const loadTable = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Fetch table schema
+        const tableResponse = await tablesService.getTable({
+          path: { tableId },
+        });
+
+        if (tableResponse.error) {
+          setError(tableResponse.error.error || "Failed to load table");
+          return;
+        }
+
+        const tableData = tableResponse.data;
+        setTableName(tableData.name);
+        setColumns(tableData.columns);
+
+        // Fetch rows
+        const rowsResponse = await tablesService.listRows({
+          path: { tableId },
+          query: { limit: 100 },
+        });
+
+        if (rowsResponse.error) {
+          setError(rowsResponse.error.error || "Failed to load rows");
+          return;
+        }
+
+        setRows(rowsResponse.data.rows);
+      } catch (err) {
+        console.error("Failed to load table:", err);
+        setError("Failed to connect to server");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadTable();
+  }, [tableId]);
+
+  const handleAddRow = useCallback(async () => {
+    if (!tableId) return;
+
+    try {
+      const response = await tablesService.insertRow({
+        path: { tableId },
+        body: { data: {} },
+      });
+
+      if (response.data) {
+        setRows((prev) => [...prev, response.data]);
+      }
+    } catch (err) {
+      console.error("Failed to add row:", err);
+    }
+  }, [tableId]);
 
   const handleCellUpdate = useCallback(
     (rowId: string, columnId: string, value: unknown) => {
       if (!tableId) return;
-      yjs.updateCell(rowId, columnId, value);
+
+      // Optimistic update
+      const previousValue = rows.find((r) => r.id === rowId)?.data[columnId];
+      setRows((prev) =>
+        prev.map((row) =>
+          row.id === rowId
+            ? {
+                ...row,
+                data: { ...row.data, [columnId]: value },
+                updatedAt: new Date().toISOString(),
+              }
+            : row
+        )
+      );
+
+      // Send via WebSocket
+      socket.sendCellUpdate(rowId, columnId, value, () => {
+        // Rollback on failure
+        setRows((prev) =>
+          prev.map((row) =>
+            row.id === rowId
+              ? {
+                  ...row,
+                  data: { ...row.data, [columnId]: previousValue },
+                }
+              : row
+          )
+        );
+      });
     },
-    [tableId, yjs]
+    [tableId, rows, socket]
   );
 
   const handleDeleteRow = useCallback(
     (rowId: string) => {
       if (!tableId) return;
-      yjs.deleteRow(rowId);
+
+      // Optimistic update
+      const deletedRow = rows.find((r) => r.id === rowId);
+      setRows((prev) => prev.filter((row) => row.id !== rowId));
+
+      // Send via WebSocket
+      socket.sendRowDelete(rowId, () => {
+        // Rollback on failure
+        if (deletedRow) {
+          setRows((prev) => [...prev, deletedRow]);
+        }
+      });
     },
-    [tableId, yjs]
+    [tableId, rows, socket]
   );
 
   const handleAddColumn = useCallback(
-    (name: string, dataType: Column["dataType"]) => {
+    async (name: string, dataType: ColumnType) => {
       if (!tableId) return;
 
-      const columnId = crypto.randomUUID();
-      yjs.addColumn({
-        id: columnId,
-        name,
-        dataType,
-      });
-      setIsAddingColumn(false);
+      try {
+        const response = await tablesService.addColumn({
+          path: { tableId },
+          body: { name, dataType },
+        });
+
+        if (response.data) {
+          setColumns((prev) => [...prev, response.data]);
+        }
+        setIsAddingColumn(false);
+      } catch (err) {
+        console.error("Failed to add column:", err);
+      }
     },
-    [tableId, yjs]
+    [tableId]
   );
 
   const handleDeleteColumn = useCallback(
-    (columnId: string) => {
+    async (columnId: string) => {
       if (!tableId) return;
-      yjs.deleteColumn(columnId);
+
+      try {
+        await tablesService.deleteColumn({
+          path: { tableId, columnId },
+        });
+
+        setColumns((prev) => prev.filter((col) => col.id !== columnId));
+      } catch (err) {
+        console.error("Failed to delete column:", err);
+      }
     },
-    [tableId, yjs]
+    [tableId]
   );
 
   const handleDeleteTable = async () => {
@@ -88,22 +307,26 @@ export default function TableViewPage() {
     }
   };
 
-  // Show loading state while connecting
-  if (yjs.status === "connecting" && !yjs.synced) {
+  // Derive connection status for UI
+  const isConnected = socket.status === "connected";
+  const isConnecting = socket.status === "connecting";
+
+  // Show loading state
+  if (isLoading) {
     return (
       <>
         <header className={styles.header}>
           <span className={styles.title}>Loading...</span>
         </header>
         <div className={styles.container}>
-          <div className={styles.loading}>Connecting to table...</div>
+          <div className={styles.loading}>Loading table...</div>
         </div>
       </>
     );
   }
 
   // Show error state
-  if (error || yjs.status === "error") {
+  if (error) {
     return (
       <>
         <header className={styles.header}>
@@ -111,7 +334,7 @@ export default function TableViewPage() {
         </header>
         <div className={styles.container}>
           <div className={styles.error}>
-            {error || "Failed to connect to table"}
+            {error}
             <br />
             <small style={{ opacity: 0.7, marginTop: "8px", display: "block" }}>
               Make sure the tables service is running (pnpm --filter @tables/service dev)
@@ -125,7 +348,7 @@ export default function TableViewPage() {
   return (
     <>
       <header className={styles.header}>
-        <span className={styles.title}>{yjs.tableName}</span>
+        <span className={styles.title}>{tableName}</span>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           {/* Connection status indicator */}
           <span
@@ -134,14 +357,13 @@ export default function TableViewPage() {
               width: "8px",
               height: "8px",
               borderRadius: "50%",
-              backgroundColor:
-                yjs.status === "connected" && yjs.synced
-                  ? "#22c55e"
-                  : yjs.status === "connecting"
-                    ? "#eab308"
-                    : "#ef4444",
+              backgroundColor: isConnected
+                ? "#22c55e"
+                : isConnecting
+                  ? "#eab308"
+                  : "#ef4444",
             }}
-            title={`Yjs: ${yjs.status}${yjs.synced ? " (synced)" : ""}`}
+            title={`WebSocket: ${socket.status}`}
           />
           <button
             type="button"
@@ -191,8 +413,8 @@ export default function TableViewPage() {
           </div>
 
           <TableGrid
-            columns={yjs.columns}
-            rows={yjs.rows}
+            columns={columns}
+            rows={rows}
             onCellUpdate={handleCellUpdate}
             onAddRow={handleAddRow}
             onDeleteRow={handleDeleteRow}
@@ -203,8 +425,8 @@ export default function TableViewPage() {
         {isChatOpen && (
           <ChatPanel
             tableId={tableId ?? ""}
-            tableName={yjs.tableName}
-            columns={yjs.columns}
+            tableName={tableName}
+            columns={columns}
             onClose={() => setIsChatOpen(false)}
           />
         )}

@@ -39,7 +39,7 @@ model TableCheckpoint {
   checkpointAt DateTime @default(now())
 }
 
-/// Materialized columns (synced from Yjs)
+/// Materialized columns (legacy - now using dynamic PostgreSQL tables)
 model MaterializedColumn {
   id        String   @id
   tableId   String
@@ -53,7 +53,7 @@ model MaterializedColumn {
   @@index([tableId])
 }
 
-/// Materialized rows (synced from Yjs)
+/// Materialized rows (legacy - now using dynamic PostgreSQL tables)
 model MaterializedRow {
   id        String   @id
   tableId   String

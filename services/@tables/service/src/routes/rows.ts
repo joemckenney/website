@@ -13,15 +13,7 @@ import {
   TableIdParams,
   UpdateRowBody,
 } from "../schemas.js";
-import {
-  deleteRow,
-  deleteRows,
-  getRow,
-  getRows,
-  insertRow,
-  updateCell,
-} from "../yjs/schema.js";
-import { applyTableUpdate, getTableDoc } from "../yjs/server.js";
+import { memoryStore } from "../store/memory.js";
 
 export async function registerRowRoutes(
   app: FastifyInstance & { withTypeProvider: () => FastifyInstance },
@@ -56,27 +48,15 @@ export async function registerRowRoutes(
         return reply.status(404).send({ error: "Table not found" });
       }
 
-      const doc = await getTableDoc(tableId);
-      let rows = getRows(doc);
-
-      // Sort if requested
-      if (sortBy) {
-        rows = rows.sort((a, b) => {
-          const aVal = a.data[sortBy];
-          const bVal = b.data[sortBy];
-          if (aVal === bVal) return 0;
-          if (aVal === null || aVal === undefined) return 1;
-          if (bVal === null || bVal === undefined) return -1;
-          const cmp = aVal < bVal ? -1 : 1;
-          return sortOrder === "desc" ? -cmp : cmp;
-        });
-      }
-
-      const total = rows.length;
-      const pagedRows = rows.slice(offset, offset + limit);
+      const { rows, total } = memoryStore.queryRows(tableId, {
+        offset,
+        limit,
+        sortBy,
+        sortOrder,
+      });
 
       return {
-        rows: pagedRows,
+        rows,
         total,
         offset,
         limit,
@@ -114,12 +94,20 @@ export async function registerRowRoutes(
 
       const rowId = crypto.randomUUID();
 
-      await applyTableUpdate(tableId, (doc) => {
-        insertRow(doc, rowId, data);
+      await memoryStore.applyEvent({
+        type: "ROW_INSERTED",
+        tableId,
+        rowId,
+        data,
       });
 
-      const doc = await getTableDoc(tableId);
-      const row = getRow(doc, rowId);
+      // Update table's updatedAt
+      await prisma.tableMeta.update({
+        where: { id: tableId },
+        data: { updatedAt: new Date() },
+      });
+
+      const row = memoryStore.getRow(tableId, rowId);
 
       return reply.status(201).send(row!);
     },
@@ -153,21 +141,29 @@ export async function registerRowRoutes(
         return reply.status(404).send({ error: "Table not found" });
       }
 
-      const doc = await getTableDoc(tableId);
-      const existingRow = getRow(doc, rowId);
-
+      const existingRow = memoryStore.getRow(tableId, rowId);
       if (!existingRow) {
         return reply.status(404).send({ error: "Row not found" });
       }
 
-      await applyTableUpdate(tableId, (doc) => {
-        for (const [columnId, value] of Object.entries(data)) {
-          updateCell(doc, rowId, columnId, value);
-        }
+      // Apply cell updates for each field
+      for (const [columnId, value] of Object.entries(data)) {
+        await memoryStore.applyEvent({
+          type: "CELL_UPDATED",
+          tableId,
+          rowId,
+          columnId,
+          value,
+        });
+      }
+
+      // Update table's updatedAt
+      await prisma.tableMeta.update({
+        where: { id: tableId },
+        data: { updatedAt: new Date() },
       });
 
-      const updatedDoc = await getTableDoc(tableId);
-      const row = getRow(updatedDoc, rowId);
+      const row = memoryStore.getRow(tableId, rowId);
 
       return row!;
     },
@@ -199,15 +195,21 @@ export async function registerRowRoutes(
         return reply.status(404).send({ error: "Table not found" });
       }
 
-      const doc = await getTableDoc(tableId);
-      const existingRow = getRow(doc, rowId);
-
+      const existingRow = memoryStore.getRow(tableId, rowId);
       if (!existingRow) {
         return reply.status(404).send({ error: "Row not found" });
       }
 
-      await applyTableUpdate(tableId, (doc) => {
-        deleteRow(doc, rowId);
+      await memoryStore.applyEvent({
+        type: "ROW_DELETED",
+        tableId,
+        rowId,
+      });
+
+      // Update table's updatedAt
+      await prisma.tableMeta.update({
+        where: { id: tableId },
+        data: { updatedAt: new Date() },
       });
 
       return reply.status(204).send(null);
@@ -251,11 +253,19 @@ export async function registerRowRoutes(
 
       switch (operation) {
         case "delete":
-          await applyTableUpdate(tableId, (doc) => {
-            deleteRows(doc, rowIds);
+          await memoryStore.applyEvent({
+            type: "ROWS_BULK_DELETED",
+            tableId,
+            rowIds,
           });
           break;
       }
+
+      // Update table's updatedAt
+      await prisma.tableMeta.update({
+        where: { id: tableId },
+        data: { updatedAt: new Date() },
+      });
 
       return { affected: rowIds.length };
     },
