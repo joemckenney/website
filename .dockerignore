@@ -1,8 +1,27 @@
-node_modules
+**/node_modules
 .git
 .github
-*.log
-dist
-build
-.next
-.turbo
+.claude
+**/*.log
+**/dist
+**/build
+**/.next
+**/.turbo
+**/src/generated
+
+# Secrets / local-only config
+**/.env
+**/.env.local
+**/values-local.yaml
+**/postgres-values-local.yaml
+
+# Generated OpenAPI specs (rebuilt during build)
+**/openapi.json
+
+# Infra / helm / ops tooling (not needed in app containers)
+infra
+**/helm
+**/infrastructure
+
+# Misc local artifacts
+**/data

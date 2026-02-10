@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsgo && vite build",
-    "build:docker": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/www-web:latest -f Dockerfile $REPO_ROOT",
-    "build:docker:local": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/www-web:latest -f Dockerfile $REPO_ROOT",
-    "build:docker:prod": "REPO_ROOT=$(git rev-parse --show-toplevel) && docker build -t ${DOCKERHUB_USERNAME}/www-web:${TAG:-latest} --build-arg VITE_API_URL=https://api.joemckenney.com -f Dockerfile $REPO_ROOT",
+    "build:docker": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build --load -t localhost:5000/www-web:latest -f Dockerfile $REPO_ROOT",
+    "build:docker:local": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build --load -t localhost:5000/www-web:latest -f Dockerfile $REPO_ROOT",
+    "build:docker:prod": "REPO_ROOT=$(git rev-parse --show-toplevel) && docker buildx build --load -t ${DOCKERHUB_USERNAME}/www-web:${TAG:-latest} --build-arg VITE_API_URL=https://api.joemckenney.com -f Dockerfile $REPO_ROOT",
     "deploy:helm:local": "helm upgrade --install www-web ./helm -f ./helm/values-local.yaml --wait --timeout=5m",
     "deploy:helm:prod": "helm upgrade --install www-web ./helm -f ./helm/values-prod.yaml --wait --timeout=5m",
     "clean": "rm -rf dist",
