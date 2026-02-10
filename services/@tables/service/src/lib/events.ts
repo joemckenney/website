@@ -1,7 +1,7 @@
 /**
  * Column data types supported by the tables system
  */
-export type ColumnType = "text" | "number" | "boolean" | "date" | "select";
+export type ColumnType = "text" | "number" | "boolean" | "date" | "select" | "relation";
 
 /**
  * Table events for the write-ahead log (WAL)
@@ -18,6 +18,7 @@ export type TableEvent =
       name: string;
       dataType: ColumnType;
       position: number;
+      referencedTableId?: string;
     }
   | { type: "COLUMN_RENAMED"; tableId: string; columnId: string; name: string }
   | {
@@ -34,6 +35,7 @@ export type TableEvent =
       tableId: string;
       rowId: string;
       data: Record<string, unknown>;
+      originAgentId?: string;
     }
   | {
       type: "ROW_UPDATED";
@@ -47,6 +49,7 @@ export type TableEvent =
       rowId: string;
       columnId: string;
       value: unknown;
+      originAgentId?: string;
     }
   | { type: "ROW_DELETED"; tableId: string; rowId: string }
   | { type: "ROWS_BULK_DELETED"; tableId: string; rowIds: string[] };

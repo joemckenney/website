@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { prisma } from "../db/client.js";
 import type { ColumnType, TableEvent } from "../lib/events.js";
 import {
+  coerceValue,
   createTableSql,
   sanitizeColumnId,
   toSqliteType,
@@ -16,6 +17,7 @@ interface ColumnMeta {
   name: string;
   dataType: ColumnType;
   position: number;
+  referencedTableId?: string;
 }
 
 /**
@@ -26,6 +28,7 @@ interface TableState {
   columns: Map<string, ColumnMeta>;
   userId: string;
   name: string;
+  baseId: string;
 }
 
 /**
@@ -39,6 +42,7 @@ interface TableState {
 class MemoryStore {
   private tables = new Map<string, TableState>();
   private eventListeners = new Map<string, Set<(event: TableEvent) => void>>();
+  private dependencyGraph = new Map<string, Set<string>>();
 
   /**
    * Initialize the memory store by replaying WAL events
@@ -50,8 +54,10 @@ class MemoryStore {
     const tableMetas = await prisma.tableMeta.findMany();
 
     for (const meta of tableMetas) {
-      await this.replayTable(meta.id, meta.userId, meta.name);
+      await this.replayTable(meta.id, meta.userId, meta.name, meta.baseId);
     }
+
+    this.rebuildDependencyGraph();
 
     console.log(`Memory store initialized with ${this.tables.size} tables`);
   }
@@ -66,6 +72,7 @@ class MemoryStore {
     tableId: string,
     userId: string,
     name: string,
+    baseId: string,
   ): Promise<void> {
     // Always replay from the beginning - SQLite :memory: doesn't persist
     const events = await wal.getEventsSince(tableId, 0n);
@@ -79,6 +86,7 @@ class MemoryStore {
       columns: new Map(),
       userId,
       name,
+      baseId,
     };
 
     for (const event of events) {
@@ -138,6 +146,7 @@ class MemoryStore {
         columns: new Map(),
         userId: event.userId,
         name: event.name,
+        baseId: "",
       });
     } else if (event.type === "TABLE_DELETED") {
       // Remove table state
@@ -151,6 +160,13 @@ class MemoryStore {
       const state = this.tables.get(event.tableId);
       if (state) {
         this.applyEventToSqlite(state, event);
+
+        // Update dependency graph for relation columns
+        if (event.type === "COLUMN_ADDED" && event.dataType === "relation" && event.referencedTableId) {
+          this.addDependencyEdge(event.tableId, event.referencedTableId);
+        } else if (event.type === "COLUMN_DELETED") {
+          this.rebuildDependencyGraph();
+        }
       }
     }
 
@@ -178,6 +194,7 @@ class MemoryStore {
           name: event.name,
           dataType: event.dataType,
           position: event.position,
+          ...(event.referencedTableId ? { referencedTableId: event.referencedTableId } : {}),
         });
         break;
       }
@@ -226,7 +243,8 @@ class MemoryStore {
           event.rowId,
           ...colIds.map((id) => {
             const value = event.data[id];
-            return value === undefined ? null : value;
+            const col = columns.get(id);
+            return col ? coerceValue(value, col.dataType) : (value === undefined ? null : value);
           }),
         ];
 
@@ -246,7 +264,10 @@ class MemoryStore {
 
         if (updates) {
           const values = [
-            ...Object.values(event.data),
+            ...Object.entries(event.data).map(([colId, value]) => {
+              const col = columns.get(colId);
+              return col ? coerceValue(value, col.dataType) : value;
+            }),
             new Date().toISOString(),
             event.rowId,
           ];
@@ -259,9 +280,11 @@ class MemoryStore {
 
       case "CELL_UPDATED": {
         const colId = sanitizeColumnId(event.columnId);
+        const col = columns.get(event.columnId);
+        const coerced = col ? coerceValue(event.value, col.dataType) : event.value;
         db.prepare(
           `UPDATE data SET ${colId} = ?, _updated_at = ? WHERE _id = ?`,
-        ).run(event.value, new Date().toISOString(), event.rowId);
+        ).run(coerced, new Date().toISOString(), event.rowId);
         break;
       }
 
@@ -344,7 +367,12 @@ class MemoryStore {
       const data: Record<string, unknown> = {};
       for (const [colId, meta] of columns) {
         const sqlCol = sanitizeColumnId(colId);
-        data[colId] = row[sqlCol];
+        const rawValue = row[sqlCol];
+        if (meta.dataType === "relation" && meta.referencedTableId) {
+          data[colId] = this.resolveRelationDisplay(meta.referencedTableId, rawValue as string | null);
+        } else {
+          data[colId] = rawValue;
+        }
       }
       return {
         id: row._id as string,
@@ -390,6 +418,135 @@ class MemoryStore {
     if (!row) {
       return null;
     }
+
+    const data: Record<string, unknown> = {};
+    for (const [colId, meta] of columns) {
+      const sqlCol = sanitizeColumnId(colId);
+      const rawValue = row[sqlCol];
+      if (meta.dataType === "relation" && meta.referencedTableId) {
+        data[colId] = this.resolveRelationDisplay(meta.referencedTableId, rawValue as string | null);
+      } else {
+        data[colId] = rawValue;
+      }
+    }
+
+    return {
+      id: row._id as string,
+      data,
+      createdAt: row._created_at as string,
+      updatedAt: row._updated_at as string,
+    };
+  }
+
+  /**
+   * Set the baseId on a table state (called from route handler after TABLE_CREATED)
+   */
+  setTableBaseId(tableId: string, baseId: string): void {
+    const state = this.tables.get(tableId);
+    if (state) {
+      state.baseId = baseId;
+    }
+  }
+
+  /**
+   * Rebuild the dependency graph from all relation columns
+   */
+  private rebuildDependencyGraph(): void {
+    this.dependencyGraph.clear();
+    for (const [tableId, state] of this.tables) {
+      for (const col of state.columns.values()) {
+        if (col.dataType === "relation" && col.referencedTableId && col.referencedTableId !== tableId) {
+          if (!this.dependencyGraph.has(tableId)) {
+            this.dependencyGraph.set(tableId, new Set());
+          }
+          this.dependencyGraph.get(tableId)!.add(col.referencedTableId);
+        }
+      }
+    }
+  }
+
+  /**
+   * Check if adding an edge sourceTableId → targetTableId would create a cycle
+   */
+  wouldCreateCycle(sourceTableId: string, targetTableId: string): boolean {
+    // Self-references are allowed
+    if (sourceTableId === targetTableId) return false;
+
+    // DFS from targetTableId: if we can reach sourceTableId, adding the edge creates a cycle
+    const visited = new Set<string>();
+    const stack = [targetTableId];
+    while (stack.length > 0) {
+      const current = stack.pop()!;
+      if (current === sourceTableId) return true;
+      if (visited.has(current)) continue;
+      visited.add(current);
+      const neighbors = this.dependencyGraph.get(current);
+      if (neighbors) {
+        for (const neighbor of neighbors) {
+          stack.push(neighbor);
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Add an edge to the dependency graph
+   */
+  private addDependencyEdge(sourceTableId: string, targetTableId: string): void {
+    if (sourceTableId === targetTableId) return;
+    if (!this.dependencyGraph.has(sourceTableId)) {
+      this.dependencyGraph.set(sourceTableId, new Set());
+    }
+    this.dependencyGraph.get(sourceTableId)!.add(targetTableId);
+  }
+
+  /**
+   * Resolve display value for a relation cell
+   */
+  private resolveRelationDisplay(referencedTableId: string, rowId: string | null): { id: string; display: string | null } | null {
+    if (rowId === null || rowId === undefined) return null;
+
+    const refState = this.tables.get(referencedTableId);
+    if (!refState) return { id: rowId, display: null };
+
+    // Find the primary field (first text column by position)
+    let primaryCol: ColumnMeta | null = null;
+    for (const col of refState.columns.values()) {
+      if (col.dataType === "text") {
+        if (!primaryCol || col.position < primaryCol.position) {
+          primaryCol = col;
+        }
+      }
+    }
+
+    // Get the referenced row (use raw getRow to avoid infinite recursion on nested relations)
+    const row = this.getRawRow(referencedTableId, rowId);
+    if (!row) return { id: rowId, display: null };
+
+    const display = primaryCol ? (row.data[primaryCol.id] as string | null) ?? null : null;
+    return { id: rowId, display };
+  }
+
+  /**
+   * Get a raw row without relation resolution (to avoid recursion)
+   */
+  private getRawRow(
+    tableId: string,
+    rowId: string,
+  ): { id: string; data: Record<string, unknown>; createdAt: string; updatedAt: string } | null {
+    const state = this.tables.get(tableId);
+    if (!state) return null;
+
+    const { db, columns } = state;
+    const colIds = Array.from(columns.keys());
+    const selectCols = [
+      "_id", "_created_at", "_updated_at",
+      ...colIds.map((id) => sanitizeColumnId(id)),
+    ].join(", ");
+
+    const row = db.prepare(`SELECT ${selectCols} FROM data WHERE _id = ?`).get(rowId) as Record<string, unknown> | undefined;
+    if (!row) return null;
 
     const data: Record<string, unknown> = {};
     for (const [colId] of columns) {

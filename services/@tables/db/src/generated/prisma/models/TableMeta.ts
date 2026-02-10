@@ -191,6 +191,7 @@ export type TableMetaWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"TableMeta"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TableMeta"> | Date | string
   base?: Prisma.XOR<Prisma.BaseScalarRelationFilter, Prisma.BaseWhereInput>
+  agents?: Prisma.TableAgentListRelationFilter
 }
 
 export type TableMetaOrderByWithRelationInput = {
@@ -201,6 +202,7 @@ export type TableMetaOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   base?: Prisma.BaseOrderByWithRelationInput
+  agents?: Prisma.TableAgentOrderByRelationAggregateInput
 }
 
 export type TableMetaWhereUniqueInput = Prisma.AtLeast<{
@@ -214,6 +216,7 @@ export type TableMetaWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"TableMeta"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TableMeta"> | Date | string
   base?: Prisma.XOR<Prisma.BaseScalarRelationFilter, Prisma.BaseWhereInput>
+  agents?: Prisma.TableAgentListRelationFilter
 }, "id">
 
 export type TableMetaOrderByWithAggregationInput = {
@@ -247,6 +250,7 @@ export type TableMetaCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   base: Prisma.BaseCreateNestedOneWithoutTablesInput
+  agents?: Prisma.TableAgentCreateNestedManyWithoutTableInput
 }
 
 export type TableMetaUncheckedCreateInput = {
@@ -256,6 +260,7 @@ export type TableMetaUncheckedCreateInput = {
   name: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  agents?: Prisma.TableAgentUncheckedCreateNestedManyWithoutTableInput
 }
 
 export type TableMetaUpdateInput = {
@@ -265,6 +270,7 @@ export type TableMetaUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   base?: Prisma.BaseUpdateOneRequiredWithoutTablesNestedInput
+  agents?: Prisma.TableAgentUpdateManyWithoutTableNestedInput
 }
 
 export type TableMetaUncheckedUpdateInput = {
@@ -274,6 +280,7 @@ export type TableMetaUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  agents?: Prisma.TableAgentUncheckedUpdateManyWithoutTableNestedInput
 }
 
 export type TableMetaCreateManyInput = {
@@ -339,6 +346,11 @@ export type TableMetaMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type TableMetaScalarRelationFilter = {
+  is?: Prisma.TableMetaWhereInput
+  isNot?: Prisma.TableMetaWhereInput
+}
+
 export type TableMetaCreateNestedManyWithoutBaseInput = {
   create?: Prisma.XOR<Prisma.TableMetaCreateWithoutBaseInput, Prisma.TableMetaUncheckedCreateWithoutBaseInput> | Prisma.TableMetaCreateWithoutBaseInput[] | Prisma.TableMetaUncheckedCreateWithoutBaseInput[]
   connectOrCreate?: Prisma.TableMetaCreateOrConnectWithoutBaseInput | Prisma.TableMetaCreateOrConnectWithoutBaseInput[]
@@ -381,12 +393,27 @@ export type TableMetaUncheckedUpdateManyWithoutBaseNestedInput = {
   deleteMany?: Prisma.TableMetaScalarWhereInput | Prisma.TableMetaScalarWhereInput[]
 }
 
+export type TableMetaCreateNestedOneWithoutAgentsInput = {
+  create?: Prisma.XOR<Prisma.TableMetaCreateWithoutAgentsInput, Prisma.TableMetaUncheckedCreateWithoutAgentsInput>
+  connectOrCreate?: Prisma.TableMetaCreateOrConnectWithoutAgentsInput
+  connect?: Prisma.TableMetaWhereUniqueInput
+}
+
+export type TableMetaUpdateOneRequiredWithoutAgentsNestedInput = {
+  create?: Prisma.XOR<Prisma.TableMetaCreateWithoutAgentsInput, Prisma.TableMetaUncheckedCreateWithoutAgentsInput>
+  connectOrCreate?: Prisma.TableMetaCreateOrConnectWithoutAgentsInput
+  upsert?: Prisma.TableMetaUpsertWithoutAgentsInput
+  connect?: Prisma.TableMetaWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TableMetaUpdateToOneWithWhereWithoutAgentsInput, Prisma.TableMetaUpdateWithoutAgentsInput>, Prisma.TableMetaUncheckedUpdateWithoutAgentsInput>
+}
+
 export type TableMetaCreateWithoutBaseInput = {
   id?: string
   userId: string
   name: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  agents?: Prisma.TableAgentCreateNestedManyWithoutTableInput
 }
 
 export type TableMetaUncheckedCreateWithoutBaseInput = {
@@ -395,6 +422,7 @@ export type TableMetaUncheckedCreateWithoutBaseInput = {
   name: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  agents?: Prisma.TableAgentUncheckedCreateNestedManyWithoutTableInput
 }
 
 export type TableMetaCreateOrConnectWithoutBaseInput = {
@@ -435,6 +463,58 @@ export type TableMetaScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"TableMeta"> | Date | string
 }
 
+export type TableMetaCreateWithoutAgentsInput = {
+  id?: string
+  userId: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  base: Prisma.BaseCreateNestedOneWithoutTablesInput
+}
+
+export type TableMetaUncheckedCreateWithoutAgentsInput = {
+  id?: string
+  baseId: string
+  userId: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type TableMetaCreateOrConnectWithoutAgentsInput = {
+  where: Prisma.TableMetaWhereUniqueInput
+  create: Prisma.XOR<Prisma.TableMetaCreateWithoutAgentsInput, Prisma.TableMetaUncheckedCreateWithoutAgentsInput>
+}
+
+export type TableMetaUpsertWithoutAgentsInput = {
+  update: Prisma.XOR<Prisma.TableMetaUpdateWithoutAgentsInput, Prisma.TableMetaUncheckedUpdateWithoutAgentsInput>
+  create: Prisma.XOR<Prisma.TableMetaCreateWithoutAgentsInput, Prisma.TableMetaUncheckedCreateWithoutAgentsInput>
+  where?: Prisma.TableMetaWhereInput
+}
+
+export type TableMetaUpdateToOneWithWhereWithoutAgentsInput = {
+  where?: Prisma.TableMetaWhereInput
+  data: Prisma.XOR<Prisma.TableMetaUpdateWithoutAgentsInput, Prisma.TableMetaUncheckedUpdateWithoutAgentsInput>
+}
+
+export type TableMetaUpdateWithoutAgentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  base?: Prisma.BaseUpdateOneRequiredWithoutTablesNestedInput
+}
+
+export type TableMetaUncheckedUpdateWithoutAgentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  baseId?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type TableMetaCreateManyBaseInput = {
   id?: string
   userId: string
@@ -449,6 +529,7 @@ export type TableMetaUpdateWithoutBaseInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  agents?: Prisma.TableAgentUpdateManyWithoutTableNestedInput
 }
 
 export type TableMetaUncheckedUpdateWithoutBaseInput = {
@@ -457,6 +538,7 @@ export type TableMetaUncheckedUpdateWithoutBaseInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  agents?: Prisma.TableAgentUncheckedUpdateManyWithoutTableNestedInput
 }
 
 export type TableMetaUncheckedUpdateManyWithoutBaseInput = {
@@ -468,6 +550,35 @@ export type TableMetaUncheckedUpdateManyWithoutBaseInput = {
 }
 
 
+/**
+ * Count Type TableMetaCountOutputType
+ */
+
+export type TableMetaCountOutputType = {
+  agents: number
+}
+
+export type TableMetaCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  agents?: boolean | TableMetaCountOutputTypeCountAgentsArgs
+}
+
+/**
+ * TableMetaCountOutputType without action
+ */
+export type TableMetaCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TableMetaCountOutputType
+   */
+  select?: Prisma.TableMetaCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * TableMetaCountOutputType without action
+ */
+export type TableMetaCountOutputTypeCountAgentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TableAgentWhereInput
+}
+
 
 export type TableMetaSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -477,6 +588,8 @@ export type TableMetaSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   createdAt?: boolean
   updatedAt?: boolean
   base?: boolean | Prisma.BaseDefaultArgs<ExtArgs>
+  agents?: boolean | Prisma.TableMeta$agentsArgs<ExtArgs>
+  _count?: boolean | Prisma.TableMetaCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["tableMeta"]>
 
 export type TableMetaSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -511,6 +624,8 @@ export type TableMetaSelectScalar = {
 export type TableMetaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "baseId" | "userId" | "name" | "createdAt" | "updatedAt", ExtArgs["result"]["tableMeta"]>
 export type TableMetaInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   base?: boolean | Prisma.BaseDefaultArgs<ExtArgs>
+  agents?: boolean | Prisma.TableMeta$agentsArgs<ExtArgs>
+  _count?: boolean | Prisma.TableMetaCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TableMetaIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   base?: boolean | Prisma.BaseDefaultArgs<ExtArgs>
@@ -523,6 +638,7 @@ export type $TableMetaPayload<ExtArgs extends runtime.Types.Extensions.InternalA
   name: "TableMeta"
   objects: {
     base: Prisma.$BasePayload<ExtArgs>
+    agents: Prisma.$TableAgentPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -926,6 +1042,7 @@ readonly fields: TableMetaFieldRefs;
 export interface Prisma__TableMetaClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   base<T extends Prisma.BaseDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BaseDefaultArgs<ExtArgs>>): Prisma.Prisma__BaseClient<runtime.Types.Result.GetResult<Prisma.$BasePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  agents<T extends Prisma.TableMeta$agentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TableMeta$agentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TableAgentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1354,6 +1471,30 @@ export type TableMetaDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Limit how many TableMetas to delete.
    */
   limit?: number
+}
+
+/**
+ * TableMeta.agents
+ */
+export type TableMeta$agentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TableAgent
+   */
+  select?: Prisma.TableAgentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TableAgent
+   */
+  omit?: Prisma.TableAgentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TableAgentInclude<ExtArgs> | null
+  where?: Prisma.TableAgentWhereInput
+  orderBy?: Prisma.TableAgentOrderByWithRelationInput | Prisma.TableAgentOrderByWithRelationInput[]
+  cursor?: Prisma.TableAgentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TableAgentScalarFieldEnum | Prisma.TableAgentScalarFieldEnum[]
 }
 
 /**

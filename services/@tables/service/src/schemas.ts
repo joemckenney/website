@@ -9,6 +9,7 @@ export const ColumnTypeSchema = Type.Union([
   Type.Literal("boolean"),
   Type.Literal("date"),
   Type.Literal("select"),
+  Type.Literal("relation"),
 ]);
 export type ColumnTypeType = Static<typeof ColumnTypeSchema>;
 
@@ -20,6 +21,7 @@ export const Column = Type.Object({
   name: Type.String({ description: "Column display name" }),
   dataType: ColumnTypeSchema,
   position: Type.Number({ description: "Column position (0-indexed)" }),
+  referencedTableId: Type.Optional(Type.String({ description: "Referenced table ID for relation columns" })),
 });
 export type ColumnType = Static<typeof Column>;
 
@@ -142,6 +144,7 @@ export type UpdateTableBodyType = Static<typeof UpdateTableBody>;
 export const AddColumnBody = Type.Object({
   name: Type.String({ description: "Column name", minLength: 1 }),
   dataType: ColumnTypeSchema,
+  referencedTableId: Type.Optional(Type.String({ description: "Referenced table ID (required for relation type)" })),
 });
 export type AddColumnBodyType = Static<typeof AddColumnBody>;
 
@@ -220,6 +223,34 @@ export const RowsQueryParams = Type.Object({
   ),
 });
 export type RowsQueryParamsType = Static<typeof RowsQueryParams>;
+
+// Agent schemas
+
+export const TableAgentSchema = Type.Object({
+  id: Type.String({ description: "Agent ID (UUID)" }),
+  tableId: Type.String({ description: "Table ID" }),
+  name: Type.String({ description: "Agent name" }),
+  enabled: Type.Boolean({ description: "Whether the agent is enabled" }),
+  triggerType: Type.String({ description: "Trigger type: on_row_insert or on_cell_update" }),
+  watchColumns: Type.Array(Type.String(), { description: "Column IDs that trigger the agent" }),
+  inputColumns: Type.Array(Type.String(), { description: "Column IDs the agent reads" }),
+  outputColumns: Type.Array(Type.String(), { description: "Column IDs the agent writes" }),
+  prompt: Type.String({ description: "Agent prompt/instructions" }),
+  createdAt: Type.String({ description: "Creation timestamp (ISO 8601)" }),
+  updatedAt: Type.String({ description: "Last update timestamp (ISO 8601)" }),
+});
+export type TableAgentSchemaType = Static<typeof TableAgentSchema>;
+
+export const ToggleAgentBody = Type.Object({
+  enabled: Type.Boolean({ description: "Whether the agent should be enabled" }),
+});
+export type ToggleAgentBodyType = Static<typeof ToggleAgentBody>;
+
+export const AgentIdParams = Type.Object({
+  tableId: Type.String({ description: "Table ID" }),
+  agentId: Type.String({ description: "Agent ID" }),
+});
+export type AgentIdParamsType = Static<typeof AgentIdParams>;
 
 // Response schemas
 

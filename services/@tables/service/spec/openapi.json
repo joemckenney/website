@@ -508,6 +508,12 @@
                               "enum": [
                                 "select"
                               ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "relation"
+                              ]
                             }
                           ]
                         }
@@ -597,12 +603,22 @@
                                 "enum": [
                                   "select"
                                 ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "relation"
+                                ]
                               }
                             ]
                           },
                           "position": {
                             "type": "number",
                             "description": "Column position (0-indexed)"
+                          },
+                          "referencedTableId": {
+                            "type": "string",
+                            "description": "Referenced table ID for relation columns"
                           }
                         }
                       },
@@ -796,12 +812,22 @@
                                 "enum": [
                                   "select"
                                 ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "relation"
+                                ]
                               }
                             ]
                           },
                           "position": {
                             "type": "number",
                             "description": "Column position (0-indexed)"
+                          },
+                          "referencedTableId": {
+                            "type": "string",
+                            "description": "Referenced table ID for relation columns"
                           }
                         }
                       },
@@ -956,12 +982,22 @@
                                 "enum": [
                                   "select"
                                 ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "relation"
+                                ]
                               }
                             ]
                           },
                           "position": {
                             "type": "number",
                             "description": "Column position (0-indexed)"
+                          },
+                          "referencedTableId": {
+                            "type": "string",
+                            "description": "Referenced table ID for relation columns"
                           }
                         }
                       },
@@ -1098,8 +1134,18 @@
                         "enum": [
                           "select"
                         ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "relation"
+                        ]
                       }
                     ]
+                  },
+                  "referencedTableId": {
+                    "type": "string",
+                    "description": "Referenced table ID (required for relation type)"
                   }
                 }
               }
@@ -1170,12 +1216,41 @@
                           "enum": [
                             "select"
                           ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "relation"
+                          ]
                         }
                       ]
                     },
                     "position": {
                       "type": "number",
                       "description": "Column position (0-indexed)"
+                    },
+                    "referencedTableId": {
+                      "type": "string",
+                      "description": "Referenced table ID for relation columns"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
                     }
                   }
                 }
@@ -1252,6 +1327,12 @@
                         "type": "string",
                         "enum": [
                           "select"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "relation"
                         ]
                       }
                     ]
@@ -1334,12 +1415,22 @@
                           "enum": [
                             "select"
                           ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "relation"
+                          ]
                         }
                       ]
                     },
                     "position": {
                       "type": "number",
                       "description": "Column position (0-indexed)"
+                    },
+                    "referencedTableId": {
+                      "type": "string",
+                      "description": "Referenced table ID for relation columns"
                     }
                   }
                 }
@@ -1514,12 +1605,22 @@
                             "enum": [
                               "select"
                             ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "relation"
+                            ]
                           }
                         ]
                       },
                       "position": {
                         "type": "number",
                         "description": "Column position (0-indexed)"
+                      },
+                      "referencedTableId": {
+                        "type": "string",
+                        "description": "Referenced table ID for relation columns"
                       }
                     }
                   }
@@ -2049,6 +2150,275 @@
                     "error": {
                       "type": "string",
                       "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tables/{tableId}/agents": {
+      "get": {
+        "operationId": "listTableAgents",
+        "tags": [
+          "agents"
+        ],
+        "description": "List all AI automation agents for a table",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "tableId",
+            "required": true,
+            "description": "Table ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "tableId",
+                      "name",
+                      "enabled",
+                      "triggerType",
+                      "watchColumns",
+                      "inputColumns",
+                      "outputColumns",
+                      "prompt",
+                      "createdAt",
+                      "updatedAt"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "Agent ID (UUID)"
+                      },
+                      "tableId": {
+                        "type": "string",
+                        "description": "Table ID"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Agent name"
+                      },
+                      "enabled": {
+                        "type": "boolean",
+                        "description": "Whether the agent is enabled"
+                      },
+                      "triggerType": {
+                        "type": "string",
+                        "description": "Trigger type: on_row_insert or on_cell_update"
+                      },
+                      "watchColumns": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Column IDs that trigger the agent"
+                      },
+                      "inputColumns": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Column IDs the agent reads"
+                      },
+                      "outputColumns": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Column IDs the agent writes"
+                      },
+                      "prompt": {
+                        "type": "string",
+                        "description": "Agent prompt/instructions"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "description": "Creation timestamp (ISO 8601)"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "description": "Last update timestamp (ISO 8601)"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tables/{tableId}/agents/{agentId}/toggle": {
+      "patch": {
+        "operationId": "toggleAgent",
+        "tags": [
+          "agents"
+        ],
+        "description": "Enable or disable an AI automation agent",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "enabled"
+                ],
+                "properties": {
+                  "enabled": {
+                    "type": "boolean",
+                    "description": "Whether the agent should be enabled"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "tableId",
+            "required": true,
+            "description": "Table ID"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "agentId",
+            "required": true,
+            "description": "Agent ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "tableId",
+                    "name",
+                    "enabled",
+                    "triggerType",
+                    "watchColumns",
+                    "inputColumns",
+                    "outputColumns",
+                    "prompt",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Agent ID (UUID)"
+                    },
+                    "tableId": {
+                      "type": "string",
+                      "description": "Table ID"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Agent name"
+                    },
+                    "enabled": {
+                      "type": "boolean",
+                      "description": "Whether the agent is enabled"
+                    },
+                    "triggerType": {
+                      "type": "string",
+                      "description": "Trigger type: on_row_insert or on_cell_update"
+                    },
+                    "watchColumns": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Column IDs that trigger the agent"
+                    },
+                    "inputColumns": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Column IDs the agent reads"
+                    },
+                    "outputColumns": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Column IDs the agent writes"
+                    },
+                    "prompt": {
+                      "type": "string",
+                      "description": "Agent prompt/instructions"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation timestamp (ISO 8601)"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update timestamp (ISO 8601)"
                     }
                   }
                 }

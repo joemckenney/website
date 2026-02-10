@@ -21,16 +21,36 @@ model Base {
 
 /// Metadata for user-created tables
 model TableMeta {
-  id        String   @id @default(uuid())
+  id        String       @id @default(uuid())
   baseId    String
-  base      Base     @relation(fields: [baseId], references: [id], onDelete: Cascade)
+  base      Base         @relation(fields: [baseId], references: [id], onDelete: Cascade)
   userId    String
   name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  agents    TableAgent[]
 
   @@index([userId])
   @@index([baseId])
+}
+
+/// AI agent automation for a table
+model TableAgent {
+  id            String    @id @default(uuid())
+  tableId       String
+  table         TableMeta @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  name          String
+  enabled       Boolean   @default(true)
+  triggerType   String    // "on_row_insert" | "on_cell_update"
+  watchColumns  String[]  @default([])
+  inputColumns  String[]
+  outputColumns String[]
+  prompt        String    @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([tableId])
+  @@index([tableId, enabled])
 }
 
 /// Write-ahead log for table mutations (source of truth for recovery)

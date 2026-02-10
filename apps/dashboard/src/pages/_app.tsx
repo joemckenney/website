@@ -1,7 +1,8 @@
 import { gateway } from "@gateway/sdk";
 import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
-import { Sidebar } from "../components/sidebar";
+import { TopNav } from "../components/top-nav";
+import { BaseProvider, useBaseContext } from "../contexts/base-context";
 import {
   logout as authLogout,
   clearTokens,
@@ -14,10 +15,10 @@ interface UserInfo {
   email: string;
 }
 
-export default function RootLayout() {
+function RootLayoutInner() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { baseName } = useBaseContext();
   const [user, setUser] = useState<UserInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -25,7 +26,6 @@ export default function RootLayout() {
 
   useEffect(() => {
     async function fetchUser() {
-      // Skip auth check on login page
       if (isLoginPage) {
         setIsLoading(false);
         return;
@@ -86,24 +86,28 @@ export default function RootLayout() {
     );
   }
 
-  // Login page has no sidebar
   if (isLoginPage) {
     return <Outlet />;
   }
 
   return (
     <div className={styles.container}>
-      <Sidebar
-        isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
+      <TopNav
         userEmail={user?.email}
         onLogout={handleLogout}
+        baseName={baseName}
       />
-      <main
-        className={`${styles.main} ${sidebarOpen ? styles.mainExpanded : ""}`}
-      >
+      <main className={styles.main}>
         <Outlet />
       </main>
     </div>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <BaseProvider>
+      <RootLayoutInner />
+    </BaseProvider>
   );
 }

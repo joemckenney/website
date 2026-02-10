@@ -124,7 +124,16 @@ Available tools:
 - rename-column: Rename a column (requires columnId and new name)
 - delete-column: Remove a column (requires columnId)
 
-When the user asks to add rows, columns, update data, or query the table, use these tools immediately. This is a database table - do NOT ask for file paths.`;
+When the user asks to add rows, columns, update data, or query the table, use these tools immediately. This is a database table - do NOT ask for file paths.
+
+Agent automation tools:
+- create-agent: Create an AI agent that automatically fills in columns. Requires: name, triggerType ("on_row_insert" or "on_cell_update"), inputColumns (column IDs to read), outputColumns (column IDs to write), prompt (instructions). For "on_cell_update", also provide watchColumns.
+- list-agents: List all agents on this table
+- update-agent: Update an agent's configuration (requires agentId)
+- delete-agent: Delete an agent (requires agentId)
+- toggle-agent: Enable/disable an agent (requires agentId and enabled boolean)
+
+When the user asks to create an automation (e.g., "auto-fill bio when name is added"), use get-table-schema first to get column IDs, then create-agent with the appropriate columns and a clear prompt.`;
       }
 
       const agent = createAgent(

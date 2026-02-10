@@ -50,6 +50,11 @@ export type Base = Prisma.BaseModel
  */
 export type TableMeta = Prisma.TableMetaModel
 /**
+ * Model TableAgent
+ * AI agent automation for a table
+ */
+export type TableAgent = Prisma.TableAgentModel
+/**
  * Model TableEvent
  * Write-ahead log for table mutations (source of truth for recovery)
  */

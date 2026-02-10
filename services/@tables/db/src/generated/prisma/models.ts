@@ -10,6 +10,7 @@
  */
 export type * from './models/Base.js'
 export type * from './models/TableMeta.js'
+export type * from './models/TableAgent.js'
 export type * from './models/TableEvent.js'
 export type * from './models/TableCheckpoint.js'
 export type * from './models/MaterializedColumn.js'

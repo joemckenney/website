@@ -386,6 +386,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   Base: 'Base',
   TableMeta: 'TableMeta',
+  TableAgent: 'TableAgent',
   TableEvent: 'TableEvent',
   TableCheckpoint: 'TableCheckpoint',
   MaterializedColumn: 'MaterializedColumn',
@@ -405,7 +406,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "base" | "tableMeta" | "tableEvent" | "tableCheckpoint" | "materializedColumn" | "materializedRow"
+    modelProps: "base" | "tableMeta" | "tableAgent" | "tableEvent" | "tableCheckpoint" | "materializedColumn" | "materializedRow"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -554,6 +555,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.TableMetaCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.TableMetaCountAggregateOutputType> | number
+        }
+      }
+    }
+    TableAgent: {
+      payload: Prisma.$TableAgentPayload<ExtArgs>
+      fields: Prisma.TableAgentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TableAgentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TableAgentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TableAgentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TableAgentPayload>
+        }
+        findFirst: {
+          args: Prisma.TableAgentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TableAgentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TableAgentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TableAgentPayload>
+        }
+        findMany: {
+          args: Prisma.TableAgentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TableAgentPayload>[]
+        }
+        create: {
+          args: Prisma.TableAgentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TableAgentPayload>
+        }
+        createMany: {
+          args: Prisma.TableAgentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TableAgentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TableAgentPayload>[]
+        }
+        delete: {
+          args: Prisma.TableAgentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TableAgentPayload>
+        }
+        update: {
+          args: Prisma.TableAgentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TableAgentPayload>
+        }
+        deleteMany: {
+          args: Prisma.TableAgentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TableAgentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TableAgentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TableAgentPayload>[]
+        }
+        upsert: {
+          args: Prisma.TableAgentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TableAgentPayload>
+        }
+        aggregate: {
+          args: Prisma.TableAgentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTableAgent>
+        }
+        groupBy: {
+          args: Prisma.TableAgentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TableAgentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TableAgentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TableAgentCountAggregateOutputType> | number
         }
       }
     }
@@ -915,6 +990,23 @@ export const TableMetaScalarFieldEnum = {
 export type TableMetaScalarFieldEnum = (typeof TableMetaScalarFieldEnum)[keyof typeof TableMetaScalarFieldEnum]
 
 
+export const TableAgentScalarFieldEnum = {
+  id: 'id',
+  tableId: 'tableId',
+  name: 'name',
+  enabled: 'enabled',
+  triggerType: 'triggerType',
+  watchColumns: 'watchColumns',
+  inputColumns: 'inputColumns',
+  outputColumns: 'outputColumns',
+  prompt: 'prompt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TableAgentScalarFieldEnum = (typeof TableAgentScalarFieldEnum)[keyof typeof TableAgentScalarFieldEnum]
+
+
 export const TableEventScalarFieldEnum = {
   id: 'id',
   tableId: 'tableId',
@@ -1037,6 +1129,13 @@ export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
 
 
 /**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
  * Reference to a field of type 'BigInt'
  */
 export type BigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt'>
@@ -1061,13 +1160,6 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
-    
-
-
-/**
- * Reference to a field of type 'Boolean'
- */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -1195,6 +1287,7 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   base?: Prisma.BaseOmit
   tableMeta?: Prisma.TableMetaOmit
+  tableAgent?: Prisma.TableAgentOmit
   tableEvent?: Prisma.TableEventOmit
   tableCheckpoint?: Prisma.TableCheckpointOmit
   materializedColumn?: Prisma.MaterializedColumnOmit

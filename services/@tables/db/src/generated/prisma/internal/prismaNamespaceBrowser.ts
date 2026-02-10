@@ -53,6 +53,7 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   Base: 'Base',
   TableMeta: 'TableMeta',
+  TableAgent: 'TableAgent',
   TableEvent: 'TableEvent',
   TableCheckpoint: 'TableCheckpoint',
   MaterializedColumn: 'MaterializedColumn',
@@ -96,6 +97,23 @@ export const TableMetaScalarFieldEnum = {
 } as const
 
 export type TableMetaScalarFieldEnum = (typeof TableMetaScalarFieldEnum)[keyof typeof TableMetaScalarFieldEnum]
+
+
+export const TableAgentScalarFieldEnum = {
+  id: 'id',
+  tableId: 'tableId',
+  name: 'name',
+  enabled: 'enabled',
+  triggerType: 'triggerType',
+  watchColumns: 'watchColumns',
+  inputColumns: 'inputColumns',
+  outputColumns: 'outputColumns',
+  prompt: 'prompt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TableAgentScalarFieldEnum = (typeof TableAgentScalarFieldEnum)[keyof typeof TableAgentScalarFieldEnum]
 
 
 export const TableEventScalarFieldEnum = {

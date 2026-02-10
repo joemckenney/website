@@ -73,6 +73,9 @@ export async function registerTableRoutes(
         name,
       });
 
+      // Set baseId on the in-memory table state
+      memoryStore.setTableBaseId(tableId, baseId);
+
       // Add initial columns if provided
       const columnMetas = [];
       for (let i = 0; i < columns.length; i++) {
@@ -182,6 +185,7 @@ export async function registerTableRoutes(
               name: col.name,
               dataType: col.dataType,
               position: col.position,
+              ...(col.referencedTableId ? { referencedTableId: col.referencedTableId } : {}),
             }))
         : [];
 
@@ -246,6 +250,7 @@ export async function registerTableRoutes(
               name: col.name,
               dataType: col.dataType,
               position: col.position,
+              ...(col.referencedTableId ? { referencedTableId: col.referencedTableId } : {}),
             }))
         : [];
 

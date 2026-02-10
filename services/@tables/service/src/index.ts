@@ -7,8 +7,10 @@ import websocket from "@fastify/websocket";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
+import { agentRunner } from "./agents/runner.js";
 import { config } from "./config.js";
 import { registerMcpRoutes } from "./mcp/transport.js";
+import { registerAgentRoutes } from "./routes/agents.js";
 import { registerBaseRoutes } from "./routes/bases.js";
 import { registerColumnRoutes } from "./routes/columns.js";
 import { registerRowRoutes } from "./routes/rows.js";
@@ -99,6 +101,7 @@ await registerBaseRoutes(fastify);
 await registerTableRoutes(fastify);
 await registerColumnRoutes(fastify);
 await registerRowRoutes(fastify);
+await registerAgentRoutes(fastify);
 await registerMcpRoutes(fastify);
 await registerWebSocketRoutes(fastify);
 
@@ -110,6 +113,9 @@ const start = async () => {
   try {
     // Initialize memory store from WAL
     await memoryStore.initialize();
+
+    // Start agent runner (subscribes to tables with enabled agents)
+    await agentRunner.start();
 
     // Start PostgreSQL materializer background worker
     materializer.start();
@@ -137,6 +143,7 @@ const start = async () => {
 // Graceful shutdown
 process.on("SIGTERM", async () => {
   console.log("Received SIGTERM, shutting down...");
+  agentRunner.stop();
   materializer.stop();
   await fastify.close();
   process.exit(0);
@@ -144,6 +151,7 @@ process.on("SIGTERM", async () => {
 
 process.on("SIGINT", async () => {
   console.log("Received SIGINT, shutting down...");
+  agentRunner.stop();
   materializer.stop();
   await fastify.close();
   process.exit(0);

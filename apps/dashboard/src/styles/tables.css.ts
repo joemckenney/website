@@ -1,78 +1,77 @@
 import { vars } from "@crow/theme";
 import { keyframes, style } from "@vanilla-extract/css";
 
-// Page header
+// Compact header for base/table views
 export const header = style({
-  padding: `${vars.space[4]} ${vars.space[6]}`,
+  padding: "6px 12px",
   borderBottom: `1px solid ${vars.colors.stone300}`,
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
+  background: "white",
+  height: "32px",
 });
 
 export const title = style({
-  fontFamily: vars.fonts.display,
-  fontSize: vars.fontSizes.base.fontSize,
-  fontWeight: "400",
-  letterSpacing: vars.letterSpacing.wider,
-  textTransform: "uppercase",
+  fontSize: "12px",
+  fontWeight: "500",
+  letterSpacing: "0.3px",
 });
 
 export const newButton = style({
-  fontSize: vars.fontSizes.sm.fontSize,
+  fontSize: "11px",
   color: vars.colors.stone50,
-  background: vars.colors.stone900,
-  padding: `${vars.space[2]} ${vars.space[4]}`,
+  background: vars.colors.stone800,
+  padding: "4px 10px",
   textDecoration: "none",
-  letterSpacing: vars.letterSpacing.wide,
-  transition: "opacity 0.15s ease",
   border: "none",
   cursor: "pointer",
   fontFamily: vars.fonts.mono,
+  borderRadius: "3px",
   ":hover": {
-    opacity: 0.85,
+    background: vars.colors.stone700,
   },
 });
 
 export const container = style({
   flex: 1,
   overflowY: "auto",
-  padding: vars.space[6],
+  padding: "12px",
 });
 
 export const loading = style({
   textAlign: "center",
-  color: vars.colors.stone600,
-  fontSize: vars.fontSizes.sm.fontSize,
-  padding: vars.space[8],
+  color: vars.colors.stone500,
+  fontSize: "12px",
+  padding: "24px",
 });
 
 export const error = style({
   textAlign: "center",
-  color: "#991b1b",
-  fontSize: vars.fontSizes.sm.fontSize,
-  padding: vars.space[8],
+  color: "#dc2626",
+  fontSize: "12px",
+  padding: "24px",
 });
 
 export const empty = style({
   textAlign: "center",
-  color: vars.colors.stone600,
-  fontSize: vars.fontSizes.sm.fontSize,
-  padding: vars.space[8],
+  color: vars.colors.stone500,
+  fontSize: "12px",
+  padding: "24px",
 });
 
 export const emptyLink = style({
   display: "inline-block",
-  marginTop: vars.space[4],
-  color: vars.colors.stone900,
+  marginTop: "8px",
+  color: vars.colors.stone700,
   textDecoration: "underline",
   background: "none",
   border: "none",
   cursor: "pointer",
   fontFamily: vars.fonts.mono,
-  fontSize: vars.fontSizes.sm.fontSize,
+  fontSize: "12px",
   ":hover": {
-    textDecoration: "none",
+    color: vars.colors.stone900,
   },
 });
 
@@ -80,7 +79,7 @@ export const list = style({
   listStyle: "none",
   padding: 0,
   margin: 0,
-  maxWidth: "680px",
+  maxWidth: "600px",
   marginLeft: "auto",
   marginRight: "auto",
 });
@@ -89,64 +88,63 @@ export const item = style({
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  padding: `${vars.space[4]} ${vars.space[5]}`,
-  borderBottom: `1px solid ${vars.colors.stone300}`,
+  padding: "8px 12px",
+  borderBottom: `1px solid ${vars.colors.stone200}`,
   textDecoration: "none",
   color: vars.colors.stone900,
-  transition: "background 0.15s ease",
+  fontSize: "12px",
   ":hover": {
     background: vars.colors.stone100,
   },
 });
 
 export const itemTitle = style({
-  fontSize: vars.fontSizes.base.fontSize,
   fontWeight: "400",
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
   flex: 1,
-  marginRight: vars.space[4],
+  marginRight: "12px",
 });
 
 export const itemDate = style({
-  fontSize: vars.fontSizes.xs.fontSize,
-  color: vars.colors.stone600,
-  letterSpacing: vars.letterSpacing.wide,
+  fontSize: "11px",
+  color: vars.colors.stone500,
   flexShrink: 0,
 });
 
-// Table Grid
+// Toolbar - very compact
+export const toolbar = style({
+  padding: "4px 8px",
+  borderBottom: `1px solid ${vars.colors.stone300}`,
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  background: vars.colors.stone50,
+  height: "28px",
+});
+
+export const toolbarButton = style({
+  fontSize: "11px",
+  color: vars.colors.stone600,
+  background: "transparent",
+  padding: "3px 8px",
+  border: `1px solid ${vars.colors.stone300}`,
+  cursor: "pointer",
+  fontFamily: vars.fonts.mono,
+  borderRadius: "3px",
+  ":hover": {
+    background: vars.colors.stone100,
+    borderColor: vars.colors.stone400,
+  },
+});
+
+// Table Grid - Excel-like tight spacing
 export const tableContainer = style({
   flex: 1,
   display: "flex",
   flexDirection: "column",
   overflow: "hidden",
-});
-
-export const toolbar = style({
-  padding: `${vars.space[3]} ${vars.space[4]}`,
-  borderBottom: `1px solid ${vars.colors.stone300}`,
-  display: "flex",
-  alignItems: "center",
-  gap: vars.space[3],
-  background: vars.colors.stone50,
-});
-
-export const toolbarButton = style({
-  fontSize: vars.fontSizes.xs.fontSize,
-  color: vars.colors.stone700,
-  background: "transparent",
-  padding: `${vars.space[1]} ${vars.space[3]}`,
-  border: `1px solid ${vars.colors.stone300}`,
-  cursor: "pointer",
-  fontFamily: vars.fonts.mono,
-  letterSpacing: vars.letterSpacing.wide,
-  transition: "all 0.15s ease",
-  ":hover": {
-    background: vars.colors.stone100,
-    borderColor: vars.colors.stone400,
-  },
 });
 
 export const gridWrapper = style({
@@ -159,6 +157,7 @@ export const grid = style({
   width: "100%",
   borderCollapse: "collapse",
   minWidth: "fit-content",
+  fontSize: "12px",
 });
 
 export const gridHeader = style({
@@ -175,18 +174,17 @@ export const gridHeaderRow = style({
 
 export const gridHeaderCell = style({
   display: "table-cell",
-  padding: `${vars.space[2]} ${vars.space[3]}`,
-  borderBottom: `2px solid ${vars.colors.stone300}`,
+  padding: "4px 8px",
+  borderBottom: `1px solid ${vars.colors.stone300}`,
   borderRight: `1px solid ${vars.colors.stone200}`,
-  fontSize: vars.fontSizes.xs.fontSize,
+  fontSize: "11px",
   fontWeight: "500",
-  letterSpacing: vars.letterSpacing.wide,
-  textTransform: "uppercase",
-  color: vars.colors.stone700,
+  color: vars.colors.stone600,
   textAlign: "left",
-  minWidth: "120px",
+  minWidth: "100px",
   userSelect: "none",
   whiteSpace: "nowrap",
+  height: "24px",
   selectors: {
     "&:last-child": {
       borderRight: "none",
@@ -200,20 +198,20 @@ export const gridBody = style({
 
 export const gridRow = style({
   display: "table-row",
-  transition: "background 0.1s ease",
   ":hover": {
-    background: vars.colors.stone100,
+    background: vars.colors.stone50,
   },
 });
 
 export const gridCell = style({
   display: "table-cell",
-  padding: `${vars.space[2]} ${vars.space[3]}`,
+  padding: "2px 8px",
   borderBottom: `1px solid ${vars.colors.stone200}`,
   borderRight: `1px solid ${vars.colors.stone200}`,
-  fontSize: vars.fontSizes.sm.fontSize,
+  fontSize: "12px",
   color: vars.colors.stone900,
-  minWidth: "120px",
+  minWidth: "100px",
+  height: "24px",
   verticalAlign: "middle",
   selectors: {
     "&:last-child": {
@@ -224,30 +222,29 @@ export const gridCell = style({
 
 export const cellEditing = style({
   padding: 0,
-  background: vars.colors.stone50,
+  background: "white",
 });
 
 export const cellInput = style({
   width: "100%",
   height: "100%",
-  padding: `${vars.space[2]} ${vars.space[3]}`,
-  border: `2px solid ${vars.colors.stone900}`,
+  padding: "2px 8px",
+  border: `2px solid ${vars.colors.stone600}`,
   outline: "none",
-  fontSize: vars.fontSizes.sm.fontSize,
+  fontSize: "12px",
   fontFamily: vars.fonts.mono,
   background: "white",
 });
 
 export const cellCheckbox = style({
-  width: "16px",
-  height: "16px",
+  width: "14px",
+  height: "14px",
   cursor: "pointer",
 });
 
 export const addRowButton = style({
   display: "table-row",
   cursor: "pointer",
-  transition: "background 0.1s ease",
   ":hover": {
     background: vars.colors.stone100,
   },
@@ -255,21 +252,21 @@ export const addRowButton = style({
 
 export const addRowCell = style({
   display: "table-cell",
-  padding: `${vars.space[2]} ${vars.space[3]}`,
+  padding: "2px 8px",
   borderBottom: `1px solid ${vars.colors.stone200}`,
-  fontSize: vars.fontSizes.sm.fontSize,
-  color: vars.colors.stone500,
-  fontStyle: "italic",
+  fontSize: "11px",
+  color: vars.colors.stone400,
+  height: "24px",
 });
 
-// Modal
+// Modal - compact
 export const modalOverlay = style({
   position: "fixed",
   top: 0,
   left: 0,
   right: 0,
   bottom: 0,
-  background: "rgba(0, 0, 0, 0.5)",
+  background: "rgba(0, 0, 0, 0.4)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -278,84 +275,82 @@ export const modalOverlay = style({
 
 export const modal = style({
   background: "white",
-  padding: vars.space[6],
-  maxWidth: "400px",
+  padding: "16px",
+  maxWidth: "320px",
   width: "90%",
+  borderRadius: "4px",
   boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
 });
 
 export const modalTitle = style({
-  fontFamily: vars.fonts.display,
-  fontSize: vars.fontSizes.lg.fontSize,
-  fontWeight: "400",
-  marginBottom: vars.space[4],
-  letterSpacing: vars.letterSpacing.wide,
+  fontSize: "13px",
+  fontWeight: "500",
+  marginBottom: "12px",
 });
 
 export const formField = style({
-  marginBottom: vars.space[4],
+  marginBottom: "12px",
 });
 
 export const formLabel = style({
   display: "block",
-  fontSize: vars.fontSizes.xs.fontSize,
+  fontSize: "11px",
   fontWeight: "500",
-  letterSpacing: vars.letterSpacing.wide,
-  textTransform: "uppercase",
-  color: vars.colors.stone700,
-  marginBottom: vars.space[2],
+  color: vars.colors.stone600,
+  marginBottom: "4px",
 });
 
 export const formInput = style({
   width: "100%",
-  padding: vars.space[3],
+  padding: "6px 8px",
   border: `1px solid ${vars.colors.stone300}`,
-  fontSize: vars.fontSizes.sm.fontSize,
+  fontSize: "12px",
   fontFamily: vars.fonts.mono,
+  borderRadius: "3px",
   ":focus": {
     outline: "none",
-    borderColor: vars.colors.stone900,
+    borderColor: vars.colors.stone500,
   },
 });
 
 export const formSelect = style({
   width: "100%",
-  padding: vars.space[3],
+  padding: "6px 8px",
   border: `1px solid ${vars.colors.stone300}`,
-  fontSize: vars.fontSizes.sm.fontSize,
+  fontSize: "12px",
   fontFamily: vars.fonts.mono,
   background: "white",
   cursor: "pointer",
+  borderRadius: "3px",
   ":focus": {
     outline: "none",
-    borderColor: vars.colors.stone900,
+    borderColor: vars.colors.stone500,
   },
 });
 
 export const modalActions = style({
   display: "flex",
-  gap: vars.space[3],
+  gap: "8px",
   justifyContent: "flex-end",
-  marginTop: vars.space[6],
+  marginTop: "16px",
 });
 
 export const modalButton = style({
-  padding: `${vars.space[2]} ${vars.space[4]}`,
-  fontSize: vars.fontSizes.sm.fontSize,
+  padding: "6px 12px",
+  fontSize: "11px",
   fontFamily: vars.fonts.mono,
-  letterSpacing: vars.letterSpacing.wide,
   cursor: "pointer",
-  transition: "all 0.15s ease",
+  borderRadius: "3px",
 });
 
 export const modalButtonPrimary = style([
   modalButton,
   {
-    background: vars.colors.stone900,
+    background: vars.colors.stone800,
     color: vars.colors.stone50,
     border: "none",
     ":hover": {
-      opacity: 0.85,
+      background: vars.colors.stone700,
     },
   },
 ]);
@@ -363,7 +358,7 @@ export const modalButtonPrimary = style([
 export const modalButtonSecondary = style([
   modalButton,
   {
-    background: "transparent",
+    background: "white",
     color: vars.colors.stone700,
     border: `1px solid ${vars.colors.stone300}`,
     ":hover": {
@@ -372,7 +367,7 @@ export const modalButtonSecondary = style([
   },
 ]);
 
-// Split pane layout for table + chat
+// Split pane - no longer needed, but keep for compatibility
 export const splitPane = style({
   flex: 1,
   display: "flex",
@@ -387,44 +382,116 @@ export const tablePane = style({
   minWidth: 0,
 });
 
-// Chat Panel
+// Tab bar for tables - compact
+export const tabBar = style({
+  display: "flex",
+  alignItems: "center",
+  gap: "2px",
+  padding: "0 8px",
+  borderBottom: `1px solid ${vars.colors.stone300}`,
+  background: vars.colors.stone100,
+  height: "28px",
+  overflowX: "auto",
+  flexShrink: 0,
+});
+
+export const tab = style({
+  display: "flex",
+  alignItems: "center",
+  padding: "0 12px",
+  height: "28px",
+  fontSize: "11px",
+  fontFamily: vars.fonts.mono,
+  color: vars.colors.stone600,
+  background: "transparent",
+  border: "none",
+  borderBottom: "2px solid transparent",
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+  marginBottom: "-1px",
+  ":hover": {
+    color: vars.colors.stone900,
+    background: vars.colors.stone200,
+  },
+  selectors: {
+    '&[data-active="true"]': {
+      color: vars.colors.stone900,
+      background: "white",
+      borderBottomColor: "white",
+    },
+  },
+});
+
+export const addTabButton = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "24px",
+  height: "24px",
+  fontSize: "14px",
+  color: vars.colors.stone400,
+  background: "transparent",
+  border: "none",
+  cursor: "pointer",
+  borderRadius: "3px",
+  ":hover": {
+    color: vars.colors.stone700,
+    background: vars.colors.stone200,
+  },
+});
+
+export const baseNameInput = style({
+  fontSize: "12px",
+  fontWeight: "500",
+  border: "none",
+  background: "transparent",
+  padding: "2px 4px",
+  margin: "-2px -4px",
+  outline: "none",
+  width: "auto",
+  minWidth: "80px",
+  ":focus": {
+    background: vars.colors.stone100,
+  },
+});
+
+// Chat Panel - compact
 export const chatPanel = style({
-  width: "360px",
   display: "flex",
   flexDirection: "column",
-  borderLeft: `1px solid ${vars.colors.stone300}`,
-  background: vars.colors.stone50,
+  background: "white",
+  height: "100%",
 });
 
 export const chatPanelHeader = style({
-  padding: `${vars.space[3]} ${vars.space[4]}`,
-  borderBottom: `1px solid ${vars.colors.stone300}`,
+  padding: "8px 12px",
+  borderBottom: `1px solid ${vars.colors.stone200}`,
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  background: "white",
+  height: "32px",
 });
 
 export const chatPanelTitle = style({
-  fontFamily: vars.fonts.display,
-  fontSize: vars.fontSizes.sm.fontSize,
+  fontSize: "11px",
   fontWeight: "500",
-  letterSpacing: vars.letterSpacing.wide,
+  color: vars.colors.stone600,
   textTransform: "uppercase",
+  letterSpacing: "0.5px",
 });
 
 export const chatPanelHeaderRight = style({
   display: "flex",
   alignItems: "center",
-  gap: vars.space[3],
+  gap: "8px",
 });
 
 export const chatPanelStatus = style({
   display: "flex",
   alignItems: "center",
-  gap: vars.space[1],
-  fontSize: vars.fontSizes.xs.fontSize,
-  color: vars.colors.stone600,
+  gap: "4px",
+  fontSize: "10px",
+  color: vars.colors.stone500,
 });
 
 export const chatPanelStatusDot = style({
@@ -434,133 +501,120 @@ export const chatPanelStatusDot = style({
   background: vars.colors.stone400,
   selectors: {
     '&[data-status="active"]': {
-      background: vars.colors.sage500,
+      background: "#22c55e",
     },
   },
 });
 
 export const chatPanelCloseBtn = style({
-  width: "24px",
-  height: "24px",
+  width: "20px",
+  height: "20px",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   background: "transparent",
   border: "none",
   cursor: "pointer",
-  color: vars.colors.stone600,
-  borderRadius: "4px",
-  transition: "all 0.15s ease",
+  color: vars.colors.stone400,
+  borderRadius: "3px",
   ":hover": {
-    background: vars.colors.stone200,
-    color: vars.colors.stone900,
+    background: vars.colors.stone100,
+    color: vars.colors.stone700,
   },
 });
 
 export const chatPanelError = style({
-  padding: `${vars.space[2]} ${vars.space[4]}`,
-  background: "#fee2e2",
-  color: "#991b1b",
-  fontSize: vars.fontSizes.xs.fontSize,
+  padding: "6px 12px",
+  background: "#fef2f2",
+  color: "#dc2626",
+  fontSize: "11px",
   borderBottom: "1px solid #fecaca",
 });
 
 export const chatPanelMessages = style({
   flex: 1,
   overflowY: "auto",
-  padding: vars.space[4],
-  "::-webkit-scrollbar": {
-    width: "4px",
-  },
-  "::-webkit-scrollbar-track": {
-    background: "transparent",
-  },
-  "::-webkit-scrollbar-thumb": {
-    background: vars.colors.stone300,
-  },
+  padding: "12px",
 });
 
 export const chatPanelLoading = style({
   textAlign: "center",
-  color: vars.colors.stone600,
-  fontSize: vars.fontSizes.sm.fontSize,
-  padding: vars.space[4],
+  color: vars.colors.stone500,
+  fontSize: "12px",
+  padding: "12px",
 });
 
 export const chatPanelMessageUser = style({
-  marginBottom: vars.space[3],
+  marginBottom: "12px",
 });
 
 export const chatPanelMessageAssistant = style({
-  marginBottom: vars.space[3],
+  marginBottom: "12px",
 });
 
 export const chatPanelMessageRole = style({
   fontSize: "9px",
-  letterSpacing: vars.letterSpacing.widest,
+  letterSpacing: "0.5px",
   textTransform: "uppercase",
-  color: vars.colors.stone600,
-  marginBottom: vars.space[1],
+  color: vars.colors.stone500,
+  marginBottom: "2px",
 });
 
 export const chatPanelMessageContent = style({
-  fontSize: vars.fontSizes.sm.fontSize,
-  lineHeight: "1.5",
+  fontSize: "12px",
+  lineHeight: "1.4",
   color: vars.colors.stone900,
   wordBreak: "break-word",
 });
 
 export const chatPanelToolCalls = style({
-  marginTop: vars.space[2],
+  marginTop: "6px",
   display: "flex",
   flexDirection: "column",
-  gap: vars.space[1],
+  gap: "4px",
 });
 
 export const chatPanelToolCall = style({
   display: "inline-flex",
   alignItems: "center",
-  gap: vars.space[2],
-  padding: `${vars.space[1]} ${vars.space[2]}`,
-  background: vars.colors.stone200,
-  borderRadius: "4px",
-  fontSize: vars.fontSizes.xs.fontSize,
+  gap: "6px",
+  padding: "3px 6px",
+  background: vars.colors.stone100,
+  borderRadius: "3px",
+  fontSize: "10px",
 });
 
 export const chatPanelToolCallName = style({
   fontFamily: vars.fonts.mono,
-  color: vars.colors.stone700,
+  color: vars.colors.stone600,
 });
 
 export const chatPanelToolCallStatus = style({
-  color: vars.colors.sage600,
-  fontSize: "10px",
+  color: "#22c55e",
+  fontSize: "9px",
   textTransform: "uppercase",
-  letterSpacing: vars.letterSpacing.wide,
 });
 
 const pulse = keyframes({
   "0%, 100%": {
     opacity: 0.3,
-    transform: "scale(1)",
   },
   "50%": {
     opacity: 1,
-    transform: "scale(1.2)",
   },
 });
 
 export const chatPanelThinking = style({
   display: "flex",
   alignItems: "center",
-  gap: "4px",
-  padding: vars.space[2],
+  gap: "3px",
+  padding: "8px",
 });
 
 export const chatPanelThinkingDot = style({
   width: "4px",
   height: "4px",
-  background: vars.colors.stone600,
+  background: vars.colors.stone400,
   borderRadius: "50%",
   animation: `${pulse} 1.2s ease-in-out infinite`,
   selectors: {
@@ -574,48 +628,47 @@ export const chatPanelThinkingDot = style({
 });
 
 export const chatPanelInputArea = style({
-  padding: vars.space[3],
-  borderTop: `1px solid ${vars.colors.stone300}`,
-  background: "white",
+  padding: "8px",
+  borderTop: `1px solid ${vars.colors.stone200}`,
   display: "flex",
-  gap: vars.space[2],
+  gap: "6px",
 });
 
 export const chatPanelInput = style({
   flex: 1,
   fontFamily: vars.fonts.mono,
-  fontSize: vars.fontSizes.sm.fontSize,
-  padding: `${vars.space[2]} ${vars.space[3]}`,
+  fontSize: "12px",
+  padding: "6px 8px",
   border: `1px solid ${vars.colors.stone300}`,
-  background: vars.colors.stone50,
+  background: "white",
   color: vars.colors.stone900,
   resize: "none",
   outline: "none",
-  minHeight: "36px",
-  maxHeight: "100px",
-  transition: "border-color 0.15s ease",
+  minHeight: "32px",
+  maxHeight: "80px",
+  borderRadius: "3px",
   ":focus": {
-    borderColor: vars.colors.stone900,
+    borderColor: vars.colors.stone500,
   },
   "::placeholder": {
-    color: vars.colors.stone500,
+    color: vars.colors.stone400,
   },
 });
 
 export const chatPanelSendBtn = style({
-  width: "36px",
-  height: "36px",
-  background: vars.colors.stone900,
+  width: "32px",
+  height: "32px",
+  background: vars.colors.stone800,
   border: "none",
   cursor: "pointer",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   color: vars.colors.stone50,
-  transition: "opacity 0.15s ease",
+  borderRadius: "3px",
   flexShrink: 0,
   ":hover": {
-    opacity: 0.85,
+    background: vars.colors.stone700,
   },
   ":disabled": {
     opacity: 0.4,
@@ -623,106 +676,125 @@ export const chatPanelSendBtn = style({
   },
 });
 
-// Chat toggle button in toolbar
+// Agents dropdown
+export const agentsDropdownWrapper = style({
+  position: "relative",
+});
+
+export const agentsDropdown = style({
+  position: "absolute",
+  top: "100%",
+  left: 0,
+  marginTop: "4px",
+  background: "white",
+  border: `1px solid ${vars.colors.stone300}`,
+  borderRadius: "4px",
+  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+  minWidth: "260px",
+  zIndex: 100,
+  padding: "4px 0",
+});
+
+export const agentsDropdownItem = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  padding: "6px 12px",
+  fontSize: "11px",
+  fontFamily: vars.fonts.mono,
+  color: vars.colors.stone800,
+  ":hover": {
+    background: vars.colors.stone50,
+  },
+});
+
+export const agentsDropdownItemInfo = style({
+  display: "flex",
+  flexDirection: "column",
+  gap: "1px",
+  flex: 1,
+  minWidth: 0,
+});
+
+export const agentsDropdownItemName = style({
+  fontWeight: "500",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+});
+
+export const agentsDropdownItemTrigger = style({
+  fontSize: "10px",
+  color: vars.colors.stone500,
+});
+
+export const agentsDropdownToggle = style({
+  width: "28px",
+  height: "16px",
+  borderRadius: "8px",
+  border: "none",
+  cursor: "pointer",
+  flexShrink: 0,
+  marginLeft: "8px",
+  position: "relative",
+  transition: "background 0.15s",
+  selectors: {
+    '&[data-enabled="true"]': {
+      background: vars.colors.stone800,
+    },
+    '&[data-enabled="false"]': {
+      background: vars.colors.stone300,
+    },
+  },
+});
+
+export const agentsDropdownToggleKnob = style({
+  position: "absolute",
+  top: "2px",
+  width: "12px",
+  height: "12px",
+  borderRadius: "50%",
+  background: "white",
+  transition: "left 0.15s",
+  selectors: {
+    '[data-enabled="true"] > &': {
+      left: "14px",
+    },
+    '[data-enabled="false"] > &': {
+      left: "2px",
+    },
+  },
+});
+
+export const agentsDropdownEmpty = style({
+  padding: "12px",
+  fontSize: "11px",
+  color: vars.colors.stone500,
+  textAlign: "center",
+});
+
+// Chat toggle - for toolbar (may not be needed anymore)
 export const chatToggleBtn = style({
   display: "flex",
   alignItems: "center",
-  gap: vars.space[1],
-  fontSize: vars.fontSizes.xs.fontSize,
-  color: vars.colors.stone700,
+  gap: "4px",
+  fontSize: "11px",
+  color: vars.colors.stone600,
   background: "transparent",
-  padding: `${vars.space[1]} ${vars.space[3]}`,
+  padding: "3px 8px",
   border: `1px solid ${vars.colors.stone300}`,
   cursor: "pointer",
   fontFamily: vars.fonts.mono,
-  letterSpacing: vars.letterSpacing.wide,
-  transition: "all 0.15s ease",
+  borderRadius: "3px",
   marginLeft: "auto",
   ":hover": {
     background: vars.colors.stone100,
-    borderColor: vars.colors.stone400,
   },
   selectors: {
     '&[data-active="true"]': {
-      background: vars.colors.stone900,
+      background: vars.colors.stone800,
       color: vars.colors.stone50,
-      borderColor: vars.colors.stone900,
+      borderColor: vars.colors.stone800,
     },
-  },
-});
-
-// Tab bar for base detail view
-export const tabBar = style({
-  display: "flex",
-  alignItems: "center",
-  gap: vars.space[1],
-  padding: `0 ${vars.space[4]}`,
-  borderBottom: `1px solid ${vars.colors.stone300}`,
-  background: vars.colors.stone50,
-  overflowX: "auto",
-  flexShrink: 0,
-});
-
-export const tab = style({
-  display: "flex",
-  alignItems: "center",
-  gap: vars.space[2],
-  padding: `${vars.space[3]} ${vars.space[4]}`,
-  fontSize: vars.fontSizes.sm.fontSize,
-  fontFamily: vars.fonts.mono,
-  color: vars.colors.stone600,
-  background: "transparent",
-  border: "none",
-  borderBottom: "2px solid transparent",
-  cursor: "pointer",
-  whiteSpace: "nowrap",
-  transition: "all 0.15s ease",
-  ":hover": {
-    color: vars.colors.stone900,
-    background: vars.colors.stone100,
-  },
-  selectors: {
-    '&[data-active="true"]': {
-      color: vars.colors.stone900,
-      borderBottomColor: vars.colors.stone900,
-    },
-  },
-});
-
-export const addTabButton = style({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  width: "28px",
-  height: "28px",
-  fontSize: vars.fontSizes.lg.fontSize,
-  color: vars.colors.stone500,
-  background: "transparent",
-  border: "none",
-  cursor: "pointer",
-  borderRadius: "4px",
-  marginLeft: vars.space[2],
-  transition: "all 0.15s ease",
-  ":hover": {
-    color: vars.colors.stone900,
-    background: vars.colors.stone200,
-  },
-});
-
-export const baseNameInput = style({
-  fontFamily: vars.fonts.display,
-  fontSize: vars.fontSizes.base.fontSize,
-  fontWeight: "400",
-  letterSpacing: vars.letterSpacing.wider,
-  textTransform: "uppercase",
-  border: "none",
-  background: "transparent",
-  padding: `${vars.space[1]} ${vars.space[2]}`,
-  margin: `-${vars.space[1]} -${vars.space[2]}`,
-  outline: "none",
-  width: "auto",
-  minWidth: "100px",
-  ":focus": {
-    background: vars.colors.stone100,
   },
 });

@@ -7,4 +7,7 @@ export const config = {
   // Materializer config - background worker for PostgreSQL sync
   materializerIntervalMs: Number(process.env.MATERIALIZER_INTERVAL_MS) || 5000,
   materializerBatchSize: Number(process.env.MATERIALIZER_BATCH_SIZE) || 100,
+  // Agent runner config
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+  agentModel: process.env.AGENT_MODEL || "claude-sonnet-4-20250514",
 };

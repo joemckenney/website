@@ -13,6 +13,8 @@ export function toSqliteType(columnType: ColumnType): string {
       return "REAL";
     case "boolean":
       return "INTEGER"; // SQLite uses 0/1 for booleans
+    case "relation":
+      return "TEXT";
   }
 }
 
@@ -51,6 +53,7 @@ export function coerceValue(
   switch (columnType) {
     case "text":
     case "select":
+    case "relation":
       return String(value);
     case "date":
       // Store dates as ISO strings
@@ -91,6 +94,7 @@ export function fromSqliteValue(
     case "text":
     case "select":
     case "date":
+    case "relation":
       return String(value);
     case "number":
       return Number(value);

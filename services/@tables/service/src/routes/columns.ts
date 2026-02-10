@@ -31,13 +31,14 @@ export async function registerColumnRoutes(
         body: AddColumnBody,
         response: {
           201: Column,
+          400: ErrorResponse,
           404: ErrorResponse,
         },
       },
     },
     async (request, reply) => {
       const { tableId } = request.params;
-      const { name, dataType } = request.body;
+      const { name, dataType, referencedTableId } = request.body;
 
       const tableMeta = await prisma.tableMeta.findUnique({
         where: { id: tableId },
@@ -45,6 +46,31 @@ export async function registerColumnRoutes(
 
       if (!tableMeta) {
         return reply.status(404).send({ error: "Table not found" });
+      }
+
+      // Validate relation-specific fields
+      if (dataType === "relation") {
+        if (!referencedTableId) {
+          return reply.status(400).send({ error: "referencedTableId is required for relation columns" });
+        }
+
+        const referencedTableMeta = await prisma.tableMeta.findUnique({
+          where: { id: referencedTableId },
+        });
+
+        if (!referencedTableMeta) {
+          return reply.status(400).send({ error: "Referenced table not found" });
+        }
+
+        if (referencedTableMeta.baseId !== tableMeta.baseId) {
+          return reply.status(400).send({ error: "Referenced table must be in the same base" });
+        }
+
+        if (memoryStore.wouldCreateCycle(tableId, referencedTableId)) {
+          return reply.status(400).send({ error: "Adding this relation would create a circular dependency" });
+        }
+      } else if (referencedTableId) {
+        return reply.status(400).send({ error: "referencedTableId is only valid for relation columns" });
       }
 
       const table = memoryStore.getTable(tableId);
@@ -58,6 +84,7 @@ export async function registerColumnRoutes(
         name,
         dataType: dataType as ColumnType,
         position,
+        ...(referencedTableId ? { referencedTableId } : {}),
       });
 
       // Update table's updatedAt
@@ -71,6 +98,7 @@ export async function registerColumnRoutes(
         name,
         dataType,
         position,
+        ...(referencedTableId ? { referencedTableId } : {}),
       });
     },
   );
@@ -133,11 +161,13 @@ export async function registerColumnRoutes(
       const updatedTable = memoryStore.getTable(tableId);
       const updatedColumn = updatedTable?.columns.get(columnId);
 
+      const refTableId = updatedColumn?.referencedTableId ?? column.referencedTableId;
       return {
         id: columnId,
         name: updatedColumn?.name ?? column.name,
         dataType: updatedColumn?.dataType ?? column.dataType,
         position: updatedColumn?.position ?? column.position,
+        ...(refTableId ? { referencedTableId: refTableId } : {}),
       };
     },
   );
@@ -252,6 +282,7 @@ export async function registerColumnRoutes(
           name: col?.name ?? "",
           dataType: col?.dataType ?? "text",
           position: index,
+          ...(col?.referencedTableId ? { referencedTableId: col.referencedTableId } : {}),
         };
       });
     },

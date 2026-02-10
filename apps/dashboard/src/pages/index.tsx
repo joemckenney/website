@@ -12,7 +12,7 @@ export default function IndexPage() {
     if (accessToken) {
       setAccessToken(accessToken);
       // Clear the token from URL and redirect
-      navigate("/new", { replace: true });
+      navigate("/bases", { replace: true });
       return;
     }
 
@@ -23,7 +23,7 @@ export default function IndexPage() {
       return;
     }
 
-    navigate("/new", { replace: true });
+    navigate("/bases", { replace: true });
   }, [navigate, searchParams]);
 
   return null;

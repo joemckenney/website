@@ -52,6 +52,7 @@
         ],
         "description": "Create a new user from OAuth signup",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -100,8 +101,7 @@
                 }
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -328,6 +328,7 @@
         ],
         "description": "Update a user by their ID",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {

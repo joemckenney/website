@@ -71,6 +71,7 @@ export type TableEvent =
       name: string;
       dataType: string;
       position: number;
+      referencedTableId?: string;
     }
   | { type: "COLUMN_RENAMED"; tableId: string; columnId: string; name: string }
   | { type: "COLUMN_DELETED"; tableId: string; columnId: string };

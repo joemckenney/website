@@ -14,6 +14,9 @@
  */
 
 import { randomUUID } from "node:crypto";
+import { agentGraph } from "../agents/graph.js";
+import { agentRunner } from "../agents/runner.js";
+import { prisma } from "../db/client.js";
 import type { ColumnType } from "../lib/events.js";
 import { memoryStore } from "../store/memory.js";
 
@@ -177,6 +180,126 @@ export function getToolDefinitions(): ToolDefinition[] {
         required: ["columnId"],
       },
     },
+    {
+      name: "create-agent",
+      description:
+        'Create an AI automation agent for the current table. The agent watches for row inserts or cell updates and automatically fills in output columns using AI. triggerType must be "on_row_insert" or "on_cell_update". For "on_cell_update", watchColumns specifies which columns trigger the agent. inputColumns are read by the agent, outputColumns are written to.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          name: {
+            type: "string",
+            description: "Human-readable name for the agent",
+          },
+          triggerType: {
+            type: "string",
+            enum: ["on_row_insert", "on_cell_update"],
+            description: "When the agent should fire",
+          },
+          watchColumns: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              'Column IDs that trigger the agent (required for "on_cell_update")',
+          },
+          inputColumns: {
+            type: "array",
+            items: { type: "string" },
+            description: "Column IDs the agent reads from",
+          },
+          outputColumns: {
+            type: "array",
+            items: { type: "string" },
+            description: "Column IDs the agent writes to",
+          },
+          prompt: {
+            type: "string",
+            description:
+              "Instructions for the agent describing what data to generate",
+          },
+        },
+        required: [
+          "name",
+          "triggerType",
+          "inputColumns",
+          "outputColumns",
+          "prompt",
+        ],
+      },
+    },
+    {
+      name: "list-agents",
+      description:
+        "List all AI automation agents for the current table, including their trigger type, columns, and enabled status.",
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "update-agent",
+      description: "Update an existing AI automation agent's configuration.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          agentId: {
+            type: "string",
+            description: "The ID of the agent to update",
+          },
+          name: { type: "string", description: "New name" },
+          triggerType: {
+            type: "string",
+            enum: ["on_row_insert", "on_cell_update"],
+          },
+          watchColumns: {
+            type: "array",
+            items: { type: "string" },
+          },
+          inputColumns: {
+            type: "array",
+            items: { type: "string" },
+          },
+          outputColumns: {
+            type: "array",
+            items: { type: "string" },
+          },
+          prompt: { type: "string" },
+        },
+        required: ["agentId"],
+      },
+    },
+    {
+      name: "delete-agent",
+      description: "Delete an AI automation agent from the current table.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          agentId: {
+            type: "string",
+            description: "The ID of the agent to delete",
+          },
+        },
+        required: ["agentId"],
+      },
+    },
+    {
+      name: "toggle-agent",
+      description: "Enable or disable an AI automation agent.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          agentId: {
+            type: "string",
+            description: "The ID of the agent to toggle",
+          },
+          enabled: {
+            type: "boolean",
+            description: "Whether the agent should be enabled",
+          },
+        },
+        required: ["agentId", "enabled"],
+      },
+    },
   ];
 }
 
@@ -233,6 +356,21 @@ export async function handleToolCall(
 
     case "delete-column":
       return deleteColumn(argsWithDefault, userId);
+
+    case "create-agent":
+      return createAgent(argsWithDefault, userId);
+
+    case "list-agents":
+      return listAgents(argsWithDefault, userId);
+
+    case "update-agent":
+      return updateAgent(argsWithDefault, userId);
+
+    case "delete-agent":
+      return deleteAgent(argsWithDefault, userId);
+
+    case "toggle-agent":
+      return toggleAgent(argsWithDefault, userId);
 
     default:
       throw new Error(`Unknown tool: ${toolName}`);
@@ -438,6 +576,7 @@ async function addColumn(
     "boolean",
     "date",
     "select",
+    "relation",
   ];
   if (!validTypes.includes(dataType)) {
     throw new Error(
@@ -529,4 +668,289 @@ async function deleteColumn(
   await memoryStore.applyEvent(event);
 
   return { success: true };
+}
+
+/**
+ * Create an AI automation agent
+ */
+async function createAgent(
+  args: Record<string, unknown>,
+  userId: string,
+): Promise<unknown> {
+  const tableId = args.tableId as string;
+  const name = args.name as string;
+  const triggerType = args.triggerType as string;
+  const watchColumns = (args.watchColumns as string[]) || [];
+  const inputColumns = args.inputColumns as string[];
+  const outputColumns = args.outputColumns as string[];
+  const prompt = args.prompt as string;
+
+  if (!tableId || !name || !triggerType || !inputColumns || !outputColumns || !prompt) {
+    throw new Error(
+      "tableId, name, triggerType, inputColumns, outputColumns, and prompt are required",
+    );
+  }
+
+  if (!verifyTableAccess(tableId, userId)) {
+    throw new Error("Table not found or access denied");
+  }
+
+  const table = memoryStore.getTable(tableId);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  // Validate columns exist
+  const allCols = [...inputColumns, ...outputColumns, ...watchColumns];
+  for (const colId of allCols) {
+    if (!table.columns.has(colId)) {
+      throw new Error(`Column ${colId} not found in table`);
+    }
+  }
+
+  if (triggerType === "on_cell_update" && watchColumns.length === 0) {
+    throw new Error(
+      'watchColumns is required for "on_cell_update" trigger type',
+    );
+  }
+
+  // Validate no cycle
+  const cycleError = await agentGraph.validateNoCycle(
+    tableId,
+    null,
+    inputColumns,
+    outputColumns,
+  );
+  if (cycleError) {
+    throw new Error(cycleError);
+  }
+
+  const agent = await prisma.tableAgent.create({
+    data: {
+      tableId,
+      name,
+      triggerType,
+      watchColumns,
+      inputColumns,
+      outputColumns,
+      prompt,
+    },
+  });
+
+  // Subscribe runner to this table
+  agentRunner.subscribeToTable(tableId);
+
+  // Resolve column names for readability
+  const resolvedInput = inputColumns.map((id) => ({
+    id,
+    name: table.columns.get(id)?.name ?? id,
+  }));
+  const resolvedOutput = outputColumns.map((id) => ({
+    id,
+    name: table.columns.get(id)?.name ?? id,
+  }));
+
+  return {
+    agentId: agent.id,
+    name: agent.name,
+    triggerType: agent.triggerType,
+    inputColumns: resolvedInput,
+    outputColumns: resolvedOutput,
+    enabled: agent.enabled,
+  };
+}
+
+/**
+ * List agents for a table
+ */
+async function listAgents(
+  args: Record<string, unknown>,
+  userId: string,
+): Promise<unknown> {
+  const tableId = args.tableId as string;
+  if (!tableId) {
+    throw new Error("tableId is required");
+  }
+
+  if (!verifyTableAccess(tableId, userId)) {
+    throw new Error("Table not found or access denied");
+  }
+
+  const table = memoryStore.getTable(tableId);
+  const agents = await prisma.tableAgent.findMany({
+    where: { tableId },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return agents.map((a) => ({
+    id: a.id,
+    name: a.name,
+    triggerType: a.triggerType,
+    watchColumns: a.watchColumns.map((id) => ({
+      id,
+      name: table?.columns.get(id)?.name ?? id,
+    })),
+    inputColumns: a.inputColumns.map((id) => ({
+      id,
+      name: table?.columns.get(id)?.name ?? id,
+    })),
+    outputColumns: a.outputColumns.map((id) => ({
+      id,
+      name: table?.columns.get(id)?.name ?? id,
+    })),
+    prompt: a.prompt,
+    enabled: a.enabled,
+  }));
+}
+
+/**
+ * Update an agent
+ */
+async function updateAgent(
+  args: Record<string, unknown>,
+  userId: string,
+): Promise<unknown> {
+  const tableId = args.tableId as string;
+  const agentId = args.agentId as string;
+
+  if (!tableId || !agentId) {
+    throw new Error("tableId and agentId are required");
+  }
+
+  if (!verifyTableAccess(tableId, userId)) {
+    throw new Error("Table not found or access denied");
+  }
+
+  const existing = await prisma.tableAgent.findFirst({
+    where: { id: agentId, tableId },
+  });
+  if (!existing) {
+    throw new Error("Agent not found");
+  }
+
+  const table = memoryStore.getTable(tableId);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  const inputColumns = (args.inputColumns as string[]) ?? existing.inputColumns;
+  const outputColumns =
+    (args.outputColumns as string[]) ?? existing.outputColumns;
+  const watchColumns = (args.watchColumns as string[]) ?? existing.watchColumns;
+
+  // Validate columns exist
+  const allCols = [...inputColumns, ...outputColumns, ...watchColumns];
+  for (const colId of allCols) {
+    if (!table.columns.has(colId)) {
+      throw new Error(`Column ${colId} not found in table`);
+    }
+  }
+
+  // Validate no cycle
+  const cycleError = await agentGraph.validateNoCycle(
+    tableId,
+    agentId,
+    inputColumns,
+    outputColumns,
+  );
+  if (cycleError) {
+    throw new Error(cycleError);
+  }
+
+  const updated = await prisma.tableAgent.update({
+    where: { id: agentId },
+    data: {
+      ...(args.name ? { name: args.name as string } : {}),
+      ...(args.triggerType ? { triggerType: args.triggerType as string } : {}),
+      ...(args.watchColumns ? { watchColumns } : {}),
+      ...(args.inputColumns ? { inputColumns } : {}),
+      ...(args.outputColumns ? { outputColumns } : {}),
+      ...(args.prompt ? { prompt: args.prompt as string } : {}),
+    },
+  });
+
+  return {
+    agentId: updated.id,
+    name: updated.name,
+    triggerType: updated.triggerType,
+    enabled: updated.enabled,
+    success: true,
+  };
+}
+
+/**
+ * Delete an agent
+ */
+async function deleteAgent(
+  args: Record<string, unknown>,
+  userId: string,
+): Promise<unknown> {
+  const tableId = args.tableId as string;
+  const agentId = args.agentId as string;
+
+  if (!tableId || !agentId) {
+    throw new Error("tableId and agentId are required");
+  }
+
+  if (!verifyTableAccess(tableId, userId)) {
+    throw new Error("Table not found or access denied");
+  }
+
+  const existing = await prisma.tableAgent.findFirst({
+    where: { id: agentId, tableId },
+  });
+  if (!existing) {
+    throw new Error("Agent not found");
+  }
+
+  await prisma.tableAgent.delete({ where: { id: agentId } });
+
+  // Unsubscribe if no more agents on this table
+  await agentRunner.unsubscribeIfEmpty(tableId);
+
+  return { deleted: true };
+}
+
+/**
+ * Toggle an agent's enabled state
+ */
+async function toggleAgent(
+  args: Record<string, unknown>,
+  userId: string,
+): Promise<unknown> {
+  const tableId = args.tableId as string;
+  const agentId = args.agentId as string;
+  const enabled = args.enabled as boolean;
+
+  if (!tableId || !agentId || typeof enabled !== "boolean") {
+    throw new Error("tableId, agentId, and enabled (boolean) are required");
+  }
+
+  if (!verifyTableAccess(tableId, userId)) {
+    throw new Error("Table not found or access denied");
+  }
+
+  const existing = await prisma.tableAgent.findFirst({
+    where: { id: agentId, tableId },
+  });
+  if (!existing) {
+    throw new Error("Agent not found");
+  }
+
+  const updated = await prisma.tableAgent.update({
+    where: { id: agentId },
+    data: { enabled },
+  });
+
+  if (enabled) {
+    agentRunner.subscribeToTable(tableId);
+  } else {
+    await agentRunner.unsubscribeIfEmpty(tableId);
+  }
+
+  return {
+    agentId: updated.id,
+    name: updated.name,
+    enabled: updated.enabled,
+  };
 }

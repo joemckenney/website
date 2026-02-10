@@ -1,20 +1,24 @@
 import { tablesService } from "@tables/sdk";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { AddColumnModal } from "../../components/tables/AddColumnModal";
-import { ChatPanel } from "../../components/tables/ChatPanel";
-import { TableGrid } from "../../components/tables/TableGrid";
-import { useTableSocket, type TableEvent } from "../../hooks/useTableSocket";
-import { ensureValidToken } from "../../lib/auth";
-import * as styles from "../../styles/tables.css";
+import { AddColumnModal } from "../../../components/tables/AddColumnModal";
+import { AgentsDropdown } from "../../../components/tables/AgentsDropdown";
+import { ChatPanel } from "../../../components/tables/ChatPanel";
+import { TableGrid } from "../../../components/tables/TableGrid";
+import { useBaseContext } from "../../../contexts/base-context";
+import { useTableSocket, type TableEvent } from "../../../hooks/useTableSocket";
+import { ensureValidToken } from "../../../lib/auth";
+import * as layoutStyles from "../../../styles/layout.css";
+import * as styles from "../../../styles/tables.css";
 
-type ColumnType = "text" | "number" | "boolean" | "date" | "select";
+type ColumnType = "text" | "number" | "boolean" | "date" | "select" | "relation";
 
 interface Column {
   id: string;
   name: string;
   dataType: ColumnType;
   position: number;
+  referencedTableId?: string;
 }
 
 interface Row {
@@ -41,16 +45,16 @@ interface BaseWithTables {
 }
 
 export default function BaseDetailPage() {
-  const { baseId } = useParams<{ baseId: string }>();
+  const { baseId, tableId: selectedTableId } = useParams<{ baseId: string; tableId: string }>();
   const navigate = useNavigate();
+  const { setBaseName } = useBaseContext();
 
   // Base state
   const [base, setBase] = useState<BaseWithTables | null>(null);
-  const [baseName, setBaseName] = useState("");
+  const [localBaseName, setLocalBaseName] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
 
   // Selected table state
-  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [columns, setColumns] = useState<Column[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
 
@@ -61,7 +65,8 @@ export default function BaseDetailPage() {
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [isAddingTable, setIsAddingTable] = useState(false);
   const [newTableName, setNewTableName] = useState("");
-  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  const isEmptyBase = selectedTableId === "_empty";
 
   // Handle incoming real-time events
   const handleTableEvent = useCallback((event: TableEvent) => {
@@ -109,6 +114,7 @@ export default function BaseDetailPage() {
               name: event.name,
               dataType: event.dataType as ColumnType,
               position: event.position,
+              ...(event.referencedTableId ? { referencedTableId: event.referencedTableId } : {}),
             },
           ];
         });
@@ -141,7 +147,7 @@ export default function BaseDetailPage() {
 
   // WebSocket connection for real-time updates
   const socket = useTableSocket({
-    tableId: selectedTableId ?? "",
+    tableId: isEmptyBase ? "" : (selectedTableId ?? ""),
     onEvent: handleTableEvent,
     onRowInserted: handleRowInserted,
     onError: (err) => {
@@ -173,12 +179,8 @@ export default function BaseDetailPage() {
         }
 
         setBase(response.data);
+        setLocalBaseName(response.data.name);
         setBaseName(response.data.name);
-
-        // Auto-select first table if exists
-        if (response.data.tables.length > 0) {
-          setSelectedTableId(response.data.tables[0].id);
-        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load base");
       } finally {
@@ -187,11 +189,16 @@ export default function BaseDetailPage() {
     };
 
     loadBase();
-  }, [baseId]);
+
+    // Clear base name when leaving
+    return () => {
+      setBaseName(null);
+    };
+  }, [baseId, setBaseName]);
 
   // Load selected table data
   useEffect(() => {
-    if (!selectedTableId) {
+    if (!selectedTableId || isEmptyBase) {
       setColumns([]);
       setRows([]);
       return;
@@ -232,16 +239,17 @@ export default function BaseDetailPage() {
     };
 
     loadTable();
-  }, [selectedTableId]);
+  }, [selectedTableId, isEmptyBase]);
 
   const handleUpdateBaseName = async () => {
-    if (!baseId || !baseName.trim()) return;
+    if (!baseId || !localBaseName.trim()) return;
 
     try {
       await tablesService.updateBase({
         path: { baseId },
-        body: { name: baseName.trim() },
+        body: { name: localBaseName.trim() },
       });
+      setBaseName(localBaseName.trim());
       setIsEditingName(false);
     } catch (err) {
       console.error("Failed to rename base:", err);
@@ -265,7 +273,6 @@ export default function BaseDetailPage() {
         return;
       }
 
-      // Add to base tables and select it
       setBase((prev) =>
         prev
           ? {
@@ -282,9 +289,9 @@ export default function BaseDetailPage() {
             }
           : null,
       );
-      setSelectedTableId(response.data.id);
       setNewTableName("");
       setIsAddingTable(false);
+      navigate(`/bases/${baseId}/${response.data.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create table");
     }
@@ -310,7 +317,7 @@ export default function BaseDetailPage() {
   };
 
   const handleAddRow = useCallback(async () => {
-    if (!selectedTableId) return;
+    if (!selectedTableId || isEmptyBase) return;
 
     try {
       await tablesService.insertRow({
@@ -320,11 +327,11 @@ export default function BaseDetailPage() {
     } catch (err) {
       console.error("Failed to add row:", err);
     }
-  }, [selectedTableId]);
+  }, [selectedTableId, isEmptyBase]);
 
   const handleCellUpdate = useCallback(
     (rowId: string, columnId: string, value: unknown) => {
-      if (!selectedTableId) return;
+      if (!selectedTableId || isEmptyBase) return;
 
       const previousValue = rows.find((r) => r.id === rowId)?.data[columnId];
       setRows((prev) =>
@@ -352,12 +359,12 @@ export default function BaseDetailPage() {
         );
       });
     },
-    [selectedTableId, rows, socket],
+    [selectedTableId, isEmptyBase, rows, socket],
   );
 
   const handleDeleteRow = useCallback(
     (rowId: string) => {
-      if (!selectedTableId) return;
+      if (!selectedTableId || isEmptyBase) return;
 
       const deletedRow = rows.find((r) => r.id === rowId);
       setRows((prev) => prev.filter((row) => row.id !== rowId));
@@ -368,29 +375,29 @@ export default function BaseDetailPage() {
         }
       });
     },
-    [selectedTableId, rows, socket],
+    [selectedTableId, isEmptyBase, rows, socket],
   );
 
   const handleAddColumn = useCallback(
-    async (name: string, dataType: ColumnType) => {
-      if (!selectedTableId) return;
+    async (name: string, dataType: ColumnType, referencedTableId?: string) => {
+      if (!selectedTableId || isEmptyBase) return;
 
       try {
         await tablesService.addColumn({
           path: { tableId: selectedTableId },
-          body: { name, dataType },
+          body: { name, dataType, ...(referencedTableId ? { referencedTableId } : {}) },
         });
         setIsAddingColumn(false);
       } catch (err) {
         console.error("Failed to add column:", err);
       }
     },
-    [selectedTableId],
+    [selectedTableId, isEmptyBase],
   );
 
   const handleDeleteColumn = useCallback(
     async (columnId: string) => {
-      if (!selectedTableId) return;
+      if (!selectedTableId || isEmptyBase) return;
 
       try {
         await tablesService.deleteColumn({
@@ -401,137 +408,138 @@ export default function BaseDetailPage() {
         console.error("Failed to delete column:", err);
       }
     },
-    [selectedTableId],
+    [selectedTableId, isEmptyBase],
   );
 
   const isConnected = socket.status === "connected";
   const isConnecting = socket.status === "connecting";
-  const selectedTable = base?.tables.find((t) => t.id === selectedTableId);
 
   if (isLoading) {
-    return (
-      <>
-        <header className={styles.header}>
-          <span className={styles.title}>Loading...</span>
-        </header>
-        <div className={styles.container}>
-          <div className={styles.loading}>Loading base...</div>
-        </div>
-      </>
-    );
+    return <div className={layoutStyles.loadingContainer}>Loading...</div>;
   }
 
   if (error || !base) {
     return (
-      <>
-        <header className={styles.header}>
-          <span className={styles.title}>Error</span>
-        </header>
-        <div className={styles.container}>
-          <div className={styles.error}>{error || "Base not found"}</div>
-        </div>
-      </>
+      <div className={styles.container}>
+        <div className={styles.error}>{error || "Base not found"}</div>
+      </div>
     );
   }
 
   return (
-    <>
-      <header className={styles.header}>
-        {isEditingName ? (
-          <input
-            type="text"
-            className={styles.baseNameInput}
-            value={baseName}
-            onChange={(e) => setBaseName(e.target.value)}
-            onBlur={handleUpdateBaseName}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleUpdateBaseName();
-              if (e.key === "Escape") {
-                setBaseName(base.name);
-                setIsEditingName(false);
-              }
-            }}
-            autoFocus
-          />
-        ) : (
-          <button
-            type="button"
-            className={styles.title}
-            onClick={() => setIsEditingName(true)}
-            style={{ background: "none", border: "none", cursor: "pointer" }}
-          >
-            {base.name}
-          </button>
-        )}
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          {selectedTableId && (
-            <span
-              style={{
-                display: "inline-block",
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                backgroundColor: isConnected
-                  ? "#22c55e"
-                  : isConnecting
-                    ? "#eab308"
-                    : "#ef4444",
-              }}
-              title={`WebSocket: ${socket.status}`}
-            />
-          )}
-          <button
-            type="button"
-            className={styles.toolbarButton}
-            onClick={handleDeleteBase}
-          >
-            Delete Base
-          </button>
-        </div>
-      </header>
-
-      {/* Tab bar */}
-      <div className={styles.tabBar}>
-        {base.tables.map((table) => (
-          <button
-            key={table.id}
-            type="button"
-            className={styles.tab}
-            data-active={table.id === selectedTableId}
-            onClick={() => setSelectedTableId(table.id)}
-          >
-            {table.name}
-          </button>
-        ))}
-        <button
-          type="button"
-          className={styles.addTabButton}
-          onClick={() => setIsAddingTable(true)}
-          title="Add new table"
-        >
-          +
-        </button>
+    <div className={layoutStyles.baseLayout}>
+      {/* Chat panel on left - associated with base */}
+      <div className={layoutStyles.chatPane}>
+        <ChatPanel
+          tableId={isEmptyBase ? (baseId ?? "") : (selectedTableId ?? baseId ?? "")}
+          tableName={base.name}
+          columns={columns}
+        />
       </div>
 
-      {base.tables.length === 0 ? (
-        <div className={styles.container}>
-          <div className={styles.empty}>
-            <p>No tables in this base yet.</p>
+      {/* Content pane on right */}
+      <div className={layoutStyles.contentPane}>
+        {/* Header with base name */}
+        <header className={styles.header}>
+          {isEditingName ? (
+            <input
+              type="text"
+              className={styles.baseNameInput}
+              value={localBaseName}
+              onChange={(e) => setLocalBaseName(e.target.value)}
+              onBlur={handleUpdateBaseName}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleUpdateBaseName();
+                if (e.key === "Escape") {
+                  setLocalBaseName(base.name);
+                  setIsEditingName(false);
+                }
+              }}
+              autoFocus
+            />
+          ) : (
             <button
               type="button"
-              className={styles.emptyLink}
-              onClick={() => setIsAddingTable(true)}
+              className={styles.title}
+              onClick={() => setIsEditingName(true)}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+              }}
             >
-              Create your first table
+              {base.name}
+            </button>
+          )}
+          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+            {!isEmptyBase && selectedTableId && (
+              <span
+                style={{
+                  display: "inline-block",
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  backgroundColor: isConnected
+                    ? "#22c55e"
+                    : isConnecting
+                      ? "#eab308"
+                      : "#ef4444",
+                }}
+                title={`WebSocket: ${socket.status}`}
+              />
+            )}
+            <button
+              type="button"
+              className={styles.toolbarButton}
+              onClick={handleDeleteBase}
+            >
+              Delete
             </button>
           </div>
+        </header>
+
+        {/* Tab bar */}
+        <div className={styles.tabBar}>
+          {base.tables.map((table) => (
+            <button
+              key={table.id}
+              type="button"
+              className={styles.tab}
+              data-active={table.id === selectedTableId}
+              onClick={() => navigate(`/bases/${baseId}/${table.id}`)}
+            >
+              {table.name}
+            </button>
+          ))}
+          <button
+            type="button"
+            className={styles.addTabButton}
+            onClick={() => setIsAddingTable(true)}
+            title="Add table"
+          >
+            +
+          </button>
         </div>
-      ) : isTableLoading ? (
-        <div className={styles.container}>
-          <div className={styles.loading}>Loading table...</div>
-        </div>
-      ) : (
-        <div className={styles.splitPane}>
+
+        {isEmptyBase || base.tables.length === 0 ? (
+          <div className={styles.container}>
+            <div className={styles.empty}>
+              <p>No tables yet.</p>
+              <button
+                type="button"
+                className={styles.emptyLink}
+                onClick={() => setIsAddingTable(true)}
+              >
+                Create your first table
+              </button>
+            </div>
+          </div>
+        ) : isTableLoading ? (
+          <div className={styles.container}>
+            <div className={styles.loading}>Loading...</div>
+          </div>
+        ) : (
           <div className={styles.tablePane}>
             <div className={styles.toolbar}>
               <button
@@ -539,33 +547,21 @@ export default function BaseDetailPage() {
                 className={styles.toolbarButton}
                 onClick={() => setIsAddingColumn(true)}
               >
-                + Add Column
+                + Column
               </button>
               <button
                 type="button"
                 className={styles.toolbarButton}
                 onClick={handleAddRow}
               >
-                + Add Row
+                + Row
               </button>
-              <button
-                type="button"
-                className={styles.chatToggleBtn}
-                data-active={isChatOpen}
-                onClick={() => setIsChatOpen(!isChatOpen)}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-                AI
-              </button>
+              {selectedTableId && (
+                <AgentsDropdown
+                  tableId={selectedTableId}
+                  columns={columns}
+                />
+              )}
             </div>
 
             <TableGrid
@@ -577,22 +573,15 @@ export default function BaseDetailPage() {
               onDeleteColumn={handleDeleteColumn}
             />
           </div>
-
-          {isChatOpen && selectedTableId && (
-            <ChatPanel
-              tableId={selectedTableId}
-              tableName={selectedTable?.name ?? ""}
-              columns={columns}
-              onClose={() => setIsChatOpen(false)}
-            />
-          )}
-        </div>
-      )}
+        )}
+      </div>
 
       {isAddingColumn && (
         <AddColumnModal
           onClose={() => setIsAddingColumn(false)}
           onAdd={handleAddColumn}
+          tables={base.tables}
+          currentTableId={selectedTableId ?? undefined}
         />
       )}
 
@@ -608,10 +597,10 @@ export default function BaseDetailPage() {
             onClick={(e) => e.stopPropagation()}
             onKeyDown={() => {}}
           >
-            <h2 className={styles.modalTitle}>Add New Table</h2>
+            <h2 className={styles.modalTitle}>Add Table</h2>
             <div className={styles.formField}>
               <label className={styles.formLabel} htmlFor="tableName">
-                Table Name
+                Name
               </label>
               <input
                 id="tableName"
@@ -622,9 +611,7 @@ export default function BaseDetailPage() {
                 placeholder="e.g., Tasks, Contacts"
                 autoFocus
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleAddTable();
-                  }
+                  if (e.key === "Enter") handleAddTable();
                 }}
               />
             </div>
@@ -648,6 +635,6 @@ export default function BaseDetailPage() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

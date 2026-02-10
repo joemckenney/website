@@ -93,7 +93,7 @@ export type ListConversationsResponses = {
 export type ListConversationsResponse = ListConversationsResponses[keyof ListConversationsResponses];
 
 export type CreateConversationData = {
-    body?: {
+    body: {
         /**
          * Conversation title
          */
@@ -282,7 +282,7 @@ export type GetConversationResponses = {
 export type GetConversationResponse = GetConversationResponses[keyof GetConversationResponses];
 
 export type UpdateConversationData = {
-    body?: {
+    body: {
         /**
          * Conversation title
          */

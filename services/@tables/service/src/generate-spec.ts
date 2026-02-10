@@ -5,6 +5,7 @@ import swagger from "@fastify/swagger";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Fastify from "fastify";
 import { config } from "./config.js";
+import { registerAgentRoutes } from "./routes/agents.js";
 import { registerBaseRoutes } from "./routes/bases.js";
 import { registerColumnRoutes } from "./routes/columns.js";
 import { registerRowRoutes } from "./routes/rows.js";
@@ -62,6 +63,7 @@ await registerBaseRoutes(fastify);
 await registerTableRoutes(fastify);
 await registerColumnRoutes(fastify);
 await registerRowRoutes(fastify);
+await registerAgentRoutes(fastify);
 
 // Ready the server (generates the OpenAPI spec)
 await fastify.ready();

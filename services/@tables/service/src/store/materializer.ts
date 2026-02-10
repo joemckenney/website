@@ -17,6 +17,8 @@ function toPgType(columnType: ColumnType): string {
       return "NUMERIC";
     case "boolean":
       return "BOOLEAN";
+    case "relation":
+      return "TEXT";
   }
 }
 

@@ -12,11 +12,9 @@ globalStyle("#root", {
   height: "100%",
 });
 
-export const headerWidth = "48px";
-export const headerOpenWidth = "280px";
-
 export const container = style({
   display: "flex",
+  flexDirection: "column",
   height: "100%",
   minHeight: "100vh",
   background: vars.colors.stone50,
@@ -24,183 +22,129 @@ export const container = style({
   color: vars.colors.stone900,
 });
 
-export const headerTray = style({
-  position: "fixed",
-  left: 0,
-  top: 0,
-  height: "100vh",
-  width: headerWidth,
-  background: vars.colors.stone100,
-  borderRight: `1px solid ${vars.colors.stone300}`,
-  display: "flex",
-  flexDirection: "column",
-  transition: "width 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-  zIndex: 100,
-  overflow: "hidden",
-});
-
-export const headerTrayOpen = style({
-  width: headerOpenWidth,
-});
-
-export const headerToggle = style({
-  width: "48px",
-  height: "48px",
+// Horizontal top nav
+export const topNav = style({
   display: "flex",
   alignItems: "center",
-  justifyContent: "center",
-  background: "none",
-  border: "none",
-  cursor: "pointer",
+  height: "36px",
+  padding: "0 12px",
+  background: vars.colors.stone100,
   borderBottom: `1px solid ${vars.colors.stone300}`,
   flexShrink: 0,
 });
 
-export const headerToggleIcon = style({
-  width: "18px",
-  height: "18px",
+export const navLeft = style({
+  display: "flex",
+  alignItems: "center",
+  gap: "4px",
+});
+
+export const navRight = style({
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  marginLeft: "auto",
+});
+
+export const navLink = style({
+  display: "flex",
+  alignItems: "center",
+  gap: "4px",
+  padding: "4px 8px",
+  fontSize: "12px",
+  color: vars.colors.stone700,
+  textDecoration: "none",
+  borderRadius: "3px",
+  transition: "all 0.1s ease",
+  ":hover": {
+    color: vars.colors.stone900,
+    background: vars.colors.stone200,
+  },
+});
+
+export const navLinkActive = style({
   color: vars.colors.stone900,
-  transition: "transform 0.25s ease",
+  background: vars.colors.stone200,
 });
 
-export const headerToggleIconOpen = style({
-  transform: "rotate(180deg)",
+export const navBreadcrumb = style({
+  display: "flex",
+  alignItems: "center",
+  gap: "4px",
+  fontSize: "12px",
+  color: vars.colors.stone500,
 });
 
-export const headerBrand = style({
-  padding: "20px 16px",
-  borderBottom: `1px solid ${vars.colors.stone300}`,
-  opacity: 0,
-  transition: "opacity 0.15s ease",
-  whiteSpace: "nowrap",
+export const navBreadcrumbSeparator = style({
+  color: vars.colors.stone400,
 });
 
-export const headerBrandVisible = style({
-  opacity: 1,
-  transitionDelay: "0.1s",
+export const navBreadcrumbCurrent = style({
+  color: vars.colors.stone900,
+  fontWeight: "500",
 });
 
-export const brandTitle = style({
-  fontFamily: vars.fonts.display,
-  fontSize: "24px",
-  fontWeight: "400",
-  letterSpacing: vars.letterSpacing.widest,
-  textTransform: "uppercase",
+export const userButton = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "24px",
+  height: "24px",
+  fontSize: "10px",
+  fontWeight: "500",
+  background: vars.colors.stone800,
+  color: vars.colors.stone50,
+  borderRadius: "3px",
+  cursor: "pointer",
+  border: "none",
+  letterSpacing: "0.5px",
+});
+
+export const userMenu = style({
+  position: "absolute",
+  top: "32px",
+  right: "8px",
+  background: "white",
+  border: `1px solid ${vars.colors.stone300}`,
+  borderRadius: "4px",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+  zIndex: 1000,
+  minWidth: "160px",
+  padding: "4px",
+});
+
+export const userMenuItem = style({
+  display: "block",
+  width: "100%",
+  padding: "6px 8px",
+  fontSize: "12px",
+  color: vars.colors.stone700,
+  background: "none",
+  border: "none",
+  textAlign: "left",
+  cursor: "pointer",
+  borderRadius: "3px",
+  fontFamily: vars.fonts.mono,
+  ":hover": {
+    background: vars.colors.stone100,
+    color: vars.colors.stone900,
+  },
+});
+
+export const userMenuEmail = style({
+  padding: "6px 8px",
+  fontSize: "11px",
+  color: vars.colors.stone500,
+  borderBottom: `1px solid ${vars.colors.stone200}`,
   marginBottom: "4px",
 });
 
-export const brandVersion = style({
-  fontSize: vars.fontSizes.xs.fontSize,
-  color: vars.colors.stone600,
-  letterSpacing: vars.letterSpacing.wider,
-  textTransform: "uppercase",
-});
-
-export const headerNav = style({
+// Main content area
+export const main = style({
   flex: 1,
-  padding: vars.space[4],
-  opacity: 0,
-  transition: "opacity 0.15s ease",
-});
-
-export const headerNavVisible = style({
-  opacity: 1,
-  transitionDelay: "0.15s",
-});
-
-export const navSection = style({
-  marginBottom: vars.space[6],
-});
-
-export const navSectionTitle = style({
-  fontSize: "9px",
-  letterSpacing: vars.letterSpacing.widest,
-  textTransform: "uppercase",
-  color: vars.colors.stone600,
-  marginBottom: vars.space[3],
-  paddingBottom: vars.space[2],
-  borderBottom: `1px solid ${vars.colors.stone300}`,
-});
-
-export const navItem = style({
-  display: "flex",
-  alignItems: "center",
-  gap: vars.space[2],
-  padding: `${vars.space[2]} 0`,
-  fontSize: vars.fontSizes.sm.fontSize,
-  color: vars.colors.stone900,
-  cursor: "pointer",
-  transition: "color 0.15s ease",
-  textDecoration: "none",
-  ":hover": {
-    color: vars.colors.stone600,
-  },
-});
-
-export const navItemIcon = style({
-  width: "14px",
-  height: "14px",
-  stroke: "currentColor",
-  flexShrink: 0,
-});
-
-export const headerUser = style({
-  padding: vars.space[4],
-  borderTop: `1px solid ${vars.colors.stone300}`,
-  opacity: 0,
-  transition: "opacity 0.15s ease",
-});
-
-export const headerUserVisible = style({
-  opacity: 1,
-  transitionDelay: "0.2s",
-});
-
-export const userInfo = style({
-  display: "flex",
-  alignItems: "center",
-  gap: vars.space[2],
-});
-
-export const userAvatar = style({
-  width: "32px",
-  height: "32px",
-  background: vars.colors.stone900,
-  color: vars.colors.stone50,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: "11px",
-  fontWeight: "500",
-  letterSpacing: vars.letterSpacing.wide,
-  flexShrink: 0,
-});
-
-export const userDetails = style({
   display: "flex",
   flexDirection: "column",
-  gap: vars.space[1],
-  minWidth: 0,
-  flex: 1,
-});
-
-export const userName = style({
-  fontSize: vars.fontSizes.sm.fontSize,
-});
-
-export const logoutButton = style({
-  background: "none",
-  border: "none",
-  padding: 0,
-  fontFamily: vars.fonts.mono,
-  fontSize: vars.fontSizes.xs.fontSize,
-  color: vars.colors.stone600,
-  cursor: "pointer",
-  textAlign: "left",
-  letterSpacing: vars.letterSpacing.wide,
-  ":hover": {
-    color: vars.colors.stone900,
-  },
+  overflow: "hidden",
 });
 
 export const loadingContainer = style({
@@ -210,104 +154,30 @@ export const loadingContainer = style({
   height: "100%",
   width: "100%",
   fontFamily: vars.fonts.mono,
-  fontSize: vars.fontSizes.sm.fontSize,
-  color: vars.colors.stone600,
-  letterSpacing: vars.letterSpacing.wide,
+  fontSize: "12px",
+  color: vars.colors.stone500,
 });
 
-export const main = style({
+// Base detail layout - chat on left, content on right
+export const baseLayout = style({
+  display: "flex",
   flex: 1,
-  marginLeft: headerWidth,
-  display: "flex",
-  flexDirection: "column",
-  height: "100%",
-  transition: "margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+  overflow: "hidden",
 });
 
-export const mainExpanded = style({
-  marginLeft: headerOpenWidth,
-});
-
-// Expandable base list styles
-export const baseItem = style({
-  display: "flex",
-  flexDirection: "column",
-});
-
-export const baseHeader = style({
-  display: "flex",
-  alignItems: "center",
-  gap: vars.space[1],
-  padding: `${vars.space[2]} 0`,
-  fontSize: vars.fontSizes.sm.fontSize,
-  color: vars.colors.stone900,
-  cursor: "pointer",
-  transition: "color 0.15s ease",
-  textDecoration: "none",
-  ":hover": {
-    color: vars.colors.stone600,
-  },
-});
-
-export const baseExpandIcon = style({
-  width: "12px",
-  height: "12px",
-  stroke: "currentColor",
+export const chatPane = style({
+  width: "360px",
   flexShrink: 0,
-  transition: "transform 0.15s ease",
+  display: "flex",
+  flexDirection: "column",
+  borderRight: `1px solid ${vars.colors.stone300}`,
+  background: vars.colors.stone50,
 });
 
-export const baseExpandIconOpen = style({
-  transform: "rotate(90deg)",
-});
-
-export const baseName = style({
+export const contentPane = style({
   flex: 1,
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-});
-
-export const baseTableList = style({
-  paddingLeft: vars.space[5],
-  overflow: "hidden",
-  maxHeight: 0,
-  transition: "max-height 0.2s ease",
-});
-
-export const baseTableListOpen = style({
-  maxHeight: "500px",
-});
-
-export const baseTableItem = style({
   display: "flex",
-  alignItems: "center",
-  gap: vars.space[2],
-  padding: `${vars.space[1]} 0`,
-  fontSize: vars.fontSizes.xs.fontSize,
-  color: vars.colors.stone700,
-  textDecoration: "none",
-  transition: "color 0.15s ease",
-  ":hover": {
-    color: vars.colors.stone900,
-  },
-});
-
-export const newBaseButton = style({
-  display: "flex",
-  alignItems: "center",
-  gap: vars.space[2],
-  padding: `${vars.space[2]} 0`,
-  fontSize: vars.fontSizes.sm.fontSize,
-  color: vars.colors.stone600,
-  cursor: "pointer",
-  transition: "color 0.15s ease",
-  background: "none",
-  border: "none",
-  fontFamily: vars.fonts.mono,
-  textAlign: "left",
-  width: "100%",
-  ":hover": {
-    color: vars.colors.stone900,
-  },
+  flexDirection: "column",
+  overflow: "hidden",
+  minWidth: 0,
 });

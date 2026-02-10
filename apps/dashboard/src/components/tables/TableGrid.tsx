@@ -5,8 +5,9 @@ import { Cell } from "./Cell";
 interface Column {
   id: string;
   name: string;
-  dataType: "text" | "number" | "boolean" | "date" | "select";
+  dataType: "text" | "number" | "boolean" | "date" | "select" | "relation";
   position: number;
+  referencedTableId?: string;
 }
 
 interface Row {
@@ -143,6 +144,7 @@ export function TableGrid({
                     key={col.id}
                     value={value}
                     dataType={col.dataType}
+                    referencedTableId={col.referencedTableId}
                     isEditing={isEditing}
                     onClick={() =>
                       handleCellClick(row.id, col.id, col.dataType)
