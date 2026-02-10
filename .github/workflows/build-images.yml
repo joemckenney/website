@@ -245,6 +245,7 @@ jobs:
           echo "user_service_exists=$(check_image ${USERNAME}/user-service ${TAG})" >> $GITHUB_OUTPUT
           echo "user_service_migrate_exists=$(check_image ${USERNAME}/user-service-migrate ${TAG})" >> $GITHUB_OUTPUT
           echo "agent_service_exists=$(check_image ${USERNAME}/agent-service ${TAG})" >> $GITHUB_OUTPUT
+          echo "agent_service_migrate_exists=$(check_image ${USERNAME}/agent-service-migrate ${TAG})" >> $GITHUB_OUTPUT
           echo "tables_service_exists=$(check_image ${USERNAME}/tables-service ${TAG})" >> $GITHUB_OUTPUT
           echo "tables_service_migrate_exists=$(check_image ${USERNAME}/tables-service-migrate ${TAG})" >> $GITHUB_OUTPUT
           echo "strava_service_exists=$(check_image ${USERNAME}/strava-mcp-server ${TAG})" >> $GITHUB_OUTPUT
@@ -404,6 +405,24 @@ jobs:
           build-args: |
             TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
             TURBO_TEAM=${{ secrets.TURBO_TEAM }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build and push agent-service-migrate
+        id: build-agent-service-migrate
+        if: needs.detect-changes.outputs.agent_service == 'true' && steps.check-images.outputs.agent_service_migrate_exists != 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/@agent/service/Dockerfile
+          target: migrator
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/agent-service-migrate:${{ steps.meta.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           labels: |

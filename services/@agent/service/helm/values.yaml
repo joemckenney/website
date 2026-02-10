@@ -78,6 +78,8 @@ agent:
 # MCP service URLs
 strava:
   serviceUrl: "http://strava-mcp-server:3004"
+tables:
+  serviceUrl: "http://tables-service:3005"
 
 # Prometheus metrics
 metrics:
@@ -87,6 +89,6 @@ metrics:
 migration:
   enabled: true
   image:
-    repository: crowprose/agent-db-migrate
+    repository: agent-service-migrate
     pullPolicy: IfNotPresent
     tag: ""  # defaults to .Values.image.tag

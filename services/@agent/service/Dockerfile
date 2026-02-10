@@ -46,6 +46,12 @@ COPY --from=workspace-pruner /app/out/full/ .
 # Build using turbo (no remote cache - Docker layer cache is sufficient)
 RUN pnpm turbo build --filter=@agent/service...
 
+# Migrator stage - has prisma CLI for running migrations
+FROM builder AS migrator
+
+WORKDIR /app/services/@agent/db
+CMD ["npx", "prisma", "migrate", "deploy"]
+
 # Deploy stage - creates production deployment
 FROM builder AS deployer
 

@@ -18,7 +18,7 @@ export async function registerAgentRoutes(
 
   // List agents for a table
   fastify.get(
-    "/tables/:tableId/agents",
+    "/:tableId/agents",
     {
       schema: {
         operationId: "listTableAgents",
@@ -65,7 +65,7 @@ export async function registerAgentRoutes(
 
   // Toggle agent enabled state
   fastify.patch(
-    "/tables/:tableId/agents/:agentId/toggle",
+    "/:tableId/agents/:agentId/toggle",
     {
       schema: {
         operationId: "toggleAgent",

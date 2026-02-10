@@ -28,7 +28,7 @@ export function AgentsDropdown({ tableId, columns }: AgentsDropdownProps) {
     setIsLoading(true);
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_TABLES_API_URL || "http://localhost:3005"}/tables/${tableId}/agents`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/tables/${tableId}/agents`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -55,7 +55,7 @@ export function AgentsDropdown({ tableId, columns }: AgentsDropdownProps) {
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_TABLES_API_URL || "http://localhost:3005"}/tables/${tableId}/agents/${agentId}/toggle`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/tables/${tableId}/agents/${agentId}/toggle`,
         {
           method: "PATCH",
           headers: {
