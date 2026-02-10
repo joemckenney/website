@@ -5,6 +5,8 @@ import { components, hooks, utils } from '@generouted/react-router/client'
 
 export type Path =
   | `/`
+  | `/bases`
+  | `/bases/:baseId`
   | `/chat/:id`
   | `/history`
   | `/login`
@@ -14,6 +16,7 @@ export type Path =
   | `/tables/:tableId`
 
 export type Params = {
+  '/bases/:baseId': { baseId: string }
   '/chat/:id': { id: string }
   '/tables/:tableId': { tableId: string }
 }

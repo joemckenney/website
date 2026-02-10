@@ -18,6 +18,11 @@ export { Prisma }
 export * as $Enums from './enums.js'
 export * from './enums.js';
 /**
+ * Model Base
+ * Container for related tables (like an Excel workbook)
+ */
+export type Base = Prisma.BaseModel
+/**
  * Model TableMeta
  * Metadata for user-created tables
  */

@@ -9,6 +9,7 @@ import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
 import { config } from "./config.js";
 import { registerMcpRoutes } from "./mcp/transport.js";
+import { registerBaseRoutes } from "./routes/bases.js";
 import { registerColumnRoutes } from "./routes/columns.js";
 import { registerRowRoutes } from "./routes/rows.js";
 import { registerTableRoutes } from "./routes/tables.js";
@@ -52,7 +53,8 @@ await fastify.register(swagger, {
   openapi: {
     info: {
       title: "Tables Service API",
-      description: "Dynamic data tables API with WAL + in-memory SQLite architecture",
+      description:
+        "Dynamic data tables API with WAL + in-memory SQLite architecture",
       version: "1.0.0",
     },
     servers: [
@@ -93,6 +95,7 @@ fastify.get(
 );
 
 // Register routes
+await registerBaseRoutes(fastify);
 await registerTableRoutes(fastify);
 await registerColumnRoutes(fastify);
 await registerRowRoutes(fastify);

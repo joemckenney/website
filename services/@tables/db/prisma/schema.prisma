@@ -7,15 +7,30 @@ datasource db {
   provider = "postgresql"
 }
 
+/// Container for related tables (like an Excel workbook)
+model Base {
+  id        String      @id @default(uuid())
+  userId    String
+  name      String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  tables    TableMeta[]
+
+  @@index([userId])
+}
+
 /// Metadata for user-created tables
 model TableMeta {
   id        String   @id @default(uuid())
+  baseId    String
+  base      Base     @relation(fields: [baseId], references: [id], onDelete: Cascade)
   userId    String
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+  @@index([baseId])
 }
 
 /// Write-ahead log for table mutations (source of truth for recovery)

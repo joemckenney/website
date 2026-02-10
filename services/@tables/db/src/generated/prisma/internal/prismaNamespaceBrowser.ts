@@ -51,6 +51,7 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
+  Base: 'Base',
   TableMeta: 'TableMeta',
   TableEvent: 'TableEvent',
   TableCheckpoint: 'TableCheckpoint',
@@ -74,8 +75,20 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
+export const BaseScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BaseScalarFieldEnum = (typeof BaseScalarFieldEnum)[keyof typeof BaseScalarFieldEnum]
+
+
 export const TableMetaScalarFieldEnum = {
   id: 'id',
+  baseId: 'baseId',
   userId: 'userId',
   name: 'name',
   createdAt: 'createdAt',

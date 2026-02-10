@@ -227,3 +227,87 @@ export const main = style({
 export const mainExpanded = style({
   marginLeft: headerOpenWidth,
 });
+
+// Expandable base list styles
+export const baseItem = style({
+  display: "flex",
+  flexDirection: "column",
+});
+
+export const baseHeader = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space[1],
+  padding: `${vars.space[2]} 0`,
+  fontSize: vars.fontSizes.sm.fontSize,
+  color: vars.colors.stone900,
+  cursor: "pointer",
+  transition: "color 0.15s ease",
+  textDecoration: "none",
+  ":hover": {
+    color: vars.colors.stone600,
+  },
+});
+
+export const baseExpandIcon = style({
+  width: "12px",
+  height: "12px",
+  stroke: "currentColor",
+  flexShrink: 0,
+  transition: "transform 0.15s ease",
+});
+
+export const baseExpandIconOpen = style({
+  transform: "rotate(90deg)",
+});
+
+export const baseName = style({
+  flex: 1,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+});
+
+export const baseTableList = style({
+  paddingLeft: vars.space[5],
+  overflow: "hidden",
+  maxHeight: 0,
+  transition: "max-height 0.2s ease",
+});
+
+export const baseTableListOpen = style({
+  maxHeight: "500px",
+});
+
+export const baseTableItem = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space[2],
+  padding: `${vars.space[1]} 0`,
+  fontSize: vars.fontSizes.xs.fontSize,
+  color: vars.colors.stone700,
+  textDecoration: "none",
+  transition: "color 0.15s ease",
+  ":hover": {
+    color: vars.colors.stone900,
+  },
+});
+
+export const newBaseButton = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space[2],
+  padding: `${vars.space[2]} 0`,
+  fontSize: vars.fontSizes.sm.fontSize,
+  color: vars.colors.stone600,
+  cursor: "pointer",
+  transition: "color 0.15s ease",
+  background: "none",
+  border: "none",
+  fontFamily: vars.fonts.mono,
+  textAlign: "left",
+  width: "100%",
+  ":hover": {
+    color: vars.colors.stone900,
+  },
+});

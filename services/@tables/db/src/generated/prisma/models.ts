@@ -8,6 +8,7 @@
  *
  * 🟢 You can import this file directly.
  */
+export type * from './models/Base.js'
 export type * from './models/TableMeta.js'
 export type * from './models/TableEvent.js'
 export type * from './models/TableCheckpoint.js'

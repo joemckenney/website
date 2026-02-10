@@ -48,6 +48,43 @@ export const TableListItem = Type.Object({
 export type TableListItemType = Static<typeof TableListItem>;
 
 /**
+ * Base schema (container for tables, like an Excel workbook)
+ */
+export const Base = Type.Object({
+  id: Type.String({ description: "Base ID (UUID)" }),
+  userId: Type.String({ description: "Owner user ID" }),
+  name: Type.String({ description: "Base name" }),
+  createdAt: Type.String({ description: "Creation timestamp (ISO 8601)" }),
+  updatedAt: Type.String({ description: "Last update timestamp (ISO 8601)" }),
+});
+export type BaseType = Static<typeof Base>;
+
+/**
+ * Base list item with table count
+ */
+export const BaseListItem = Type.Object({
+  id: Type.String({ description: "Base ID (UUID)" }),
+  name: Type.String({ description: "Base name" }),
+  tableCount: Type.Number({ description: "Number of tables in this base" }),
+  createdAt: Type.String({ description: "Creation timestamp (ISO 8601)" }),
+  updatedAt: Type.String({ description: "Last update timestamp (ISO 8601)" }),
+});
+export type BaseListItemType = Static<typeof BaseListItem>;
+
+/**
+ * Base with its tables
+ */
+export const BaseWithTables = Type.Object({
+  id: Type.String({ description: "Base ID (UUID)" }),
+  userId: Type.String({ description: "Owner user ID" }),
+  name: Type.String({ description: "Base name" }),
+  tables: Type.Array(TableListItem, { description: "Tables in this base" }),
+  createdAt: Type.String({ description: "Creation timestamp (ISO 8601)" }),
+  updatedAt: Type.String({ description: "Last update timestamp (ISO 8601)" }),
+});
+export type BaseWithTablesType = Static<typeof BaseWithTables>;
+
+/**
  * Row schema
  */
 export const Row = Type.Object({
@@ -73,7 +110,18 @@ export type RowsResponseType = Static<typeof RowsResponse>;
 
 // Request bodies
 
+export const CreateBaseBody = Type.Object({
+  name: Type.String({ description: "Base name", minLength: 1 }),
+});
+export type CreateBaseBodyType = Static<typeof CreateBaseBody>;
+
+export const UpdateBaseBody = Type.Object({
+  name: Type.String({ description: "New base name", minLength: 1 }),
+});
+export type UpdateBaseBodyType = Static<typeof UpdateBaseBody>;
+
 export const CreateTableBody = Type.Object({
+  baseId: Type.String({ description: "Base ID to create the table in" }),
   name: Type.String({ description: "Table name", minLength: 1 }),
   columns: Type.Optional(
     Type.Array(
@@ -134,6 +182,11 @@ export type BulkRowsBodyType = Static<typeof BulkRowsBody>;
 
 // Path parameters
 
+export const BaseIdParams = Type.Object({
+  baseId: Type.String({ description: "Base ID" }),
+});
+export type BaseIdParamsType = Static<typeof BaseIdParams>;
+
 export const TableIdParams = Type.Object({
   tableId: Type.String({ description: "Table ID" }),
 });
@@ -152,6 +205,11 @@ export const RowIdParams = Type.Object({
 export type RowIdParamsType = Static<typeof RowIdParams>;
 
 // Query parameters
+
+export const TablesQueryParams = Type.Object({
+  baseId: Type.Optional(Type.String({ description: "Filter by base ID" })),
+});
+export type TablesQueryParamsType = Static<typeof TablesQueryParams>;
 
 export const RowsQueryParams = Type.Object({
   offset: Type.Optional(Type.Number({ description: "Pagination offset" })),

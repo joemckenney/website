@@ -384,6 +384,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 
 export const ModelName = {
+  Base: 'Base',
   TableMeta: 'TableMeta',
   TableEvent: 'TableEvent',
   TableCheckpoint: 'TableCheckpoint',
@@ -404,10 +405,84 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "tableMeta" | "tableEvent" | "tableCheckpoint" | "materializedColumn" | "materializedRow"
+    modelProps: "base" | "tableMeta" | "tableEvent" | "tableCheckpoint" | "materializedColumn" | "materializedRow"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
+    Base: {
+      payload: Prisma.$BasePayload<ExtArgs>
+      fields: Prisma.BaseFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BaseFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BasePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BaseFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BasePayload>
+        }
+        findFirst: {
+          args: Prisma.BaseFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BasePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BaseFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BasePayload>
+        }
+        findMany: {
+          args: Prisma.BaseFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BasePayload>[]
+        }
+        create: {
+          args: Prisma.BaseCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BasePayload>
+        }
+        createMany: {
+          args: Prisma.BaseCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BaseCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BasePayload>[]
+        }
+        delete: {
+          args: Prisma.BaseDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BasePayload>
+        }
+        update: {
+          args: Prisma.BaseUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BasePayload>
+        }
+        deleteMany: {
+          args: Prisma.BaseDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BaseUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BaseUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BasePayload>[]
+        }
+        upsert: {
+          args: Prisma.BaseUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BasePayload>
+        }
+        aggregate: {
+          args: Prisma.BaseAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBase>
+        }
+        groupBy: {
+          args: Prisma.BaseGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BaseGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BaseCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BaseCountAggregateOutputType> | number
+        }
+      }
+    }
     TableMeta: {
       payload: Prisma.$TableMetaPayload<ExtArgs>
       fields: Prisma.TableMetaFieldRefs
@@ -817,8 +892,20 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
+export const BaseScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BaseScalarFieldEnum = (typeof BaseScalarFieldEnum)[keyof typeof BaseScalarFieldEnum]
+
+
 export const TableMetaScalarFieldEnum = {
   id: 'id',
+  baseId: 'baseId',
   userId: 'userId',
   name: 'name',
   createdAt: 'createdAt',
@@ -1106,6 +1193,7 @@ export type PrismaClientOptions = ({
   comments?: runtime.SqlCommenterPlugin[]
 }
 export type GlobalOmitConfig = {
+  base?: Prisma.BaseOmit
   tableMeta?: Prisma.TableMetaOmit
   tableEvent?: Prisma.TableEventOmit
   tableCheckpoint?: Prisma.TableCheckpointOmit

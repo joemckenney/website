@@ -5,6 +5,7 @@ import swagger from "@fastify/swagger";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Fastify from "fastify";
 import { config } from "./config.js";
+import { registerBaseRoutes } from "./routes/bases.js";
 import { registerColumnRoutes } from "./routes/columns.js";
 import { registerRowRoutes } from "./routes/rows.js";
 import { registerTableRoutes } from "./routes/tables.js";
@@ -57,6 +58,7 @@ fastify.get(
 );
 
 // Register routes
+await registerBaseRoutes(fastify);
 await registerTableRoutes(fastify);
 await registerColumnRoutes(fastify);
 await registerRowRoutes(fastify);

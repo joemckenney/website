@@ -44,6 +44,398 @@
         }
       }
     },
+    "/bases": {
+      "post": {
+        "operationId": "createBase",
+        "tags": [
+          "bases"
+        ],
+        "description": "Create a new base (container for tables)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Base name",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "userId",
+                    "name",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Base ID (UUID)"
+                    },
+                    "userId": {
+                      "type": "string",
+                      "description": "Owner user ID"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Base name"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation timestamp (ISO 8601)"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update timestamp (ISO 8601)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listBases",
+        "tags": [
+          "bases"
+        ],
+        "description": "List all bases for the current user",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "name",
+                      "tableCount",
+                      "createdAt",
+                      "updatedAt"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "Base ID (UUID)"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Base name"
+                      },
+                      "tableCount": {
+                        "type": "number",
+                        "description": "Number of tables in this base"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "description": "Creation timestamp (ISO 8601)"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "description": "Last update timestamp (ISO 8601)"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bases/{baseId}": {
+      "get": {
+        "operationId": "getBase",
+        "tags": [
+          "bases"
+        ],
+        "description": "Get a base by ID with its tables",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "baseId",
+            "required": true,
+            "description": "Base ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "userId",
+                    "name",
+                    "tables",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Base ID (UUID)"
+                    },
+                    "userId": {
+                      "type": "string",
+                      "description": "Owner user ID"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Base name"
+                    },
+                    "tables": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Table ID (UUID)"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Table name"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "Creation timestamp (ISO 8601)"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "description": "Last update timestamp (ISO 8601)"
+                          }
+                        }
+                      },
+                      "description": "Tables in this base"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation timestamp (ISO 8601)"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update timestamp (ISO 8601)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateBase",
+        "tags": [
+          "bases"
+        ],
+        "description": "Update a base (rename)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "New base name",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "baseId",
+            "required": true,
+            "description": "Base ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "userId",
+                    "name",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Base ID (UUID)"
+                    },
+                    "userId": {
+                      "type": "string",
+                      "description": "Owner user ID"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Base name"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation timestamp (ISO 8601)"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update timestamp (ISO 8601)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteBase",
+        "tags": [
+          "bases"
+        ],
+        "description": "Delete a base and all its tables",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "baseId",
+            "required": true,
+            "description": "Base ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tables": {
       "post": {
         "operationId": "createTable",
@@ -58,9 +450,14 @@
               "schema": {
                 "type": "object",
                 "required": [
+                  "baseId",
                   "name"
                 ],
                 "properties": {
+                  "baseId": {
+                    "type": "string",
+                    "description": "Base ID to create the table in"
+                  },
                   "name": {
                     "type": "string",
                     "description": "Table name",
@@ -250,7 +647,18 @@
         "tags": [
           "tables"
         ],
-        "description": "List all tables for the current user",
+        "description": "List all tables for the current user, optionally filtered by base",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "baseId",
+            "required": false,
+            "description": "Filter by base ID"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Default Response",

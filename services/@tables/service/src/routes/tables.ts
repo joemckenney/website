@@ -8,6 +8,7 @@ import {
   Table,
   TableIdParams,
   TableListItem,
+  TablesQueryParams,
   UpdateTableBody,
 } from "../schemas.js";
 import { memoryStore } from "../store/memory.js";
@@ -33,8 +34,23 @@ export async function registerTableRoutes(
       },
     },
     async (request, reply) => {
-      const { name, columns = [] } = request.body;
+      const { baseId, name, columns = [] } = request.body;
       const userId = (request.headers["x-user-id"] as string) || "anonymous";
+
+      // Verify base exists and belongs to user
+      const base = await prisma.base.findUnique({
+        where: { id: baseId },
+      });
+
+      if (!base) {
+        return reply.status(400).send({ error: "Base not found" });
+      }
+
+      if (base.userId !== userId) {
+        return reply
+          .status(400)
+          .send({ error: "Base does not belong to user" });
+      }
 
       // Generate table ID
       const tableId = crypto.randomUUID();
@@ -43,6 +59,7 @@ export async function registerTableRoutes(
       await prisma.tableMeta.create({
         data: {
           id: tableId,
+          baseId,
           userId,
           name,
         },
@@ -86,8 +103,10 @@ export async function registerTableRoutes(
         userId,
         name,
         columns: columnMetas,
-        createdAt: tableMeta?.createdAt.toISOString() ?? new Date().toISOString(),
-        updatedAt: tableMeta?.updatedAt.toISOString() ?? new Date().toISOString(),
+        createdAt:
+          tableMeta?.createdAt.toISOString() ?? new Date().toISOString(),
+        updatedAt:
+          tableMeta?.updatedAt.toISOString() ?? new Date().toISOString(),
       });
     },
   );
@@ -98,8 +117,10 @@ export async function registerTableRoutes(
     {
       schema: {
         operationId: "listTables",
-        description: "List all tables for the current user",
+        description:
+          "List all tables for the current user, optionally filtered by base",
         tags: ["tables"],
+        querystring: TablesQueryParams,
         response: {
           200: Type.Array(TableListItem),
         },
@@ -107,9 +128,13 @@ export async function registerTableRoutes(
     },
     async (request) => {
       const userId = (request.headers["x-user-id"] as string) || "anonymous";
+      const { baseId } = request.query;
 
       const tables = await prisma.tableMeta.findMany({
-        where: { userId },
+        where: {
+          userId,
+          ...(baseId ? { baseId } : {}),
+        },
         orderBy: { updatedAt: "desc" },
       });
 

@@ -650,3 +650,79 @@ export const chatToggleBtn = style({
     },
   },
 });
+
+// Tab bar for base detail view
+export const tabBar = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space[1],
+  padding: `0 ${vars.space[4]}`,
+  borderBottom: `1px solid ${vars.colors.stone300}`,
+  background: vars.colors.stone50,
+  overflowX: "auto",
+  flexShrink: 0,
+});
+
+export const tab = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space[2],
+  padding: `${vars.space[3]} ${vars.space[4]}`,
+  fontSize: vars.fontSizes.sm.fontSize,
+  fontFamily: vars.fonts.mono,
+  color: vars.colors.stone600,
+  background: "transparent",
+  border: "none",
+  borderBottom: "2px solid transparent",
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+  transition: "all 0.15s ease",
+  ":hover": {
+    color: vars.colors.stone900,
+    background: vars.colors.stone100,
+  },
+  selectors: {
+    '&[data-active="true"]': {
+      color: vars.colors.stone900,
+      borderBottomColor: vars.colors.stone900,
+    },
+  },
+});
+
+export const addTabButton = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "28px",
+  height: "28px",
+  fontSize: vars.fontSizes.lg.fontSize,
+  color: vars.colors.stone500,
+  background: "transparent",
+  border: "none",
+  cursor: "pointer",
+  borderRadius: "4px",
+  marginLeft: vars.space[2],
+  transition: "all 0.15s ease",
+  ":hover": {
+    color: vars.colors.stone900,
+    background: vars.colors.stone200,
+  },
+});
+
+export const baseNameInput = style({
+  fontFamily: vars.fonts.display,
+  fontSize: vars.fontSizes.base.fontSize,
+  fontWeight: "400",
+  letterSpacing: vars.letterSpacing.wider,
+  textTransform: "uppercase",
+  border: "none",
+  background: "transparent",
+  padding: `${vars.space[1]} ${vars.space[2]}`,
+  margin: `-${vars.space[1]} -${vars.space[2]}`,
+  outline: "none",
+  width: "auto",
+  minWidth: "100px",
+  ":focus": {
+    background: vars.colors.stone100,
+  },
+});

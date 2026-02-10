@@ -1,6 +1,15 @@
 import { Text } from "@crow/text";
-import { Link } from "react-router";
+import { tablesService } from "@tables/sdk";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { ensureValidToken } from "../lib/auth";
 import * as styles from "../styles/layout.css";
+
+interface BaseWithTables {
+  id: string;
+  name: string;
+  tables: { id: string; name: string }[];
+}
 
 interface SidebarProps {
   isOpen: boolean;
@@ -15,6 +24,12 @@ export function Sidebar({
   userEmail,
   onLogout,
 }: SidebarProps) {
+  const navigate = useNavigate();
+  const [bases, setBases] = useState<BaseWithTables[]>([]);
+  const [expandedBases, setExpandedBases] = useState<Set<string>>(new Set());
+  const [isCreatingBase, setIsCreatingBase] = useState(false);
+  const [newBaseName, setNewBaseName] = useState("");
+
   const initials = userEmail
     ? userEmail
         .split("@")[0]
@@ -23,6 +38,72 @@ export function Sidebar({
         .join("")
         .slice(0, 2)
     : "??";
+
+  useEffect(() => {
+    loadBases();
+  }, []);
+
+  async function loadBases() {
+    const token = await ensureValidToken();
+    if (!token) return;
+
+    try {
+      const response = await tablesService.listBases({});
+      if (response.error || !response.data) return;
+
+      // Load tables for each base
+      const basesWithTables = await Promise.all(
+        response.data.map(async (base) => {
+          const baseResponse = await tablesService.getBase({
+            path: { baseId: base.id },
+          });
+          return {
+            id: base.id,
+            name: base.name,
+            tables: baseResponse.data?.tables ?? [],
+          };
+        }),
+      );
+
+      setBases(basesWithTables);
+    } catch (err) {
+      console.error("Failed to load bases:", err);
+    }
+  }
+
+  function toggleBase(baseId: string) {
+    setExpandedBases((prev) => {
+      const next = new Set(prev);
+      if (next.has(baseId)) {
+        next.delete(baseId);
+      } else {
+        next.add(baseId);
+      }
+      return next;
+    });
+  }
+
+  async function handleCreateBase() {
+    if (!newBaseName.trim()) return;
+
+    const token = await ensureValidToken();
+    if (!token) return;
+
+    try {
+      const response = await tablesService.createBase({
+        body: { name: newBaseName.trim() },
+      });
+
+      if (response.error || !response.data) return;
+
+      setNewBaseName("");
+      setIsCreatingBase(false);
+      navigate(`/bases/${response.data.id}`);
+      loadBases();
+    } catch (err) {
+      console.error("Failed to create base:", err);
+    }
+  }
 
   return (
     <aside
@@ -88,19 +169,97 @@ export function Sidebar({
 
         <div className={styles.navSection}>
           <div className={styles.navSectionTitle}>Data</div>
-          <Link to="/tables" className={styles.navItem}>
-            <svg
-              className={styles.navItemIcon}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              aria-hidden="true"
+          {bases.map((base) => (
+            <div key={base.id} className={styles.baseItem}>
+              <div className={styles.baseHeader}>
+                <button
+                  type="button"
+                  onClick={() => toggleBase(base.id)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                  }}
+                >
+                  <svg
+                    className={`${styles.baseExpandIcon} ${expandedBases.has(base.id) ? styles.baseExpandIconOpen : ""}`}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
+                <Link to={`/bases/${base.id}`} className={styles.baseName}>
+                  {base.name}
+                </Link>
+              </div>
+              <div
+                className={`${styles.baseTableList} ${expandedBases.has(base.id) ? styles.baseTableListOpen : ""}`}
+              >
+                {base.tables.map((table) => (
+                  <Link
+                    key={table.id}
+                    to={`/bases/${base.id}?table=${table.id}`}
+                    className={styles.baseTableItem}
+                  >
+                    {table.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+          {isCreatingBase ? (
+            <div style={{ padding: "4px 0" }}>
+              <input
+                type="text"
+                value={newBaseName}
+                onChange={(e) => setNewBaseName(e.target.value)}
+                placeholder="Base name..."
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleCreateBase();
+                  if (e.key === "Escape") {
+                    setNewBaseName("");
+                    setIsCreatingBase(false);
+                  }
+                }}
+                onBlur={() => {
+                  if (!newBaseName.trim()) {
+                    setIsCreatingBase(false);
+                  }
+                }}
+                style={{
+                  width: "100%",
+                  padding: "4px 8px",
+                  fontSize: "12px",
+                  border: "1px solid #d6d3d1",
+                  fontFamily: "inherit",
+                }}
+              />
+            </div>
+          ) : (
+            <button
+              type="button"
+              className={styles.newBaseButton}
+              onClick={() => setIsCreatingBase(true)}
             >
-              <path d="M3 10h18M3 14h18M10 3v18M14 3v18" />
-            </svg>
-            Tables
-          </Link>
+              <svg
+                className={styles.navItemIcon}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                aria-hidden="true"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              New Base
+            </button>
+          )}
         </div>
 
         <div className={styles.navSection}>
