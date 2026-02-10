@@ -67,15 +67,19 @@ export default function TableViewPage() {
         break;
 
       case "ROW_INSERTED":
-        setRows((prev) => [
-          ...prev,
-          {
-            id: event.rowId,
-            data: event.data,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        ]);
+        setRows((prev) => {
+          // Idempotent: don't add if already exists
+          if (prev.some((row) => row.id === event.rowId)) return prev;
+          return [
+            ...prev,
+            {
+              id: event.rowId,
+              data: event.data,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          ];
+        });
         break;
 
       case "ROW_DELETED":
@@ -83,15 +87,19 @@ export default function TableViewPage() {
         break;
 
       case "COLUMN_ADDED":
-        setColumns((prev) => [
-          ...prev,
-          {
-            id: event.columnId,
-            name: event.name,
-            dataType: event.dataType as ColumnType,
-            position: event.position,
-          },
-        ]);
+        setColumns((prev) => {
+          // Idempotent: don't add if already exists
+          if (prev.some((col) => col.id === event.columnId)) return prev;
+          return [
+            ...prev,
+            {
+              id: event.columnId,
+              name: event.name,
+              dataType: event.dataType as ColumnType,
+              position: event.position,
+            },
+          ];
+        });
         break;
 
       case "COLUMN_RENAMED":
@@ -184,14 +192,12 @@ export default function TableViewPage() {
     if (!tableId) return;
 
     try {
-      const response = await tablesService.insertRow({
+      // Don't update state here - WebSocket subscription will broadcast
+      // the ROW_INSERTED event which handleTableEvent will process
+      await tablesService.insertRow({
         path: { tableId },
         body: { data: {} },
       });
-
-      if (response.data) {
-        setRows((prev) => [...prev, response.data]);
-      }
     } catch (err) {
       console.error("Failed to add row:", err);
     }
@@ -257,14 +263,12 @@ export default function TableViewPage() {
       if (!tableId) return;
 
       try {
-        const response = await tablesService.addColumn({
+        // Don't update state here - WebSocket subscription will broadcast
+        // the COLUMN_ADDED event which handleTableEvent will process
+        await tablesService.addColumn({
           path: { tableId },
           body: { name, dataType },
         });
-
-        if (response.data) {
-          setColumns((prev) => [...prev, response.data]);
-        }
         setIsAddingColumn(false);
       } catch (err) {
         console.error("Failed to add column:", err);

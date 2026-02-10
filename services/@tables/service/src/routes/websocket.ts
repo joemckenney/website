@@ -25,6 +25,11 @@ interface ConnectionInfo {
 const tableConnections = new Map<string, Set<ConnectionInfo>>();
 
 /**
+ * Active subscriptions to memoryStore: tableId -> unsubscribe function
+ */
+const tableSubscriptions = new Map<string, () => void>();
+
+/**
  * Send a typed message to a WebSocket
  */
 function send(socket: WebSocket, msg: ServerMessage): void {
@@ -34,19 +39,19 @@ function send(socket: WebSocket, msg: ServerMessage): void {
 }
 
 /**
- * Broadcast a message to all connections for a table, optionally excluding one
+ * Broadcast an event to all connections for a table
+ * Called by memoryStore subscription when any event is applied
  */
-function broadcast(
-  tableId: string,
-  msg: ServerMessage,
-  excludeSocket?: WebSocket,
-): void {
+function broadcastEvent(tableId: string, event: TableEvent): void {
   const connections = tableConnections.get(tableId);
-  if (!connections) return;
+  if (!connections || connections.size === 0) return;
 
+  // Use "server" as originUserId so clients know to process the event
+  const msg = serverMessage.event(event, "server");
   const data = JSON.stringify(msg);
+
   for (const conn of connections) {
-    if (conn.socket !== excludeSocket && conn.socket.readyState === 1) {
+    if (conn.socket.readyState === 1) {
       conn.socket.send(data);
     }
   }
@@ -60,23 +65,29 @@ export function getConnectionCount(tableId: string): number {
 }
 
 /**
- * Broadcast a table event to all WebSocket clients
- * Used by MCP tools to notify clients of changes
+ * Subscribe to memoryStore events for a table (if not already subscribed)
  */
-export function broadcastTableEvent(event: TableEvent): void {
-  if (!("tableId" in event)) return;
+function ensureTableSubscription(tableId: string): void {
+  if (tableSubscriptions.has(tableId)) return;
 
-  const tableId = event.tableId;
+  const unsubscribe = memoryStore.subscribe(tableId, (event) => {
+    broadcastEvent(tableId, event);
+  });
+
+  tableSubscriptions.set(tableId, unsubscribe);
+}
+
+/**
+ * Unsubscribe from memoryStore events if no more connections
+ */
+function cleanupTableSubscription(tableId: string): void {
   const connections = tableConnections.get(tableId);
-  if (!connections || connections.size === 0) return;
+  if (connections && connections.size > 0) return;
 
-  const msg = serverMessage.event(event, "agent");
-  const data = JSON.stringify(msg);
-
-  for (const conn of connections) {
-    if (conn.socket.readyState === 1) {
-      conn.socket.send(data);
-    }
+  const unsubscribe = tableSubscriptions.get(tableId);
+  if (unsubscribe) {
+    unsubscribe();
+    tableSubscriptions.delete(tableId);
   }
 }
 
@@ -113,6 +124,9 @@ export async function registerWebSocketRoutes(
     }
     tableConnections.get(tableId)?.add(connInfo);
 
+    // Subscribe to memoryStore events (broadcasts to all clients)
+    ensureTableSubscription(tableId);
+
     fastify.log.info(
       { tableId, userId, connections: getConnectionCount(tableId) },
       "WebSocket connected",
@@ -147,6 +161,7 @@ export async function registerWebSocketRoutes(
     // Handle connection close
     socket.on("close", () => {
       tableConnections.get(tableId)?.delete(connInfo);
+      cleanupTableSubscription(tableId);
       fastify.log.info(
         { tableId, userId, connections: getConnectionCount(tableId) },
         "WebSocket disconnected",
@@ -157,6 +172,7 @@ export async function registerWebSocketRoutes(
     socket.on("error", (err) => {
       fastify.log.error({ err, tableId, userId }, "WebSocket error");
       tableConnections.get(tableId)?.delete(connInfo);
+      cleanupTableSubscription(tableId);
     });
   });
 }
@@ -169,7 +185,7 @@ async function handleClientMessage(
   conn: ConnectionInfo,
   msg: ClientMessage,
 ): Promise<void> {
-  const { socket, userId, tableId } = conn;
+  const { socket, tableId } = conn;
 
   switch (msg.type) {
     case "PING": {
@@ -202,6 +218,7 @@ async function handleClientMessage(
       }
 
       // Apply event to memory store + WAL
+      // This triggers the subscription which broadcasts to all clients
       const event: TableEvent = {
         type: "CELL_UPDATED",
         tableId,
@@ -224,11 +241,8 @@ async function handleClientMessage(
         orderBy: { id: "desc" },
       });
 
-      // ACK to sender
+      // ACK to sender (broadcast happens via subscription)
       send(socket, serverMessage.ack(msg.clientSeq, lastEvent?.id ?? 0n));
-
-      // Broadcast to other clients (excluding sender)
-      broadcast(tableId, serverMessage.event(event, userId), socket);
       break;
     }
 
@@ -253,6 +267,7 @@ async function handleClientMessage(
         data: msg.data ?? {},
       };
 
+      // This triggers the subscription which broadcasts to all clients
       await memoryStore.applyEvent(event);
 
       await prisma.tableMeta.update({
@@ -260,7 +275,7 @@ async function handleClientMessage(
         data: { updatedAt: new Date() },
       });
 
-      // Get the newly inserted row
+      // Get the newly inserted row and send confirmation to sender
       const row = memoryStore.getRow(tableId, rowId);
       if (row) {
         send(
@@ -277,9 +292,6 @@ async function handleClientMessage(
           ),
         );
       }
-
-      // Broadcast to other clients
-      broadcast(tableId, serverMessage.event(event, userId), socket);
       break;
     }
 
@@ -311,6 +323,7 @@ async function handleClientMessage(
         rowId: msg.rowId,
       };
 
+      // This triggers the subscription which broadcasts to all clients
       await memoryStore.applyEvent(event);
 
       await prisma.tableMeta.update({
@@ -323,8 +336,8 @@ async function handleClientMessage(
         orderBy: { id: "desc" },
       });
 
+      // ACK to sender (broadcast happens via subscription)
       send(socket, serverMessage.ack(msg.clientSeq, lastEvent?.id ?? 0n));
-      broadcast(tableId, serverMessage.event(event, userId), socket);
       break;
     }
   }

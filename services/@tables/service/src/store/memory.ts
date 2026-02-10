@@ -58,27 +58,17 @@ class MemoryStore {
 
   /**
    * Replay events for a specific table
+   *
+   * Always replays ALL events from the beginning since SQLite :memory:
+   * is lost on restart. Checkpoints are only used by the materializer.
    */
   private async replayTable(
     tableId: string,
     userId: string,
     name: string,
   ): Promise<void> {
-    const checkpoint = await wal.getCheckpoint(tableId);
-    const events = await wal.getEventsSince(tableId, checkpoint ?? 0n);
-
-    if (events.length === 0 && !checkpoint) {
-      // No events for this table, create empty state
-      const db = new Database(":memory:");
-      db.exec(createTableSql());
-      this.tables.set(tableId, {
-        db,
-        columns: new Map(),
-        userId,
-        name,
-      });
-      return;
-    }
+    // Always replay from the beginning - SQLite :memory: doesn't persist
+    const events = await wal.getEventsSince(tableId, 0n);
 
     // Create fresh database and replay events
     const db = new Database(":memory:");
@@ -97,10 +87,10 @@ class MemoryStore {
 
     this.tables.set(tableId, state);
 
-    // Update checkpoint
     if (events.length > 0) {
-      const lastEventId = events[events.length - 1].id;
-      await wal.updateCheckpoint(tableId, lastEventId);
+      console.log(
+        `  Replayed ${events.length} events for table ${tableId} (${state.columns.size} columns)`,
+      );
     }
   }
 

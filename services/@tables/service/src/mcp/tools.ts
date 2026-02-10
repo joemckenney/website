@@ -15,7 +15,6 @@
 
 import { randomUUID } from "node:crypto";
 import type { ColumnType } from "../lib/events.js";
-import { broadcastTableEvent } from "../routes/websocket.js";
 import { memoryStore } from "../store/memory.js";
 
 /**
@@ -345,7 +344,6 @@ async function updateCell(
     value,
   };
   await memoryStore.applyEvent(event);
-  broadcastTableEvent(event);
 
   return { success: true };
 }
@@ -377,7 +375,6 @@ async function insertRow(
     data,
   };
   await memoryStore.applyEvent(event);
-  broadcastTableEvent(event);
 
   const row = memoryStore.getRow(tableId, rowId);
   return { rowId, row };
@@ -408,7 +405,6 @@ async function deleteRows(
       rowId: rowIds[0],
     };
     await memoryStore.applyEvent(event);
-    broadcastTableEvent(event);
   } else if (rowIds.length > 1) {
     const event = {
       type: "ROWS_BULK_DELETED" as const,
@@ -416,7 +412,6 @@ async function deleteRows(
       rowIds,
     };
     await memoryStore.applyEvent(event);
-    broadcastTableEvent(event);
   }
 
   return { deleted: rowIds.length };
@@ -471,7 +466,6 @@ async function addColumn(
     position,
   };
   await memoryStore.applyEvent(event);
-  broadcastTableEvent(event);
 
   return {
     columnId,
@@ -505,7 +499,6 @@ async function renameColumn(
     name,
   };
   await memoryStore.applyEvent(event);
-  broadcastTableEvent(event);
 
   return { success: true };
 }
@@ -534,7 +527,6 @@ async function deleteColumn(
     columnId,
   };
   await memoryStore.applyEvent(event);
-  broadcastTableEvent(event);
 
   return { success: true };
 }
