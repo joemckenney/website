@@ -71,7 +71,6 @@ jobs:
           helm lint services/@users/service/helm
           helm lint services/@agent/service/helm
           helm lint services/@tables/service/helm
-          helm lint services/@strava/mcp-server/helm
 
       - name: Render templates (dry-run)
         run: |
@@ -81,7 +80,6 @@ jobs:
           helm template user-service services/@users/service/helm
           helm template agent-service services/@agent/service/helm
           helm template tables-service services/@tables/service/helm
-          helm template strava-mcp-server services/@strava/mcp-server/helm
 
   build-images:
     name: Build Docker Images

@@ -1,7 +1,13 @@
 /**
  * Column data types supported by the tables system
  */
-export type ColumnType = "text" | "number" | "boolean" | "date" | "select" | "relation";
+export type ColumnType =
+  | "text"
+  | "number"
+  | "boolean"
+  | "date"
+  | "select"
+  | "relation";
 
 /**
  * Table events for the write-ahead log (WAL)

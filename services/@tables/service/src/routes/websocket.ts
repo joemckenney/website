@@ -1,12 +1,12 @@
-import type { FastifyInstance } from "fastify";
 import type { WebSocket } from "@fastify/websocket";
+import type { FastifyInstance } from "fastify";
 import { prisma } from "../db/client.js";
 import type { TableEvent } from "../lib/events.js";
 import {
-  isValidClientMessage,
-  serverMessage,
   type ClientMessage,
+  isValidClientMessage,
   type ServerMessage,
+  serverMessage,
 } from "../lib/ws-protocol.js";
 import { memoryStore } from "../store/memory.js";
 

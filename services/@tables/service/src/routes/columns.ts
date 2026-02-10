@@ -51,7 +51,11 @@ export async function registerColumnRoutes(
       // Validate relation-specific fields
       if (dataType === "relation") {
         if (!referencedTableId) {
-          return reply.status(400).send({ error: "referencedTableId is required for relation columns" });
+          return reply
+            .status(400)
+            .send({
+              error: "referencedTableId is required for relation columns",
+            });
         }
 
         const referencedTableMeta = await prisma.tableMeta.findUnique({
@@ -59,18 +63,30 @@ export async function registerColumnRoutes(
         });
 
         if (!referencedTableMeta) {
-          return reply.status(400).send({ error: "Referenced table not found" });
+          return reply
+            .status(400)
+            .send({ error: "Referenced table not found" });
         }
 
         if (referencedTableMeta.baseId !== tableMeta.baseId) {
-          return reply.status(400).send({ error: "Referenced table must be in the same base" });
+          return reply
+            .status(400)
+            .send({ error: "Referenced table must be in the same base" });
         }
 
         if (memoryStore.wouldCreateCycle(tableId, referencedTableId)) {
-          return reply.status(400).send({ error: "Adding this relation would create a circular dependency" });
+          return reply
+            .status(400)
+            .send({
+              error: "Adding this relation would create a circular dependency",
+            });
         }
       } else if (referencedTableId) {
-        return reply.status(400).send({ error: "referencedTableId is only valid for relation columns" });
+        return reply
+          .status(400)
+          .send({
+            error: "referencedTableId is only valid for relation columns",
+          });
       }
 
       const table = memoryStore.getTable(tableId);
@@ -161,7 +177,8 @@ export async function registerColumnRoutes(
       const updatedTable = memoryStore.getTable(tableId);
       const updatedColumn = updatedTable?.columns.get(columnId);
 
-      const refTableId = updatedColumn?.referencedTableId ?? column.referencedTableId;
+      const refTableId =
+        updatedColumn?.referencedTableId ?? column.referencedTableId;
       return {
         id: columnId,
         name: updatedColumn?.name ?? column.name,
@@ -282,7 +299,9 @@ export async function registerColumnRoutes(
           name: col?.name ?? "",
           dataType: col?.dataType ?? "text",
           position: index,
-          ...(col?.referencedTableId ? { referencedTableId: col.referencedTableId } : {}),
+          ...(col?.referencedTableId
+            ? { referencedTableId: col.referencedTableId }
+            : {}),
         };
       });
     },

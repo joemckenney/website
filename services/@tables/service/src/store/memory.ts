@@ -162,7 +162,11 @@ class MemoryStore {
         this.applyEventToSqlite(state, event);
 
         // Update dependency graph for relation columns
-        if (event.type === "COLUMN_ADDED" && event.dataType === "relation" && event.referencedTableId) {
+        if (
+          event.type === "COLUMN_ADDED" &&
+          event.dataType === "relation" &&
+          event.referencedTableId
+        ) {
           this.addDependencyEdge(event.tableId, event.referencedTableId);
         } else if (event.type === "COLUMN_DELETED") {
           this.rebuildDependencyGraph();
@@ -194,7 +198,9 @@ class MemoryStore {
           name: event.name,
           dataType: event.dataType,
           position: event.position,
-          ...(event.referencedTableId ? { referencedTableId: event.referencedTableId } : {}),
+          ...(event.referencedTableId
+            ? { referencedTableId: event.referencedTableId }
+            : {}),
         });
         break;
       }
@@ -244,7 +250,11 @@ class MemoryStore {
           ...colIds.map((id) => {
             const value = event.data[id];
             const col = columns.get(id);
-            return col ? coerceValue(value, col.dataType) : (value === undefined ? null : value);
+            return col
+              ? coerceValue(value, col.dataType)
+              : value === undefined
+                ? null
+                : value;
           }),
         ];
 
@@ -281,7 +291,9 @@ class MemoryStore {
       case "CELL_UPDATED": {
         const colId = sanitizeColumnId(event.columnId);
         const col = columns.get(event.columnId);
-        const coerced = col ? coerceValue(event.value, col.dataType) : event.value;
+        const coerced = col
+          ? coerceValue(event.value, col.dataType)
+          : event.value;
         db.prepare(
           `UPDATE data SET ${colId} = ?, _updated_at = ? WHERE _id = ?`,
         ).run(coerced, new Date().toISOString(), event.rowId);
@@ -369,7 +381,10 @@ class MemoryStore {
         const sqlCol = sanitizeColumnId(colId);
         const rawValue = row[sqlCol];
         if (meta.dataType === "relation" && meta.referencedTableId) {
-          data[colId] = this.resolveRelationDisplay(meta.referencedTableId, rawValue as string | null);
+          data[colId] = this.resolveRelationDisplay(
+            meta.referencedTableId,
+            rawValue as string | null,
+          );
         } else {
           data[colId] = rawValue;
         }
@@ -424,7 +439,10 @@ class MemoryStore {
       const sqlCol = sanitizeColumnId(colId);
       const rawValue = row[sqlCol];
       if (meta.dataType === "relation" && meta.referencedTableId) {
-        data[colId] = this.resolveRelationDisplay(meta.referencedTableId, rawValue as string | null);
+        data[colId] = this.resolveRelationDisplay(
+          meta.referencedTableId,
+          rawValue as string | null,
+        );
       } else {
         data[colId] = rawValue;
       }
@@ -455,7 +473,11 @@ class MemoryStore {
     this.dependencyGraph.clear();
     for (const [tableId, state] of this.tables) {
       for (const col of state.columns.values()) {
-        if (col.dataType === "relation" && col.referencedTableId && col.referencedTableId !== tableId) {
+        if (
+          col.dataType === "relation" &&
+          col.referencedTableId &&
+          col.referencedTableId !== tableId
+        ) {
           if (!this.dependencyGraph.has(tableId)) {
             this.dependencyGraph.set(tableId, new Set());
           }
@@ -493,7 +515,10 @@ class MemoryStore {
   /**
    * Add an edge to the dependency graph
    */
-  private addDependencyEdge(sourceTableId: string, targetTableId: string): void {
+  private addDependencyEdge(
+    sourceTableId: string,
+    targetTableId: string,
+  ): void {
     if (sourceTableId === targetTableId) return;
     if (!this.dependencyGraph.has(sourceTableId)) {
       this.dependencyGraph.set(sourceTableId, new Set());
@@ -504,7 +529,10 @@ class MemoryStore {
   /**
    * Resolve display value for a relation cell
    */
-  private resolveRelationDisplay(referencedTableId: string, rowId: string | null): { id: string; display: string | null } | null {
+  private resolveRelationDisplay(
+    referencedTableId: string,
+    rowId: string | null,
+  ): { id: string; display: string | null } | null {
     if (rowId === null || rowId === undefined) return null;
 
     const refState = this.tables.get(referencedTableId);
@@ -524,7 +552,9 @@ class MemoryStore {
     const row = this.getRawRow(referencedTableId, rowId);
     if (!row) return { id: rowId, display: null };
 
-    const display = primaryCol ? (row.data[primaryCol.id] as string | null) ?? null : null;
+    const display = primaryCol
+      ? ((row.data[primaryCol.id] as string | null) ?? null)
+      : null;
     return { id: rowId, display };
   }
 
@@ -534,18 +564,27 @@ class MemoryStore {
   private getRawRow(
     tableId: string,
     rowId: string,
-  ): { id: string; data: Record<string, unknown>; createdAt: string; updatedAt: string } | null {
+  ): {
+    id: string;
+    data: Record<string, unknown>;
+    createdAt: string;
+    updatedAt: string;
+  } | null {
     const state = this.tables.get(tableId);
     if (!state) return null;
 
     const { db, columns } = state;
     const colIds = Array.from(columns.keys());
     const selectCols = [
-      "_id", "_created_at", "_updated_at",
+      "_id",
+      "_created_at",
+      "_updated_at",
       ...colIds.map((id) => sanitizeColumnId(id)),
     ].join(", ");
 
-    const row = db.prepare(`SELECT ${selectCols} FROM data WHERE _id = ?`).get(rowId) as Record<string, unknown> | undefined;
+    const row = db
+      .prepare(`SELECT ${selectCols} FROM data WHERE _id = ?`)
+      .get(rowId) as Record<string, unknown> | undefined;
     if (!row) return null;
 
     const data: Record<string, unknown> = {};

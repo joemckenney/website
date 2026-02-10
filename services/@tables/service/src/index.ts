@@ -3,8 +3,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
-import websocket from "@fastify/websocket";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
+import websocket from "@fastify/websocket";
 import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
 import { agentRunner } from "./agents/runner.js";
@@ -17,8 +17,8 @@ import { registerRowRoutes } from "./routes/rows.js";
 import { registerTableRoutes } from "./routes/tables.js";
 import { registerWebSocketRoutes } from "./routes/websocket.js";
 import { HealthResponse } from "./schemas.js";
-import { memoryStore } from "./store/memory.js";
 import { Materializer } from "./store/materializer.js";
+import { memoryStore } from "./store/memory.js";
 
 const fastify = Fastify({
   logger:

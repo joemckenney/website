@@ -185,7 +185,9 @@ export async function registerTableRoutes(
               name: col.name,
               dataType: col.dataType,
               position: col.position,
-              ...(col.referencedTableId ? { referencedTableId: col.referencedTableId } : {}),
+              ...(col.referencedTableId
+                ? { referencedTableId: col.referencedTableId }
+                : {}),
             }))
         : [];
 
@@ -250,7 +252,9 @@ export async function registerTableRoutes(
               name: col.name,
               dataType: col.dataType,
               position: col.position,
-              ...(col.referencedTableId ? { referencedTableId: col.referencedTableId } : {}),
+              ...(col.referencedTableId
+                ? { referencedTableId: col.referencedTableId }
+                : {}),
             }))
         : [];
 

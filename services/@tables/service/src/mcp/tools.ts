@@ -685,7 +685,14 @@ async function createAgent(
   const outputColumns = args.outputColumns as string[];
   const prompt = args.prompt as string;
 
-  if (!tableId || !name || !triggerType || !inputColumns || !outputColumns || !prompt) {
+  if (
+    !tableId ||
+    !name ||
+    !triggerType ||
+    !inputColumns ||
+    !outputColumns ||
+    !prompt
+  ) {
     throw new Error(
       "tableId, name, triggerType, inputColumns, outputColumns, and prompt are required",
     );

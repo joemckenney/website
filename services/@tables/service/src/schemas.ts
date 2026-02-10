@@ -21,7 +21,9 @@ export const Column = Type.Object({
   name: Type.String({ description: "Column display name" }),
   dataType: ColumnTypeSchema,
   position: Type.Number({ description: "Column position (0-indexed)" }),
-  referencedTableId: Type.Optional(Type.String({ description: "Referenced table ID for relation columns" })),
+  referencedTableId: Type.Optional(
+    Type.String({ description: "Referenced table ID for relation columns" }),
+  ),
 });
 export type ColumnType = Static<typeof Column>;
 
@@ -144,7 +146,11 @@ export type UpdateTableBodyType = Static<typeof UpdateTableBody>;
 export const AddColumnBody = Type.Object({
   name: Type.String({ description: "Column name", minLength: 1 }),
   dataType: ColumnTypeSchema,
-  referencedTableId: Type.Optional(Type.String({ description: "Referenced table ID (required for relation type)" })),
+  referencedTableId: Type.Optional(
+    Type.String({
+      description: "Referenced table ID (required for relation type)",
+    }),
+  ),
 });
 export type AddColumnBodyType = Static<typeof AddColumnBody>;
 
@@ -231,10 +237,18 @@ export const TableAgentSchema = Type.Object({
   tableId: Type.String({ description: "Table ID" }),
   name: Type.String({ description: "Agent name" }),
   enabled: Type.Boolean({ description: "Whether the agent is enabled" }),
-  triggerType: Type.String({ description: "Trigger type: on_row_insert or on_cell_update" }),
-  watchColumns: Type.Array(Type.String(), { description: "Column IDs that trigger the agent" }),
-  inputColumns: Type.Array(Type.String(), { description: "Column IDs the agent reads" }),
-  outputColumns: Type.Array(Type.String(), { description: "Column IDs the agent writes" }),
+  triggerType: Type.String({
+    description: "Trigger type: on_row_insert or on_cell_update",
+  }),
+  watchColumns: Type.Array(Type.String(), {
+    description: "Column IDs that trigger the agent",
+  }),
+  inputColumns: Type.Array(Type.String(), {
+    description: "Column IDs the agent reads",
+  }),
+  outputColumns: Type.Array(Type.String(), {
+    description: "Column IDs the agent writes",
+  }),
   prompt: Type.String({ description: "Agent prompt/instructions" }),
   createdAt: Type.String({ description: "Creation timestamp (ISO 8601)" }),
   updatedAt: Type.String({ description: "Last update timestamp (ISO 8601)" }),

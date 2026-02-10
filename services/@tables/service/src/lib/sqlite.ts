@@ -61,9 +61,10 @@ export function coerceValue(
         return value.toISOString();
       }
       return String(value);
-    case "number":
+    case "number": {
       const num = Number(value);
       return Number.isNaN(num) ? null : num;
+    }
     case "boolean":
       // SQLite stores booleans as 0/1
       if (typeof value === "boolean") {
