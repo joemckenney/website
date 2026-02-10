@@ -27,6 +27,7 @@ interface Column {
 }
 
 export interface UseTableAgentOptions {
+  baseId: string;
   tableId: string;
   tableName: string;
   columns: Column[];
@@ -50,7 +51,7 @@ const generateId = () => `msg-${++messageIdCounter}`;
 export function useTableAgent(
   options: UseTableAgentOptions,
 ): UseTableAgentReturn {
-  const { tableId, tableName, columns } = options;
+  const { baseId, tableId, tableName, columns } = options;
 
   const [messages, setMessages] = useState<AgentMessage[]>([
     {
@@ -182,6 +183,7 @@ export function useTableAgent(
           accessToken: token,
           signal: abortControllerRef.current.signal,
           headers: {
+            "x-base-id": baseId,
             "x-table-id": tableId,
             "x-table-name": tableName,
             "x-table-columns": columnsList,
@@ -272,7 +274,7 @@ export function useTableAgent(
         abortControllerRef.current = null;
       }
     },
-    [conversationId, isStreaming, tableId, tableName, columns],
+    [conversationId, isStreaming, baseId, tableId, tableName, columns],
   );
 
   return {

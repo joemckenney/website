@@ -10,6 +10,25 @@ import {
 import { wal } from "./wal.js";
 
 /**
+ * Filter condition for querying rows
+ */
+export interface FilterCondition {
+  columnId: string;
+  operator:
+    | "eq"
+    | "neq"
+    | "gt"
+    | "gte"
+    | "lt"
+    | "lte"
+    | "contains"
+    | "not_contains"
+    | "is_empty"
+    | "is_not_empty";
+  value?: unknown;
+}
+
+/**
  * Column metadata stored in SQLite
  */
 interface ColumnMeta {
@@ -316,6 +335,75 @@ class MemoryStore {
   }
 
   /**
+   * Build a parameterized WHERE clause from filter conditions
+   */
+  private buildWhereClause(
+    filters: FilterCondition[],
+    columns: Map<string, ColumnMeta>,
+  ): { sql: string; params: unknown[] } {
+    const clauses: string[] = [];
+    const params: unknown[] = [];
+
+    for (const filter of filters) {
+      if (!columns.has(filter.columnId)) {
+        console.warn(
+          `Filter skipped: column ${filter.columnId} not found in table`,
+        );
+        continue;
+      }
+
+      const col = sanitizeColumnId(filter.columnId);
+
+      switch (filter.operator) {
+        case "eq":
+          clauses.push(`${col} = ?`);
+          params.push(filter.value);
+          break;
+        case "neq":
+          clauses.push(`${col} != ?`);
+          params.push(filter.value);
+          break;
+        case "gt":
+          clauses.push(`${col} > ?`);
+          params.push(filter.value);
+          break;
+        case "gte":
+          clauses.push(`${col} >= ?`);
+          params.push(filter.value);
+          break;
+        case "lt":
+          clauses.push(`${col} < ?`);
+          params.push(filter.value);
+          break;
+        case "lte":
+          clauses.push(`${col} <= ?`);
+          params.push(filter.value);
+          break;
+        case "contains":
+          clauses.push(`${col} LIKE ?`);
+          params.push(`%${filter.value}%`);
+          break;
+        case "not_contains":
+          clauses.push(`${col} NOT LIKE ?`);
+          params.push(`%${filter.value}%`);
+          break;
+        case "is_empty":
+          clauses.push(`(${col} IS NULL OR ${col} = '')`);
+          break;
+        case "is_not_empty":
+          clauses.push(`(${col} IS NOT NULL AND ${col} != '')`);
+          break;
+      }
+    }
+
+    if (clauses.length === 0) {
+      return { sql: "", params: [] };
+    }
+
+    return { sql: `WHERE ${clauses.join(" AND ")}`, params };
+  }
+
+  /**
    * Query rows from a table
    */
   queryRows(
@@ -325,6 +413,7 @@ class MemoryStore {
       limit?: number;
       sortBy?: string;
       sortOrder?: "asc" | "desc";
+      filters?: FilterCondition[];
     } = {},
   ): {
     rows: Array<{
@@ -341,7 +430,16 @@ class MemoryStore {
     }
 
     const { db, columns } = state;
-    const { offset = 0, limit = 50, sortBy, sortOrder = "asc" } = options;
+    const {
+      offset = 0,
+      limit = 50,
+      sortBy,
+      sortOrder = "asc",
+      filters = [],
+    } = options;
+
+    // Build WHERE clause from filters
+    const where = this.buildWhereClause(filters, columns);
 
     // Build column list for SELECT
     const colIds = Array.from(columns.keys());
@@ -352,10 +450,10 @@ class MemoryStore {
       ...colIds.map((id) => sanitizeColumnId(id)),
     ].join(", ");
 
-    // Count total
+    // Count total (with filters)
     const countResult = db
-      .prepare("SELECT COUNT(*) as count FROM data")
-      .get() as { count: number };
+      .prepare(`SELECT COUNT(*) as count FROM data ${where.sql}`)
+      .get(...where.params) as { count: number };
     const total = countResult.count;
 
     // Build ORDER BY
@@ -368,11 +466,11 @@ class MemoryStore {
       orderBy = `${sortCol} ${sortOrder.toUpperCase()}`;
     }
 
-    // Query with pagination
-    const sql = `SELECT ${selectCols} FROM data ORDER BY ${orderBy} LIMIT ? OFFSET ?`;
-    const rawRows = db.prepare(sql).all(limit, offset) as Array<
-      Record<string, unknown>
-    >;
+    // Query with pagination and filters
+    const sql = `SELECT ${selectCols} FROM data ${where.sql} ORDER BY ${orderBy} LIMIT ? OFFSET ?`;
+    const rawRows = db
+      .prepare(sql)
+      .all(...where.params, limit, offset) as Array<Record<string, unknown>>;
 
     // Transform rows to use column IDs as keys
     const rows = rawRows.map((row) => {
@@ -398,6 +496,66 @@ class MemoryStore {
     });
 
     return { rows, total };
+  }
+
+  /**
+   * Aggregate data from a table
+   */
+  aggregate(
+    tableId: string,
+    options: {
+      columnId?: string;
+      function: "count" | "sum" | "avg" | "min" | "max";
+      filters?: FilterCondition[];
+    },
+  ): { result: number | null } {
+    const state = this.tables.get(tableId);
+    if (!state) {
+      return { result: null };
+    }
+
+    const { db, columns } = state;
+    const { columnId, filters = [] } = options;
+    const fn = options.function;
+
+    // count works without columnId, others require it
+    if (fn !== "count" && !columnId) {
+      throw new Error(`columnId is required for ${fn} aggregation`);
+    }
+
+    // Validate column exists
+    if (columnId && !columns.has(columnId)) {
+      throw new Error(`Column ${columnId} not found`);
+    }
+
+    // Validate numeric functions are used on number columns
+    if (columnId && (fn === "sum" || fn === "avg")) {
+      const col = columns.get(columnId);
+      if (col && col.dataType !== "number") {
+        throw new Error(
+          `${fn} can only be used on number columns, but "${col.name}" is ${col.dataType}`,
+        );
+      }
+    }
+
+    // Build WHERE clause from filters
+    const where = this.buildWhereClause(filters, columns);
+
+    // Build aggregation SQL
+    let expr: string;
+    if (fn === "count" && !columnId) {
+      expr = "COUNT(*)";
+    } else {
+      const col = sanitizeColumnId(columnId!);
+      expr = `${fn.toUpperCase()}(${col})`;
+    }
+
+    const sql = `SELECT ${expr} as result FROM data ${where.sql}`;
+    const row = db.prepare(sql).get(...where.params) as {
+      result: number | null;
+    };
+
+    return { result: row.result ?? null };
   }
 
   /**

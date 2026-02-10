@@ -28,6 +28,11 @@ const sseConnections = new Map<string, ServerResponse>();
 const userTableContext = new Map<string, string>();
 
 /**
+ * Store base context from SSE connection by user ID
+ */
+const userBaseContext = new Map<string, string>();
+
+/**
  * MCP JSON-RPC request structure
  * Note: id is optional for notifications
  */
@@ -103,21 +108,21 @@ export async function registerMcpRoutes(
     },
     async (request, reply) => {
       const userId = request.headers["x-user-id"] as string;
-      // Try to get tableId from request header first, then fall back to stored context
+      // Try to get tableId/baseId from request header first, then fall back to stored context
       const headerTableId = request.headers["x-table-id"] as string | undefined;
+      const headerBaseId = request.headers["x-base-id"] as string | undefined;
       const storedTableId = userTableContext.get(userId);
+      const storedBaseId = userBaseContext.get(userId);
       const contextTableId = headerTableId || storedTableId;
+      const contextBaseId = headerBaseId || storedBaseId;
       const mcpRequest = request.body as McpRequest;
 
       console.log(`[MCP MESSAGE] ====== Incoming request ======`);
       console.log(`[MCP MESSAGE] Method: ${mcpRequest.method}`);
       console.log(`[MCP MESSAGE] ID: ${mcpRequest.id}`);
       console.log(`[MCP MESSAGE] User: ${userId}`);
-      console.log(`[MCP MESSAGE] Table ID from header: ${headerTableId}`);
-      console.log(
-        `[MCP MESSAGE] Table ID from stored context: ${storedTableId}`,
-      );
-      console.log(`[MCP MESSAGE] Using Context Table ID: ${contextTableId}`);
+      console.log(`[MCP MESSAGE] Table ID: ${contextTableId}`);
+      console.log(`[MCP MESSAGE] Base ID: ${contextBaseId}`);
       console.log(
         `[MCP MESSAGE] Params:`,
         JSON.stringify(mcpRequest.params || {}, null, 2),
@@ -187,12 +192,13 @@ export async function registerMcpRoutes(
           );
 
           try {
-            // Pass contextTableId so tools can use it as default
+            // Pass contextTableId and contextBaseId so tools can use them as defaults
             const result = await handleToolCall(
               toolName,
               toolArgs || {},
               userId,
               contextTableId,
+              contextBaseId,
             );
             console.log(
               `[MCP] Tool result:`,
@@ -269,18 +275,22 @@ export async function registerMcpRoutes(
     async (request, reply) => {
       const userId = request.headers["x-user-id"] as string;
       const tableId = request.headers["x-table-id"] as string | undefined;
+      const baseId = request.headers["x-base-id"] as string | undefined;
       console.log(`[MCP SSE] Connection opened for user: ${userId}`);
       console.log(`[MCP SSE] Table ID from header: ${tableId}`);
-      console.log(
-        `[MCP SSE] Request headers:`,
-        JSON.stringify(request.headers, null, 2),
-      );
+      console.log(`[MCP SSE] Base ID from header: ${baseId}`);
 
-      // Store table context for this user (used by POST requests)
+      // Store table and base context for this user (used by POST requests)
       if (tableId) {
         userTableContext.set(userId, tableId);
         console.log(
           `[MCP SSE] Stored table context for user ${userId}: ${tableId}`,
+        );
+      }
+      if (baseId) {
+        userBaseContext.set(userId, baseId);
+        console.log(
+          `[MCP SSE] Stored base context for user ${userId}: ${baseId}`,
         );
       }
 
@@ -314,6 +324,7 @@ export async function registerMcpRoutes(
         clearInterval(heartbeat);
         sseConnections.delete(userId);
         userTableContext.delete(userId);
+        userBaseContext.delete(userId);
       });
     },
   );

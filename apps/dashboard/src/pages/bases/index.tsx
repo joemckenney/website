@@ -22,7 +22,7 @@ export default function BasesListPage() {
 
   useEffect(() => {
     loadBases();
-  }, [loadBases]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- run once on mount
 
   async function loadBases() {
     const token = await ensureValidToken();

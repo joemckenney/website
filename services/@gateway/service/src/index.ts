@@ -39,6 +39,7 @@ await fastify.register(cors, {
   allowedHeaders: [
     "Content-Type",
     "Authorization",
+    "x-base-id",
     "x-table-id",
     "x-table-name",
     "x-table-columns",

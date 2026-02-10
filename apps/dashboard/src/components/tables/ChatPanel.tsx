@@ -9,6 +9,7 @@ interface Column {
 }
 
 interface ChatPanelProps {
+  baseId: string;
   tableId: string;
   tableName: string;
   columns: Column[];
@@ -16,6 +17,7 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({
+  baseId,
   tableId,
   tableName,
   columns,
@@ -29,6 +31,7 @@ export function ChatPanel({
     error,
     sendMessage,
   } = useTableAgent({
+    baseId,
     tableId,
     tableName,
     columns,
