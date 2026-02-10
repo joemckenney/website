@@ -189,7 +189,7 @@ export async function registerUserRoutes(
         await prisma.user.delete({
           where: { id: request.params.id },
         });
-        return reply.status(204).send();
+        return reply.status(204).send(null);
       } catch (error) {
         if (
           error instanceof Error &&

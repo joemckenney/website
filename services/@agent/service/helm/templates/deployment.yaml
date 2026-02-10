@@ -65,6 +65,8 @@ spec:
         # MCP service URLs
         - name: STRAVA_SERVICE_URL
           value: {{ .Values.strava.serviceUrl | quote }}
+        - name: TABLES_SERVICE_URL
+          value: {{ .Values.tables.serviceUrl | quote }}
         # Secrets
         - name: DATABASE_URL
           valueFrom:

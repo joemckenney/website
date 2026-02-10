@@ -19,6 +19,7 @@
     "format": "biome format --write ."
   },
   "dependencies": {
+    "@agent/sdk": "workspace:*",
     "@crow/box": "workspace:*",
     "@crow/button": "workspace:*",
     "@crow/flex": "workspace:*",
@@ -26,9 +27,9 @@
     "@crow/text": "workspace:*",
     "@crow/textarea": "workspace:*",
     "@crow/theme": "workspace:*",
-    "@agent/sdk": "workspace:*",
     "@gateway/sdk": "workspace:*",
     "@generouted/react-router": "^1.20.0",
+    "@tables/sdk": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router": "^7.11.0"

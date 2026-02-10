@@ -6,8 +6,8 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || "development",
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   braveApiKey: process.env.BRAVE_API_KEY,
-  // Strava MCP service URL for per-user Strava integration
-  stravaServiceUrl: process.env.STRAVA_SERVICE_URL || "http://localhost:3004",
+  // Tables MCP service URL for table operations
+  tablesServiceUrl: process.env.TABLES_SERVICE_URL || "http://localhost:3005",
   agent: {
     model: process.env.AGENT_MODEL || "claude-sonnet-4-20250514",
     maxTokens: Number(process.env.AGENT_MAX_TOKENS) || 4096,

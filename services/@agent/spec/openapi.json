@@ -52,6 +52,7 @@
         ],
         "description": "Create a new conversation",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -443,6 +444,7 @@
         ],
         "description": "Update a conversation",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -630,6 +632,7 @@
         ],
         "description": "Send a message and stream the agent response via Server-Sent Events",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -645,8 +648,7 @@
                 }
               }
             }
-          },
-          "required": true
+          }
         },
         "parameters": [
           {

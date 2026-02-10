@@ -12,31 +12,6 @@ import {
   ErrorResponse,
 } from "../schemas.js";
 
-/**
- * Check if user has a valid Strava connection
- */
-async function getStravaConnection(userId: string) {
-  const connection = await prisma.stravaConnection.findUnique({
-    where: { userId },
-    select: {
-      id: true,
-      athleteId: true,
-      expiresAt: true,
-    },
-  });
-
-  if (!connection) {
-    return null;
-  }
-
-  // Check if token is expired (Strava MCP service will refresh it)
-  // We just need to know if a connection exists
-  return {
-    connected: true,
-    athleteId: connection.athleteId,
-  };
-}
-
 export async function registerChatRoutes(
   app: FastifyInstance & { withTypeProvider: () => FastifyInstance },
 ) {
@@ -92,45 +67,85 @@ export async function registerChatRoutes(
         },
       });
 
-      // Check if user has Strava connected
-      const stravaStatus = await getStravaConnection(user.id);
-      console.log(`[Chat] User ${user.id} Strava status:`, stravaStatus);
+      // Check for table context header (set by chat panel in dashboard)
+      const tableId = request.headers["x-table-id"] as string | undefined;
+      const tableName = request.headers["x-table-name"] as string | undefined;
+      const tableColumns = request.headers["x-table-columns"] as
+        | string
+        | undefined;
+
+      console.log(`[Chat] ====== Table Context Headers ======`);
+      console.log(`[Chat] x-table-id: ${tableId}`);
+      console.log(`[Chat] x-table-name: ${tableName}`);
+      console.log(`[Chat] x-table-columns: ${tableColumns}`);
 
       // Build MCP servers config conditionally
       const mcpServers: Record<string, McpServerConfig> = {};
-      if (stravaStatus?.connected) {
-        const stravaUrl = `${config.stravaServiceUrl}/strava/mcp/sse`;
-        console.log(`[Chat] Adding Strava MCP server: ${stravaUrl}`);
-        mcpServers.strava = {
+
+      if (tableId) {
+        const tablesUrl = `${config.tablesServiceUrl}/mcp/sse`;
+        console.log(`[Chat] Adding Tables MCP server: ${tablesUrl}`);
+        mcpServers.tables = {
           type: "sse",
-          url: stravaUrl,
-          headers: { "x-user-id": user.id },
+          url: tablesUrl,
+          headers: { "x-user-id": user.id, "x-table-id": tableId },
         };
       }
 
       // Create agent with Agent SDK
       // The Agent SDK handles tool execution internally
-      const hasStrava = Object.keys(mcpServers).length > 0;
+      const hasMcpServers = Object.keys(mcpServers).length > 0;
       console.log(`[Chat] ====== Creating Agent ======`);
-      console.log(`[Chat] Has MCP servers: ${hasStrava}`);
+      console.log(`[Chat] Has MCP servers: ${hasMcpServers}`);
       console.log(`[Chat] MCP server names:`, Object.keys(mcpServers));
       console.log(
         `[Chat] Full MCP config:`,
         JSON.stringify(mcpServers, null, 2),
       );
 
+      // Build system prompt with table context if available
+      let systemPrompt = config.agent.systemPrompt;
+      if (tableId) {
+        systemPrompt += `\n\nIMPORTANT: You are working with the user's data table "${tableName || "current table"}".`;
+        if (tableColumns) {
+          systemPrompt += ` Current columns: ${tableColumns}.`;
+        }
+        systemPrompt += `
+
+You have MCP tools to work with this table. All tools automatically operate on the current table - you don't need to specify a table ID.
+
+Available tools:
+- get-table-schema: See all columns in this table
+- query-rows: Get rows (with optional limit/offset for pagination)
+- insert-row: Add a new row (optionally with initial data)
+- update-cell: Update a cell (requires rowId, columnId, and value)
+- delete-rows: Delete rows (requires array of rowIds)
+- add-column: Add a column (requires name and dataType: text/number/boolean/date/select)
+- rename-column: Rename a column (requires columnId and new name)
+- delete-column: Remove a column (requires columnId)
+
+When the user asks to add rows, columns, update data, or query the table, use these tools immediately. This is a database table - do NOT ask for file paths.
+
+Agent automation tools:
+- create-agent: Create an AI agent that automatically fills in columns. Requires: name, triggerType ("on_row_insert" or "on_cell_update"), inputColumns (column IDs to read), outputColumns (column IDs to write), prompt (instructions). For "on_cell_update", also provide watchColumns.
+- list-agents: List all agents on this table
+- update-agent: Update an agent's configuration (requires agentId)
+- delete-agent: Delete an agent (requires agentId)
+- toggle-agent: Enable/disable an agent (requires agentId and enabled boolean)
+
+When the user asks to create an automation (e.g., "auto-fill bio when name is added"), use get-table-schema first to get column IDs, then create-agent with the appropriate columns and a clear prompt.`;
+      }
+
       const agent = createAgent(
         {
           model: config.agent.model,
           maxTokens: config.agent.maxTokens,
-          systemPrompt: hasStrava
-            ? `${config.agent.systemPrompt}\n\nIMPORTANT: You have access to the user's Strava fitness data via MCP tools. When the user asks about their runs, activities, or fitness data, use the Strava MCP tools (get-recent-activities, get-activity-details, get-athlete-stats) instead of searching for files.`
-            : config.agent.systemPrompt,
+          systemPrompt,
         },
         {
           allowedTools: ["WebSearch"],
           permissionMode: "bypassPermissions",
-          ...(hasStrava && { mcpServers }),
+          ...(hasMcpServers && { mcpServers }),
         },
       );
 

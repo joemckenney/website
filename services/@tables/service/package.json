@@ -1,0 +1,51 @@
+{
+  "name": "@tables/service",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "build": "tsgo && tsx src/generate-spec.ts",
+    "build:docker": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/tables-service:latest -f Dockerfile $REPO_ROOT",
+    "build:docker:local": "REPO_ROOT=$(git rev-parse --show-toplevel) && eval $(minikube docker-env) && docker buildx build -t localhost:5000/tables-service:latest -f Dockerfile $REPO_ROOT",
+    "build:docker:prod": "REPO_ROOT=$(git rev-parse --show-toplevel) && docker build -t ${DOCKERHUB_USERNAME}/tables-service:${TAG:-latest} -f Dockerfile $REPO_ROOT",
+    "deploy:helm:local": "helm upgrade --install tables-service ./helm -f ./helm/values-local.yaml --wait --timeout=5m",
+    "deploy:helm:prod": "helm upgrade --install tables-service ./helm -f ./helm/values-prod.yaml --wait --timeout=5m",
+    "clean": "rm -rf dist",
+    "clean:docker": "docker rmi localhost:5000/tables-service:latest || true",
+    "start": "node dist/index.js",
+    "check": "biome check .",
+    "lint": "biome check --write .",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.52.0",
+    "@fastify/cors": "^11.1.0",
+    "@fastify/swagger": "^9.6.0",
+    "@fastify/swagger-ui": "^5.2.3",
+    "@fastify/type-provider-typebox": "^6.1.0",
+    "@fastify/websocket": "^11.0.2",
+    "@tables/db": "workspace:*",
+    "@types/jsonwebtoken": "^9.0.10",
+    "better-sqlite3": "^11.9.1",
+    "dotenv": "^17.2.3",
+    "fastify": "^5.6.2",
+    "fastify-metrics": "^12.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "typebox": "^1.0.13",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^20.14.0",
+    "@types/ws": "^8.18.1",
+    "@typescript/native-preview": "catalog:",
+    "@website/config": "workspace:*",
+    "pino-pretty": "^13.1.2",
+    "tsx": "^4.16.2"
+  }
+}

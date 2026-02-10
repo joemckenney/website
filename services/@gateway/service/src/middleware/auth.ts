@@ -14,6 +14,11 @@ export async function authenticateRequest(
   request: FastifyRequest,
   reply: FastifyReply,
 ) {
+  // Skip authentication for CORS preflight requests
+  if (request.method === "OPTIONS") {
+    return;
+  }
+
   try {
     const authHeader = request.headers.authorization;
 

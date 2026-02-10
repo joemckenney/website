@@ -27,6 +27,9 @@ WORKDIR /app
 # Enable corepack to use pnpm version from package.json
 RUN corepack enable
 
+# Install build tools for native modules (better-sqlite3)
+RUN apk add --no-cache python3 make g++
+
 # Copy workspace configs and lockfile from pruned output
 COPY --from=workspace-pruner /app/out/json/ .
 COPY --from=workspace-pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
@@ -42,6 +45,12 @@ COPY --from=workspace-pruner /app/out/full/ .
 
 # Build using turbo (no remote cache - Docker layer cache is sufficient)
 RUN pnpm turbo build --filter=@agent/service...
+
+# Migrator stage - has prisma CLI for running migrations
+FROM builder AS migrator
+
+WORKDIR /app/services/@agent/db
+CMD ["npx", "prisma", "migrate", "deploy"]
 
 # Deploy stage - creates production deployment
 FROM builder AS deployer

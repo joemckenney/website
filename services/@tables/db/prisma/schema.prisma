@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Container for related tables (like an Excel workbook)
+model Base {
+  id        String      @id @default(uuid())
+  userId    String
+  name      String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  tables    TableMeta[]
+
+  @@index([userId])
+}
+
+/// Metadata for user-created tables
+model TableMeta {
+  id        String       @id @default(uuid())
+  baseId    String
+  base      Base         @relation(fields: [baseId], references: [id], onDelete: Cascade)
+  userId    String
+  name      String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  agents    TableAgent[]
+
+  @@index([userId])
+  @@index([baseId])
+}
+
+/// AI agent automation for a table
+model TableAgent {
+  id            String    @id @default(uuid())
+  tableId       String
+  table         TableMeta @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  name          String
+  enabled       Boolean   @default(true)
+  triggerType   String    // "on_row_insert" | "on_cell_update"
+  watchColumns  String[]  @default([])
+  inputColumns  String[]
+  outputColumns String[]
+  prompt        String    @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([tableId])
+  @@index([tableId, enabled])
+}
+
+/// Write-ahead log for table mutations (source of truth for recovery)
+model TableEvent {
+  id          BigInt   @id @default(autoincrement())
+  tableId     String
+  eventType   String   // SCHEMA_CHANGE, ROW_INSERT, ROW_UPDATE, ROW_DELETE, etc.
+  payload     Json
+  createdAt   DateTime @default(now())
+  appliedToPg Boolean  @default(false)
+  appliedAt   DateTime?
+
+  @@index([tableId, appliedToPg])
+  @@index([appliedToPg, createdAt])
+}
+
+/// Checkpoint for WAL replay optimization
+model TableCheckpoint {
+  tableId      String   @id
+  lastEventId  BigInt
+  checkpointAt DateTime @default(now())
+}
+
+/// Materialized columns (legacy - now using dynamic PostgreSQL tables)
+model MaterializedColumn {
+  id        String   @id
+  tableId   String
+  name      String
+  dataType  String
+  position  Int
+  options   String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tableId])
+}
+
+/// Materialized rows (legacy - now using dynamic PostgreSQL tables)
+model MaterializedRow {
+  id        String   @id
+  tableId   String
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tableId])
+  @@index([tableId, createdAt])
+}

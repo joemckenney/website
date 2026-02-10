@@ -1,5 +1,6 @@
 import { client as agentClient } from "@agent/sdk";
 import { client } from "@gateway/sdk";
+import { client as tablesClient } from "@tables/sdk";
 import {
   clearTokens,
   ensureValidToken,
@@ -33,6 +34,12 @@ export function setupApiClient(baseUrl: string) {
   // Agent SDK client - routes through gateway at /agent/*
   agentClient.setConfig({
     baseUrl: `${baseUrl}/agent`,
+    credentials: "include",
+  });
+
+  // Tables SDK client - routes through gateway at /tables/*
+  tablesClient.setConfig({
+    baseUrl: `${baseUrl}/tables`,
     credentials: "include",
   });
 
@@ -126,6 +133,15 @@ export function setupApiClient(baseUrl: string) {
 
   // Agent client request interceptor - Add auth token
   agentClient.interceptors.request.use(async (request) => {
+    const token = await ensureValidToken();
+    if (token) {
+      request.headers.set("Authorization", `Bearer ${token}`);
+    }
+    return request;
+  });
+
+  // Tables client request interceptor - Add auth token
+  tablesClient.interceptors.request.use(async (request) => {
     const token = await ensureValidToken();
     if (token) {
       request.headers.set("Authorization", `Bearer ${token}`);

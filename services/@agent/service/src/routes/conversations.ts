@@ -204,7 +204,7 @@ export async function registerConversationRoutes(
       }
 
       await prisma.conversation.delete({ where: { id } });
-      return reply.status(204).send();
+      return reply.status(204).send(null);
     },
   );
 }

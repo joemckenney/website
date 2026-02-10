@@ -1,0 +1,6 @@
+{
+  "extends": ["@website/config/biome"],
+  "files": {
+    "includes": ["**", "!spec", "!dist"]
+  }
+}

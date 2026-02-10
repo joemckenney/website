@@ -3,7 +3,11 @@ import type { AudioParameters, WeatherData } from "../types/weather";
 // Chrome Prompt API types based on official documentation
 // https://developer.chrome.com/docs/ai/prompt-api
 
-type AIAvailability = "unavailable" | "downloadable" | "downloading" | "available";
+type AIAvailability =
+  | "unavailable"
+  | "downloadable"
+  | "downloading"
+  | "available";
 
 interface AIDownloadProgressEvent {
   loaded: number;

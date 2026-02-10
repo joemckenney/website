@@ -63,6 +63,8 @@ export interface StreamChatOptions {
   accessToken: string;
   /** AbortSignal for cancellation */
   signal?: AbortSignal;
+  /** Additional headers to send with the request (e.g., for table context) */
+  headers?: Record<string, string>;
 }
 
 /**
@@ -94,6 +96,7 @@ export async function* streamChat(
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${options.accessToken}`,
+        ...options.headers,
       },
       body: JSON.stringify({ message }),
       signal: options.signal,

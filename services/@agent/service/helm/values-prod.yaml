@@ -42,6 +42,10 @@ agent:
   maxTokens: "4096"
   systemPrompt: "You are a helpful AI assistant with access to web search. Be concise and helpful."
 
+# MCP service URLs
+tables:
+  serviceUrl: "http://tables-service:3005"
+
 # Secrets - injected via GHA secrets (see cd.yml)
 # These are placeholder values that get overridden by --set flags
 secrets:
@@ -53,6 +57,10 @@ secrets:
 metrics:
   enabled: true
 
-# Database migrations (uses service image with command override)
+# Database migrations
 migration:
   enabled: true
+  image:
+    repository: crowprose/agent-service-migrate
+    pullPolicy: IfNotPresent
+    tag: ""  # defaults to .Values.image.tag

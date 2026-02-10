@@ -27,9 +27,8 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: migrate
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["npx", "prisma", "migrate", "deploy"]
+          image: "{{ .Values.migration.image.repository }}:{{ .Values.migration.image.tag | default .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.migration.image.pullPolicy | default .Values.image.pullPolicy }}
           env:
             - name: DATABASE_URL
               valueFrom:
@@ -40,9 +39,9 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           resources:
             limits:
-              cpu: 200m
-              memory: 256Mi
+              cpu: 500m
+              memory: 512Mi
             requests:
-              cpu: 50m
-              memory: 64Mi
+              cpu: 100m
+              memory: 256Mi
 {{- end }}

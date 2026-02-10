@@ -41,13 +41,13 @@ export const listConversations = <ThrowOnError extends boolean = false>(options?
 /**
  * Create a new conversation
  */
-export const createConversation = <ThrowOnError extends boolean = false>(options?: Options<CreateConversationData, ThrowOnError>) => {
-    return (options?.client ?? client).post<CreateConversationResponses, CreateConversationErrors, ThrowOnError>({
+export const createConversation = <ThrowOnError extends boolean = false>(options: Options<CreateConversationData, ThrowOnError>) => {
+    return (options.client ?? client).post<CreateConversationResponses, CreateConversationErrors, ThrowOnError>({
         url: '/conversations',
         ...options,
         headers: {
             'Content-Type': 'application/json',
-            ...options?.headers
+            ...options.headers
         }
     });
 };
