@@ -27,6 +27,9 @@ WORKDIR /app
 # Enable corepack to use pnpm version from package.json
 RUN corepack enable
 
+# Install build tools for native modules (better-sqlite3 peer dep of prisma)
+RUN apk add --no-cache python3 make g++
+
 # Copy workspace configs and lockfile from pruned output
 COPY --from=workspace-pruner /app/out/json/ .
 COPY --from=workspace-pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
