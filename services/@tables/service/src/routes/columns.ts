@@ -51,11 +51,9 @@ export async function registerColumnRoutes(
       // Validate relation-specific fields
       if (dataType === "relation") {
         if (!referencedTableId) {
-          return reply
-            .status(400)
-            .send({
-              error: "referencedTableId is required for relation columns",
-            });
+          return reply.status(400).send({
+            error: "referencedTableId is required for relation columns",
+          });
         }
 
         const referencedTableMeta = await prisma.tableMeta.findUnique({
@@ -75,18 +73,14 @@ export async function registerColumnRoutes(
         }
 
         if (memoryStore.wouldCreateCycle(tableId, referencedTableId)) {
-          return reply
-            .status(400)
-            .send({
-              error: "Adding this relation would create a circular dependency",
-            });
+          return reply.status(400).send({
+            error: "Adding this relation would create a circular dependency",
+          });
         }
       } else if (referencedTableId) {
-        return reply
-          .status(400)
-          .send({
-            error: "referencedTableId is only valid for relation columns",
-          });
+        return reply.status(400).send({
+          error: "referencedTableId is only valid for relation columns",
+        });
       }
 
       const table = memoryStore.getTable(tableId);
