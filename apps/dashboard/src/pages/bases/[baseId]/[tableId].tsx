@@ -446,6 +446,7 @@ export default function BaseDetailPage() {
       {/* Chat panel on left - associated with base */}
       <div className={layoutStyles.chatPane}>
         <ChatPanel
+          baseId={baseId ?? ""}
           tableId={
             isEmptyBase ? (baseId ?? "") : (selectedTableId ?? baseId ?? "")
           }

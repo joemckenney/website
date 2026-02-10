@@ -12,6 +12,105 @@ import {
   ErrorResponse,
 } from "../schemas.js";
 
+/**
+ * Fetch full base context (all tables + schemas) from the tables service
+ * Returns a formatted string for the system prompt
+ */
+async function fetchBaseContext(
+  baseId: string,
+  activeTableId: string,
+  userId: string,
+): Promise<string> {
+  const baseUrl = config.tablesServiceUrl;
+  const headers = { "x-user-id": userId };
+
+  // Fetch base info with table list
+  const baseRes = await fetch(`${baseUrl}/bases/${baseId}`, { headers });
+  if (!baseRes.ok) {
+    throw new Error(`Failed to fetch base: ${baseRes.status}`);
+  }
+  const base = (await baseRes.json()) as {
+    id: string;
+    name: string;
+    userId: string;
+    tables: Array<{ id: string; name: string }>;
+  };
+
+  // Fetch schema for each table in parallel
+  const tableSchemas = await Promise.all(
+    base.tables.map(async (t) => {
+      const res = await fetch(`${baseUrl}/tables/${t.id}`, { headers });
+      if (!res.ok) return { ...t, columns: [] };
+      const data = (await res.json()) as {
+        id: string;
+        name: string;
+        columns: Array<{
+          id: string;
+          name: string;
+          dataType: string;
+          referencedTableId?: string;
+        }>;
+      };
+      return data;
+    }),
+  );
+
+  // Build the table-name lookup for relations
+  const tableNames = new Map(base.tables.map((t) => [t.id, t.name]));
+
+  // Format context
+  const lines: string[] = [];
+  lines.push(`You are working in base "${base.name}" (baseId: ${base.id}).`);
+  lines.push(`Current user: ${userId}`);
+  lines.push("");
+
+  const activeTable = tableSchemas.find((t) => t.id === activeTableId);
+  if (activeTable) {
+    lines.push(
+      `Currently viewing table: "${activeTable.name}" (tableId: ${activeTable.id})`,
+    );
+  }
+  lines.push("");
+
+  lines.push(`Tables in this base:`);
+  for (const table of tableSchemas) {
+    const colDescs = table.columns.map((c) => {
+      let desc = `${c.name} (${c.dataType}, id:${c.id})`;
+      if (c.referencedTableId) {
+        const refName =
+          tableNames.get(c.referencedTableId) || c.referencedTableId;
+        desc += ` → ${refName}`;
+      }
+      return desc;
+    });
+    const marker = table.id === activeTableId ? " [active]" : "";
+    lines.push(
+      `- "${table.name}" (tableId: ${table.id})${marker}: ${colDescs.length > 0 ? colDescs.join(", ") : "no columns"}`,
+    );
+  }
+
+  // List relationships if any
+  const relations = tableSchemas.flatMap((t) =>
+    t.columns
+      .filter((c) => c.dataType === "relation" && c.referencedTableId)
+      .map((c) => ({
+        from: t.name,
+        column: c.name,
+        to: tableNames.get(c.referencedTableId!) || c.referencedTableId!,
+      })),
+  );
+
+  if (relations.length > 0) {
+    lines.push("");
+    lines.push("Relationships:");
+    for (const r of relations) {
+      lines.push(`- ${r.from}.${r.column} → ${r.to}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
 export async function registerChatRoutes(
   app: FastifyInstance & { withTypeProvider: () => FastifyInstance },
 ) {
@@ -67,7 +166,8 @@ export async function registerChatRoutes(
         },
       });
 
-      // Check for table context header (set by chat panel in dashboard)
+      // Check for table context headers (set by chat panel in dashboard)
+      const baseId = request.headers["x-base-id"] as string | undefined;
       const tableId = request.headers["x-table-id"] as string | undefined;
       const tableName = request.headers["x-table-name"] as string | undefined;
       const tableColumns = request.headers["x-table-columns"] as
@@ -75,6 +175,7 @@ export async function registerChatRoutes(
         | undefined;
 
       console.log(`[Chat] ====== Table Context Headers ======`);
+      console.log(`[Chat] x-base-id: ${baseId}`);
       console.log(`[Chat] x-table-id: ${tableId}`);
       console.log(`[Chat] x-table-name: ${tableName}`);
       console.log(`[Chat] x-table-columns: ${tableColumns}`);
@@ -88,7 +189,11 @@ export async function registerChatRoutes(
         mcpServers.tables = {
           type: "sse",
           url: tablesUrl,
-          headers: { "x-user-id": user.id, "x-table-id": tableId },
+          headers: {
+            "x-user-id": user.id,
+            "x-table-id": tableId,
+            ...(baseId ? { "x-base-id": baseId } : {}),
+          },
         };
       }
 
@@ -103,35 +208,69 @@ export async function registerChatRoutes(
         JSON.stringify(mcpServers, null, 2),
       );
 
-      // Build system prompt with table context if available
+      // Build system prompt with full base context
       let systemPrompt = config.agent.systemPrompt;
       if (tableId) {
-        systemPrompt += `\n\nIMPORTANT: You are working with the user's data table "${tableName || "current table"}".`;
-        if (tableColumns) {
-          systemPrompt += ` Current columns: ${tableColumns}.`;
+        // Fetch full base context from tables service
+        let baseContext = "";
+        if (baseId) {
+          try {
+            baseContext = await fetchBaseContext(baseId, tableId, user.id);
+          } catch (err) {
+            console.error("[Chat] Failed to fetch base context:", err);
+          }
         }
-        systemPrompt += `
 
-You have MCP tools to work with this table. All tools automatically operate on the current table - you don't need to specify a table ID.
+        // Fallback if base context fetch failed
+        if (!baseContext) {
+          baseContext = `You are working with the user's data table "${tableName || "current table"}".`;
+          if (tableColumns) {
+            baseContext += ` Current columns: ${tableColumns}.`;
+          }
+        }
 
-Available tools:
-- get-table-schema: See all columns in this table
-- query-rows: Get rows (with optional limit/offset for pagination)
-- insert-row: Add a new row (optionally with initial data)
-- update-cell: Update a cell (requires rowId, columnId, and value)
-- delete-rows: Delete rows (requires array of rowIds)
-- add-column: Add a column (requires name and dataType: text/number/boolean/date/select)
-- rename-column: Rename a column (requires columnId and new name)
-- delete-column: Remove a column (requires columnId)
+        systemPrompt += `\n\n${baseContext}
+
+You have MCP tools to work with data tables. Tools default to the active table, but you can target ANY table in the base by passing its tableId.
+
+IMPORTANT: When the user refers to a table by name (e.g., "add rows to the Assets table"), look up the tableId from the table list above and pass it explicitly. Do NOT assume the active table is the one the user means — match the name they used.
+
+IMPORTANT: Always create new tables in the current base — never create a new base unless the user explicitly asks for one.
+
+Table & base management:
+- list-tables: List all tables in this base with column/row counts.
+- create-table: Create a new table in the current base. Requires: name. Optional: columns (array of {name, dataType}).
+- rename-table: Rename a table. Requires: name. Optional: tableId (defaults to current table).
+- delete-table: Delete a table. Optional: tableId (defaults to current table).
+- rename-base: Rename the current base. Requires: name.
+- delete-base: Delete the current base and all its tables.
+
+Data operations:
+- get-table-schema: See all columns in a table.
+- query-rows: Get rows with optional pagination and sorting (limit, offset, sortBy, sortOrder).
+- search-rows: Search rows with filters. Requires: filters (array of {columnId, operator, value}). Operators: eq, neq, gt, gte, lt, lte, contains, not_contains, is_empty, is_not_empty. Optional: limit, offset, sortBy, sortOrder.
+- aggregate: Run an aggregation. Requires: function (count/sum/avg/min/max). Optional: columnId (required for sum/avg/min/max), filters.
+- insert-row: Add a new row (optionally with initial data).
+- bulk-insert: Insert multiple rows at once. Requires: rows (array of {data}).
+- update-cell: Update a cell (requires rowId, columnId, and value).
+- bulk-update: Update multiple cells. Requires: updates (array of {rowId, columnId, value}).
+- delete-rows: Delete rows (requires array of rowIds).
+
+Column operations:
+- add-column: Add a column (requires name and dataType: text/number/boolean/date/select).
+- rename-column: Rename a column (requires columnId and new name).
+- delete-column: Remove a column (requires columnId).
+- reorder-columns: Reorder columns (requires columnIds array in desired order).
+- change-column-type: Change column type (requires columnId and newType).
 
 When the user asks to add rows, columns, update data, or query the table, use these tools immediately. This is a database table - do NOT ask for file paths.
 
 Agent automation tools:
 - create-agent: Create an AI agent that automatically fills in columns. Requires: name, triggerType ("on_row_insert" or "on_cell_update"), inputColumns (column IDs to read), outputColumns (column IDs to write), prompt (instructions). For "on_cell_update", also provide watchColumns.
-- list-agents: List all agents on this table
-- update-agent: Update an agent's configuration (requires agentId)
-- delete-agent: Delete an agent (requires agentId)
-- toggle-agent: Enable/disable an agent (requires agentId and enabled boolean)
+- list-agents: List all agents on this table.
+- update-agent: Update an agent's configuration (requires agentId).
+- delete-agent: Delete an agent (requires agentId).
+- toggle-agent: Enable/disable an agent (requires agentId and enabled boolean).
 
 When the user asks to create an automation (e.g., "auto-fill bio when name is added"), use get-table-schema first to get column IDs, then create-agent with the appropriate columns and a clear prompt.`;
       }
