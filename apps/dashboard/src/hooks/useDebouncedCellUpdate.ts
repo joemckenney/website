@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useCallback, useRef } from "react";
 
 interface DebouncedValue {
   value: unknown;
@@ -107,7 +107,7 @@ export function useDebouncedCellUpdate(
 
       debounceTimers.current.set(key, timer);
     },
-    [debounceMs],
+    [debounceMs, makeKey],
   );
 
   const flush = useCallback(() => {

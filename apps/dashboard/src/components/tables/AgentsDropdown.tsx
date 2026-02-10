@@ -116,8 +116,7 @@ export function AgentsDropdown({ tableId, columns }: AgentsDropdownProps) {
   };
 
   const enabledCount = agents.filter((a) => a.enabled).length;
-  const buttonLabel =
-    agents.length > 0 ? `Agents (${enabledCount})` : "Agents";
+  const buttonLabel = agents.length > 0 ? `Agents (${enabledCount})` : "Agents";
 
   return (
     <div className={styles.agentsDropdownWrapper} ref={wrapperRef}>

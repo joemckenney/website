@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import * as styles from "../../styles/tables.css";
 import { Cell } from "./Cell";
 

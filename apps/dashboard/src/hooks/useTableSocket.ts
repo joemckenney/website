@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ensureValidToken } from "../lib/auth";
 
 /**
@@ -163,6 +163,45 @@ export function useTableSocket(
     onErrorRef.current = onError;
   }, [onEvent, onRowInserted, onAck, onError]);
 
+  const handleMessage = useCallback((msg: ServerMessage) => {
+    switch (msg.type) {
+      case "SUBSCRIBED":
+        // Connection confirmed
+        break;
+
+      case "EVENT":
+        // Only process events from other users
+        if (msg.originUserId) {
+          onEventRef.current(msg.event as TableEvent);
+        }
+        break;
+
+      case "ACK":
+        onAckRef.current?.(msg.clientSeq, msg.eventId);
+        pendingRef.current.delete(msg.clientSeq);
+        break;
+
+      case "ROW_INSERTED":
+        onRowInsertedRef.current?.(msg.clientSeq, msg);
+        pendingRef.current.delete(msg.clientSeq);
+        break;
+
+      case "ERROR":
+        onErrorRef.current?.(msg);
+        // Trigger rollback for failed operation
+        if (msg.clientSeq !== undefined) {
+          const pending = pendingRef.current.get(msg.clientSeq);
+          pending?.onRollback?.();
+          pendingRef.current.delete(msg.clientSeq);
+        }
+        break;
+
+      case "PONG":
+        // Heartbeat response
+        break;
+    }
+  }, []);
+
   const connect = useCallback(async () => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       return;
@@ -233,46 +272,7 @@ export function useTableSocket(
       setStatus("error");
       console.error("WebSocket connection failed:", err);
     }
-  }, [tableId, autoReconnect]);
-
-  const handleMessage = useCallback((msg: ServerMessage) => {
-    switch (msg.type) {
-      case "SUBSCRIBED":
-        // Connection confirmed
-        break;
-
-      case "EVENT":
-        // Only process events from other users
-        if (msg.originUserId) {
-          onEventRef.current(msg.event as TableEvent);
-        }
-        break;
-
-      case "ACK":
-        onAckRef.current?.(msg.clientSeq, msg.eventId);
-        pendingRef.current.delete(msg.clientSeq);
-        break;
-
-      case "ROW_INSERTED":
-        onRowInsertedRef.current?.(msg.clientSeq, msg);
-        pendingRef.current.delete(msg.clientSeq);
-        break;
-
-      case "ERROR":
-        onErrorRef.current?.(msg);
-        // Trigger rollback for failed operation
-        if (msg.clientSeq !== undefined) {
-          const pending = pendingRef.current.get(msg.clientSeq);
-          pending?.onRollback?.();
-          pendingRef.current.delete(msg.clientSeq);
-        }
-        break;
-
-      case "PONG":
-        // Heartbeat response
-        break;
-    }
-  }, []);
+  }, [tableId, autoReconnect, handleMessage]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {

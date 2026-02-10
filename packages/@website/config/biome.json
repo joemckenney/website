@@ -20,11 +20,14 @@
       "a11y": {
         "useButtonType": "warn",
         "noStaticElementInteractions": "warn",
-        "useKeyWithClickEvents": "warn"
+        "useKeyWithClickEvents": "warn",
+        "noAutofocus": "warn",
+        "noSvgWithoutTitle": "warn"
       },
       "correctness": {
         "noInvalidUseBeforeDeclaration": "warn",
-        "useExhaustiveDependencies": "warn"
+        "useExhaustiveDependencies": "warn",
+        "useUniqueElementIds": "warn"
       },
       "suspicious": {
         "noArrayIndexKey": "warn",

@@ -1,7 +1,13 @@
 import { useState } from "react";
 import * as styles from "../../styles/tables.css";
 
-type ColumnType = "text" | "number" | "boolean" | "date" | "select" | "relation";
+type ColumnType =
+  | "text"
+  | "number"
+  | "boolean"
+  | "date"
+  | "select"
+  | "relation";
 
 interface AddColumnModalProps {
   onClose: () => void;
@@ -14,7 +20,12 @@ interface AddColumnModalProps {
   currentTableId?: string;
 }
 
-export function AddColumnModal({ onClose, onAdd, tables, currentTableId }: AddColumnModalProps) {
+export function AddColumnModal({
+  onClose,
+  onAdd,
+  tables,
+  currentTableId,
+}: AddColumnModalProps) {
   const [name, setName] = useState("");
   const [dataType, setDataType] = useState<ColumnType>("text");
   const [referencedTableId, setReferencedTableId] = useState("");
@@ -29,7 +40,8 @@ export function AddColumnModal({ onClose, onAdd, tables, currentTableId }: AddCo
     );
   };
 
-  const isSubmitDisabled = !name.trim() || (dataType === "relation" && !referencedTableId);
+  const isSubmitDisabled =
+    !name.trim() || (dataType === "relation" && !referencedTableId);
 
   return (
     <div
@@ -55,7 +67,6 @@ export function AddColumnModal({ onClose, onAdd, tables, currentTableId }: AddCo
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g., Price, Status, Due Date"
-            autoFocus
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleSubmit();
@@ -102,7 +113,8 @@ export function AddColumnModal({ onClose, onAdd, tables, currentTableId }: AddCo
               <option value="">Select a table...</option>
               {tables.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.name}{t.id === currentTableId ? " (self)" : ""}
+                  {t.name}
+                  {t.id === currentTableId ? " (self)" : ""}
                 </option>
               ))}
             </select>

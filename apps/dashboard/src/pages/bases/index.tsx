@@ -22,7 +22,7 @@ export default function BasesListPage() {
 
   useEffect(() => {
     loadBases();
-  }, []);
+  }, [loadBases]);
 
   async function loadBases() {
     const token = await ensureValidToken();
@@ -164,7 +164,6 @@ export default function BasesListPage() {
                 value={newBaseName}
                 onChange={(e) => setNewBaseName(e.target.value)}
                 placeholder="e.g., My Workbook, Project X"
-                autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     handleCreateBase();

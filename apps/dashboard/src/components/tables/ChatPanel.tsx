@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTableAgent, type AgentMessage } from "../../hooks/useTableAgent";
+import { type AgentMessage, useTableAgent } from "../../hooks/useTableAgent";
 import * as styles from "../../styles/tables.css";
 
 interface Column {

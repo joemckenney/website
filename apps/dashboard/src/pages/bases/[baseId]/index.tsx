@@ -31,7 +31,9 @@ export default function BaseRedirectPage() {
         }
 
         if (response.data.tables.length > 0) {
-          navigate(`/bases/${baseId}/${response.data.tables[0].id}`, { replace: true });
+          navigate(`/bases/${baseId}/${response.data.tables[0].id}`, {
+            replace: true,
+          });
         } else {
           // No tables yet — redirect to a sentinel so the main page can handle it
           navigate(`/bases/${baseId}/_empty`, { replace: true });

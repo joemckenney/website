@@ -1,5 +1,5 @@
-import { useRef, useEffect, useState } from "react";
 import { tablesService } from "@tables/sdk";
+import { useEffect, useRef, useState } from "react";
 import * as styles from "../../styles/tables.css";
 
 interface RelationOption {
@@ -72,7 +72,7 @@ export function Cell({
         setRelationOptions(
           rows.map((row) => {
             const display = primaryCol
-              ? (row.data[primaryCol.id] as string) ?? row.id
+              ? ((row.data[primaryCol.id] as string) ?? row.id)
               : row.id;
             return { id: row.id, display: String(display) };
           }),
@@ -85,8 +85,28 @@ export function Cell({
     };
 
     loadOptions();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isEditing, dataType, referencedTableId]);
+
+  // Local edit buffer — only commit to parent on blur/Enter/Tab
+  const [localValue, setLocalValue] = useState<string>("");
+  const hasCommitted = useRef(false);
+
+  // Sync local buffer when entering edit mode
+  useEffect(() => {
+    if (isEditing) {
+      if (dataType === "date") {
+        setLocalValue(value ? String(value).split("T")[0] : "");
+      } else {
+        setLocalValue(
+          value === null || value === undefined ? "" : String(value),
+        );
+      }
+      hasCommitted.current = false;
+    }
+  }, [isEditing, value, dataType]);
 
   const handleBooleanToggle = () => {
     onChange(!value);
@@ -110,9 +130,14 @@ export function Cell({
   // Relation type
   if (dataType === "relation") {
     if (isEditing) {
-      const currentId = value && typeof value === "object" && "id" in (value as Record<string, unknown>)
-        ? (value as { id: string }).id
-        : (typeof value === "string" ? value : "");
+      const currentId =
+        value &&
+        typeof value === "object" &&
+        "id" in (value as Record<string, unknown>)
+          ? (value as { id: string }).id
+          : typeof value === "string"
+            ? value
+            : "";
 
       return (
         <div className={`${styles.gridCell} ${styles.cellEditing}`}>
@@ -128,7 +153,9 @@ export function Cell({
             onKeyDown={onKeyDown}
             disabled={loadingOptions}
           >
-            <option value="">{loadingOptions ? "Loading..." : "-- None --"}</option>
+            <option value="">
+              {loadingOptions ? "Loading..." : "-- None --"}
+            </option>
             {relationOptions.map((opt) => (
               <option key={opt.id} value={opt.id}>
                 {opt.display}
@@ -142,7 +169,11 @@ export function Cell({
     // Display mode
     const displayValue = (() => {
       if (value === null || value === undefined) return null;
-      if (typeof value === "object" && value !== null && "id" in (value as Record<string, unknown>)) {
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        "id" in (value as Record<string, unknown>)
+      ) {
         const rel = value as { id: string; display: string | null };
         if (rel.display === null) return "Deleted";
         return rel.display;
@@ -165,30 +196,18 @@ export function Cell({
 
     return (
       <div className={styles.gridCell} onClick={onClick}>
-        <span style={{
-          ...(isDeleted ? { opacity: 0.5, fontStyle: "italic" } : { color: "#3b82f6" }),
-        }}>
+        <span
+          style={{
+            ...(isDeleted
+              ? { opacity: 0.5, fontStyle: "italic" }
+              : { color: "#3b82f6" }),
+          }}
+        >
           {displayValue}
         </span>
       </div>
     );
   }
-
-  // Local edit buffer — only commit to parent on blur/Enter/Tab
-  const [localValue, setLocalValue] = useState<string>("");
-  const hasCommitted = useRef(false);
-
-  // Sync local buffer when entering edit mode
-  useEffect(() => {
-    if (isEditing) {
-      if (dataType === "date") {
-        setLocalValue(value ? String(value).split("T")[0] : "");
-      } else {
-        setLocalValue(value === null || value === undefined ? "" : String(value));
-      }
-      hasCommitted.current = false;
-    }
-  }, [isEditing, value, dataType]);
 
   const commitValue = () => {
     if (hasCommitted.current) return;

@@ -6,12 +6,18 @@ import { AgentsDropdown } from "../../../components/tables/AgentsDropdown";
 import { ChatPanel } from "../../../components/tables/ChatPanel";
 import { TableGrid } from "../../../components/tables/TableGrid";
 import { useBaseContext } from "../../../contexts/base-context";
-import { useTableSocket, type TableEvent } from "../../../hooks/useTableSocket";
+import { type TableEvent, useTableSocket } from "../../../hooks/useTableSocket";
 import { ensureValidToken } from "../../../lib/auth";
 import * as layoutStyles from "../../../styles/layout.css";
 import * as styles from "../../../styles/tables.css";
 
-type ColumnType = "text" | "number" | "boolean" | "date" | "select" | "relation";
+type ColumnType =
+  | "text"
+  | "number"
+  | "boolean"
+  | "date"
+  | "select"
+  | "relation";
 
 interface Column {
   id: string;
@@ -45,7 +51,10 @@ interface BaseWithTables {
 }
 
 export default function BaseDetailPage() {
-  const { baseId, tableId: selectedTableId } = useParams<{ baseId: string; tableId: string }>();
+  const { baseId, tableId: selectedTableId } = useParams<{
+    baseId: string;
+    tableId: string;
+  }>();
   const navigate = useNavigate();
   const { setBaseName } = useBaseContext();
 
@@ -114,7 +123,9 @@ export default function BaseDetailPage() {
               name: event.name,
               dataType: event.dataType as ColumnType,
               position: event.position,
-              ...(event.referencedTableId ? { referencedTableId: event.referencedTableId } : {}),
+              ...(event.referencedTableId
+                ? { referencedTableId: event.referencedTableId }
+                : {}),
             },
           ];
         });
@@ -385,7 +396,11 @@ export default function BaseDetailPage() {
       try {
         await tablesService.addColumn({
           path: { tableId: selectedTableId },
-          body: { name, dataType, ...(referencedTableId ? { referencedTableId } : {}) },
+          body: {
+            name,
+            dataType,
+            ...(referencedTableId ? { referencedTableId } : {}),
+          },
         });
         setIsAddingColumn(false);
       } catch (err) {
@@ -431,7 +446,9 @@ export default function BaseDetailPage() {
       {/* Chat panel on left - associated with base */}
       <div className={layoutStyles.chatPane}>
         <ChatPanel
-          tableId={isEmptyBase ? (baseId ?? "") : (selectedTableId ?? baseId ?? "")}
+          tableId={
+            isEmptyBase ? (baseId ?? "") : (selectedTableId ?? baseId ?? "")
+          }
           tableName={base.name}
           columns={columns}
         />
@@ -455,7 +472,6 @@ export default function BaseDetailPage() {
                   setIsEditingName(false);
                 }
               }}
-              autoFocus
             />
           ) : (
             <button
@@ -557,10 +573,7 @@ export default function BaseDetailPage() {
                 + Row
               </button>
               {selectedTableId && (
-                <AgentsDropdown
-                  tableId={selectedTableId}
-                  columns={columns}
-                />
+                <AgentsDropdown tableId={selectedTableId} columns={columns} />
               )}
             </div>
 
@@ -609,7 +622,6 @@ export default function BaseDetailPage() {
                 value={newTableName}
                 onChange={(e) => setNewTableName(e.target.value)}
                 placeholder="e.g., Tasks, Contacts"
-                autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleAddTable();
                 }}

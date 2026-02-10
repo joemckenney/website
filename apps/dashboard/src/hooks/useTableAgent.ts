@@ -80,7 +80,7 @@ export function useTableAgent(
       },
     ]);
     setError(null);
-  }, [tableId, tableName]);
+  }, [tableName]);
 
   const cancelStream = useCallback(() => {
     if (abortControllerRef.current) {
