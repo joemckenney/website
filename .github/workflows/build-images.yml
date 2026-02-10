@@ -44,6 +44,9 @@ on:
       agent_service_built:
         description: 'Whether agent-service was built'
         value: ${{ jobs.build.outputs.agent_service_built }}
+      tables_service_built:
+        description: 'Whether tables-service was built'
+        value: ${{ jobs.build.outputs.tables_service_built }}
       strava_service_built:
         description: 'Whether strava-mcp-server was built'
         value: ${{ jobs.build.outputs.strava_service_built }}
@@ -64,6 +67,7 @@ jobs:
       api_service: ${{ steps.changes.outputs.api_service }}
       user_service: ${{ steps.changes.outputs.user_service }}
       agent_service: ${{ steps.changes.outputs.agent_service }}
+      tables_service: ${{ steps.changes.outputs.tables_service }}
       strava_service: ${{ steps.changes.outputs.strava_service }}
 
     steps:
@@ -108,6 +112,7 @@ jobs:
             echo "api_service=true" >> $GITHUB_OUTPUT
             echo "user_service=true" >> $GITHUB_OUTPUT
             echo "agent_service=true" >> $GITHUB_OUTPUT
+            echo "tables_service=true" >> $GITHUB_OUTPUT
             echo "strava_service=true" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -120,6 +125,7 @@ jobs:
             echo "api_service=true" >> $GITHUB_OUTPUT
             echo "user_service=true" >> $GITHUB_OUTPUT
             echo "agent_service=true" >> $GITHUB_OUTPUT
+            echo "tables_service=true" >> $GITHUB_OUTPUT
             echo "strava_service=true" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -132,6 +138,7 @@ jobs:
             echo "api_service=true" >> $GITHUB_OUTPUT
             echo "user_service=true" >> $GITHUB_OUTPUT
             echo "agent_service=true" >> $GITHUB_OUTPUT
+            echo "tables_service=true" >> $GITHUB_OUTPUT
             echo "strava_service=true" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -181,6 +188,7 @@ jobs:
           check_package "@gateway/service" "api_service"
           check_package "@users/service" "user_service"
           check_package "@agent/service" "agent_service"
+          check_package "@tables/service" "tables_service"
           check_package "@strava/mcp-server" "strava_service"
 
   build:
@@ -197,6 +205,7 @@ jobs:
       api_service_built: ${{ steps.build-api-service.outcome == 'success' || steps.check-images.outputs.api_service_exists == 'true' }}
       user_service_built: ${{ steps.build-user-service.outcome == 'success' || steps.check-images.outputs.user_service_exists == 'true' }}
       agent_service_built: ${{ steps.build-agent-service.outcome == 'success' || steps.check-images.outputs.agent_service_exists == 'true' }}
+      tables_service_built: ${{ steps.build-tables-service.outcome == 'success' || steps.check-images.outputs.tables_service_exists == 'true' }}
       strava_service_built: ${{ steps.build-strava-service.outcome == 'success' || steps.check-images.outputs.strava_service_exists == 'true' }}
 
     steps:
@@ -236,6 +245,8 @@ jobs:
           echo "user_service_exists=$(check_image ${USERNAME}/user-service ${TAG})" >> $GITHUB_OUTPUT
           echo "user_service_migrate_exists=$(check_image ${USERNAME}/user-service-migrate ${TAG})" >> $GITHUB_OUTPUT
           echo "agent_service_exists=$(check_image ${USERNAME}/agent-service ${TAG})" >> $GITHUB_OUTPUT
+          echo "tables_service_exists=$(check_image ${USERNAME}/tables-service ${TAG})" >> $GITHUB_OUTPUT
+          echo "tables_service_migrate_exists=$(check_image ${USERNAME}/tables-service-migrate ${TAG})" >> $GITHUB_OUTPUT
           echo "strava_service_exists=$(check_image ${USERNAME}/strava-mcp-server ${TAG})" >> $GITHUB_OUTPUT
 
           echo "Image existence check complete"
@@ -408,6 +419,52 @@ jobs:
         if: needs.detect-changes.outputs.agent_service == 'true' && steps.check-images.outputs.agent_service_exists == 'true'
         run: echo "Skipping agent-service build - image already exists"
 
+      - name: Build and push tables-service
+        id: build-tables-service
+        if: needs.detect-changes.outputs.tables_service == 'true' && steps.check-images.outputs.tables_service_exists != 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/@tables/service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/tables-service:${{ steps.meta.outputs.tag }}
+          build-args: |
+            TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
+            TURBO_TEAM=${{ secrets.TURBO_TEAM }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build and push tables-service-migrate
+        id: build-tables-service-migrate
+        if: needs.detect-changes.outputs.tables_service == 'true' && steps.check-images.outputs.tables_service_migrate_exists != 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/@tables/service/Dockerfile
+          target: migrator
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/tables-service-migrate:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Skip tables-service (no changes)
+        if: needs.detect-changes.outputs.tables_service != 'true'
+        run: echo "Skipping tables-service build - no changes detected"
+
+      - name: Skip tables-service (image exists)
+        if: needs.detect-changes.outputs.tables_service == 'true' && steps.check-images.outputs.tables_service_exists == 'true'
+        run: echo "Skipping tables-service build - image already exists"
+
       - name: Build and push strava-mcp-server
         id: build-strava-service
         if: needs.detect-changes.outputs.strava_service == 'true' && steps.check-images.outputs.strava_service_exists != 'true'
@@ -447,4 +504,5 @@ jobs:
           echo "| api-service | ${{ needs.detect-changes.outputs.api_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| user-service | ${{ needs.detect-changes.outputs.user_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| agent-service | ${{ needs.detect-changes.outputs.agent_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| tables-service | ${{ needs.detect-changes.outputs.tables_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| strava-mcp-server | ${{ needs.detect-changes.outputs.strava_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY

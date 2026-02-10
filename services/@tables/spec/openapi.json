@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Tables Service API",
-    "description": "Dynamic data tables API with memory-first architecture",
+    "description": "Dynamic data tables API with WAL + in-memory SQLite architecture",
     "version": "1.0.0"
   },
   "components": {
@@ -2443,6 +2443,119 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/mcp/message": {
+      "post": {
+        "operationId": "mcpMessage",
+        "tags": [
+          "mcp"
+        ],
+        "description": "Handle MCP JSON-RPC request",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "jsonrpc",
+                  "method"
+                ],
+                "properties": {
+                  "jsonrpc": {
+                    "type": "string",
+                    "enum": [
+                      "2.0"
+                    ]
+                  },
+                  "id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ]
+                  },
+                  "method": {
+                    "type": "string"
+                  },
+                  "params": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "header",
+            "name": "x-user-id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp/sse": {
+      "get": {
+        "operationId": "mcpSSE",
+        "tags": [
+          "mcp"
+        ],
+        "description": "SSE stream for MCP transport",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "header",
+            "name": "x-user-id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
           }
         }
       }
