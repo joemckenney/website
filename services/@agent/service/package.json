@@ -7,12 +7,12 @@
     "dist"
   ],
   "scripts": {
-    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "dev": "tsx watch --clear-screen=false --import @website/tracing/register src/index.ts",
     "build": "tsgo && tsx src/generate-spec.ts",
     "build:image:local": "dbuild --image agent-service",
     "deploy:k8s:local": "helm upgrade --install agent-service ./helm -f ./helm/values-local.yaml --wait --timeout=5m",
     "clean": "rm -rf dist",
-    "start": "node dist/index.js",
+    "start": "node --import @website/tracing/register dist/index.js",
     "check": "biome check .",
     "lint": "biome check --write .",
     "format": "biome format --write ."
@@ -25,6 +25,7 @@
     "@fastify/swagger-ui": "^5.2.3",
     "@fastify/type-provider-typebox": "^6.1.0",
     "@tools/core": "workspace:*",
+    "@website/tracing": "workspace:*",
     "@tools/web-search": "workspace:*",
     "dotenv": "^17.2.3",
     "fastify": "^5.6.2",

@@ -1,0 +1,30 @@
+{
+  "name": "@website/tracing",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./dist/index.js",
+    "./register": "./dist/register.js"
+  },
+  "scripts": {
+    "build": "tsgo",
+    "clean": "rm -rf dist",
+    "check": "biome check .",
+    "lint": "biome check --write .",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.57.0",
+    "@opentelemetry/instrumentation-fastify": "^0.44.0",
+    "@opentelemetry/instrumentation-http": "^0.57.0",
+    "@opentelemetry/sdk-node": "^0.57.0",
+    "@prisma/instrumentation": "^6.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:",
+    "@typescript/native-preview": "catalog:",
+    "@website/config": "workspace:*"
+  }
+}

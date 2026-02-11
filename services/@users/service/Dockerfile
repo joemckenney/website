@@ -74,4 +74,4 @@ COPY --from=deployer --chown=1000:1000 /app/pruned .
 
 EXPOSE 3002
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "--import", "@website/tracing/register", "dist/index.js"]

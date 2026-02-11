@@ -35,6 +35,10 @@ env:
     value: "production"
   - name: PORT
     value: "3003"
+  - name: OTEL_SERVICE_NAME
+    value: "agent-service"
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: "http://tempo:4318"
 
 # Agent configuration
 agent:

@@ -38,6 +38,12 @@ resources:
     cpu: 50m
     memory: 128Mi
 
+env:
+  - name: OTEL_SERVICE_NAME
+    value: "api-gateway"
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: "http://tempo:4318"
+
 nodeSelector: {}
 tolerations: []
 affinity: {}

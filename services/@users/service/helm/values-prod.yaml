@@ -37,6 +37,10 @@ env:
     value: "3002"
   - name: LOG_LEVEL
     value: "info"
+  - name: OTEL_SERVICE_NAME
+    value: "user-service"
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: "http://tempo:4318"
 
 # Secrets - injected via GHA secrets (see cd.yml)
 secrets:

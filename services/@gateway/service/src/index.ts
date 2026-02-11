@@ -6,6 +6,7 @@ import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import websocket from "@fastify/websocket";
+import { tracingMixin } from "@website/tracing";
 import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
 import { registerAgentRoutes } from "./routes/agent.js";
@@ -17,9 +18,9 @@ const fastify = Fastify({
   disableRequestLogging: true,
   logger:
     process.env.NODE_ENV === "production"
-      ? true // JSON logging in production
+      ? { mixin: tracingMixin }
       : {
-          // Pretty logging in development
+          mixin: tracingMixin,
           transport: {
             target: "pino-pretty",
             options: {

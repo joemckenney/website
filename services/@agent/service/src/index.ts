@@ -4,6 +4,7 @@ import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
+import { tracingMixin } from "@website/tracing";
 import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
 import { config } from "./config.js";
@@ -14,8 +15,9 @@ import { HealthResponse } from "./schemas.js";
 const fastify = Fastify({
   logger:
     config.nodeEnv === "production"
-      ? true
+      ? { mixin: tracingMixin }
       : {
+          mixin: tracingMixin,
           transport: {
             target: "pino-pretty",
             options: {
