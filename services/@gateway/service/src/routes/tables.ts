@@ -1,8 +1,11 @@
 import httpProxy from "@fastify/http-proxy";
+import { context, propagation, trace } from "@website/tracing";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { config } from "../config.js";
 import { verifyAccessToken } from "../lib/jwt.js";
 import { authenticateRequest } from "../middleware/auth.js";
+
+const tracer = trace.getTracer("gateway-ws");
 
 /**
  * Proxy routes for the tables service.
@@ -73,29 +76,63 @@ export async function registerTablesRoutes(fastify: FastifyInstance) {
 
       // Handle upstream connection
       upstreamWs.on("open", () => {
-        fastify.log.debug(
+        fastify.log.info(
           { tableId, userId: authResult.user.id },
           "Upstream WebSocket connected",
         );
       });
 
-      // Forward messages from upstream to client
+      // Forward messages from upstream to client, extracting trace context
       upstreamWs.on("message", (data) => {
         if (socket.readyState === 1) {
-          socket.send(data.toString());
+          const raw = data.toString();
+          try {
+            const msg = JSON.parse(raw);
+            const traceparent = msg._traceparent;
+            delete msg._traceparent;
+            const parentCtx = traceparent
+              ? propagation.extract(context.active(), { traceparent })
+              : context.active();
+            tracer.startActiveSpan("ws.forward", {}, parentCtx, (span) => {
+              fastify.log.info(
+                { message: msg, tableId, direction: "upstream->client" },
+                "WS message forwarded",
+              );
+              socket.send(JSON.stringify(msg));
+              span.end();
+            });
+          } catch {
+            // Non-JSON message, forward as-is
+            socket.send(raw);
+          }
         }
       });
 
-      // Forward messages from client to upstream
+      // Forward messages from client to upstream, injecting trace context
       socket.on("message", (data) => {
         if (upstreamWs.readyState === 1) {
-          upstreamWs.send(data.toString());
+          tracer.startActiveSpan("ws.forward", (span) => {
+            try {
+              const msg = JSON.parse(data.toString());
+              const carrier: Record<string, string> = {};
+              propagation.inject(context.active(), carrier);
+              msg._traceparent = carrier.traceparent;
+              const { _traceparent: _, ...logMsg } = msg;
+              fastify.log.info(
+                { message: logMsg, tableId, direction: "client->upstream" },
+                "WS message forwarded",
+              );
+              upstreamWs.send(JSON.stringify(msg));
+            } finally {
+              span.end();
+            }
+          });
         }
       });
 
       // Handle upstream close
       upstreamWs.on("close", (code, reason) => {
-        fastify.log.debug({ tableId, code }, "Upstream WebSocket closed");
+        fastify.log.info({ tableId, code }, "Upstream WebSocket closed");
         if (socket.readyState === 1) {
           socket.close(code, reason.toString());
         }
@@ -171,7 +208,7 @@ export async function registerTablesRoutes(fastify: FastifyInstance) {
     upstreamWs.on(
       "message",
       (data: Buffer | ArrayBuffer | Buffer[], isBinary: boolean) => {
-        fastify.log.debug("[Yjs Proxy] Upstream -> Client");
+        fastify.log.info("[Yjs Proxy] Upstream -> Client");
         if (socket.readyState === 1) {
           // Send as binary buffer for Yjs protocol
           socket.send(data as Buffer);
