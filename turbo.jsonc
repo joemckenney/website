@@ -68,22 +68,13 @@
       "cache": false,
       "persistent": true
     },
-    "build:docker:local": {
+    "build:image:local": {
       "cache": false
     },
-    "build:docker:prod": {
-      "cache": false
-    },
-    "deploy:helm:local": {
-      "cache": false
-    },
-    "deploy:helm:prod": {
+    "deploy:k8s:local": {
       "cache": false
     },
     "clean": {
-      "cache": false
-    },
-    "clean:docker": {
       "cache": false
     },
     "migrate:deploy": {
