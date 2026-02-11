@@ -1,3 +1,4 @@
+export { build } from "./build";
 export { deploy } from "./deploy";
 export { logs } from "./logs";
 export { setup } from "./setup";

@@ -1,9 +1,11 @@
 import { error, header, info, step, success } from "../utils/colors";
-import { isMinikubeRunning, isRegistryForwardRunning } from "../utils/minikube";
+import { isMinikubeRunning } from "../utils/minikube";
+import { resolveService } from "../utils/services";
 import { runInteractive } from "../utils/shell";
 
-export async function deploy(): Promise<void> {
-	header("Deploy to Local Cluster");
+export async function deploy(service?: string): Promise<void> {
+	const label = service ? `Deploy ${service}` : "Deploy All Services";
+	header(label);
 
 	// Check cluster is running
 	step("Checking cluster status...");
@@ -13,39 +15,21 @@ export async function deploy(): Promise<void> {
 		process.exit(1);
 	}
 	success("Cluster is running");
-
-	const forwardStatus = isRegistryForwardRunning();
-	if (!forwardStatus.running) {
-		error("Registry port-forward is not running");
-		info("Start it with: pnpm exec cluster start");
-		process.exit(1);
-	}
-	success("Registry port-forward is running");
 	console.log();
 
-	// Build Docker images
-	step("Building Docker images...");
-	const buildResult = await runInteractive([
-		"pnpm",
-		"turbo",
-		"run",
-		"build:docker:local",
-	]);
-	if (buildResult !== 0) {
-		error("Failed to build Docker images");
-		process.exit(1);
-	}
-	success("Docker images built");
-	console.log();
+	const cmd = ["pnpm", "turbo", "run", "deploy:k8s:local"];
 
-	// Deploy with Helm
+	if (service) {
+		const resolved = resolveService(service);
+		if (!resolved) {
+			error(`Unknown service: ${service}`);
+			process.exit(1);
+		}
+		cmd.push("--filter", resolved.package);
+	}
+
 	step("Deploying services with Helm...");
-	const deployResult = await runInteractive([
-		"pnpm",
-		"turbo",
-		"run",
-		"deploy:helm:local",
-	]);
+	const deployResult = await runInteractive(cmd);
 	if (deployResult !== 0) {
 		error("Failed to deploy services");
 		process.exit(1);

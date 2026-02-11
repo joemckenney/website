@@ -1,18 +1,7 @@
 import { colors, error, header, info } from "../utils/colors";
 import { getPods, isMinikubeRunning } from "../utils/minikube";
+import { printServiceShortcuts, resolveService } from "../utils/services";
 import { runInteractive } from "../utils/shell";
-
-const SERVICE_MAP: Record<string, string> = {
-	api: "api-service",
-	gateway: "api-service",
-	user: "user-service",
-	users: "user-service",
-	agent: "agent-service",
-	strava: "strava-mcp-server",
-	www: "www-web",
-	app: "app-web",
-	dashboard: "app-web",
-};
 
 export async function logs(
 	service: string | undefined,
@@ -40,14 +29,13 @@ export async function logs(
 		console.log("Usage: pnpm exec cluster logs <service> [-f] [--tail N]");
 		console.log();
 		console.log("Service shortcuts:");
-		for (const [shortcut, fullName] of Object.entries(SERVICE_MAP)) {
-			console.log(`  ${shortcut.padEnd(10)} → ${fullName}`);
-		}
+		printServiceShortcuts();
 		return;
 	}
 
 	// Resolve service name
-	const resolvedService = SERVICE_MAP[service.toLowerCase()] ?? service;
+	const resolved = resolveService(service);
+	const resolvedService = resolved?.name ?? service;
 
 	// Find the pod
 	const pods = await getPods();
