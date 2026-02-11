@@ -38,6 +38,13 @@ export function resolveService(input: string): ServiceInfo | undefined {
 }
 
 /**
+ * Get all known services.
+ */
+export function getAllServices(): ServiceInfo[] {
+	return SERVICES;
+}
+
+/**
  * Print available service shortcuts.
  */
 export function printServiceShortcuts(): void {

@@ -14,6 +14,7 @@ import { registerTablesRoutes } from "./routes/tables.js";
 import { registerRoutes } from "./routes.js";
 
 const fastify = Fastify({
+  disableRequestLogging: true,
   logger:
     process.env.NODE_ENV === "production"
       ? true // JSON logging in production

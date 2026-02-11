@@ -12,6 +12,7 @@ import { registerUserRoutes } from "./routes/users.js";
 import { HealthResponse } from "./schemas.js";
 
 const fastify = Fastify({
+  disableRequestLogging: true,
   logger:
     config.nodeEnv === "production"
       ? true
