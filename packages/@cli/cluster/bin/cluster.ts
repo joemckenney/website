@@ -2,8 +2,10 @@
 
 import {
 	build,
+	clean,
 	deploy,
 	logs,
+	migrate,
 	setup,
 	start,
 	status,
@@ -27,7 +29,9 @@ ${colors.yellow("Commands:")}
   status             Show cluster status (pods, services, ingresses)
   build [service]    Build Docker images (all or one service)
   deploy [service]   Deploy services via Helm (all or one service)
+  migrate [service]  Run database migrations (all or one service)
   logs <service>     View logs for a service
+  clean              Remove unused Docker images from minikube
 
 ${colors.yellow("Options:")}
   -h, --help         Show this help message
@@ -40,8 +44,11 @@ ${colors.yellow("Examples:")}
   cluster build api          # Build only api-service image
   cluster deploy             # Deploy all services via Helm
   cluster deploy www         # Deploy only www-web
+  cluster migrate            # Run all database migrations
+  cluster migrate user       # Migrate only user-service db
   cluster logs api -f        # Follow API logs
   cluster status             # Check what's running
+  cluster clean              # Remove unused Docker images
   cluster stop               # Stop when done
 
 ${colors.yellow("Service shortcuts:")}
@@ -92,8 +99,16 @@ async function main(): Promise<void> {
 			await build(commandArgs[0]);
 			break;
 
+		case "clean":
+			await clean();
+			break;
+
 		case "deploy":
 			await deploy(commandArgs[0]);
+			break;
+
+		case "migrate":
+			await migrate(commandArgs[0]);
 			break;
 
 		case "logs": {

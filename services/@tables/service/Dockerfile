@@ -68,10 +68,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Copy the entire pruned deployment (includes app, workspace deps, node_modules)
-COPY --from=deployer /app/pruned .
-
-# Fix permissions for non-root user (pnpm deploy creates some files with 600 permissions)
-RUN chmod -R a+r /app
+COPY --from=deployer --chown=1000:1000 /app/pruned .
 
 EXPOSE 3005
 

@@ -1,7 +1,7 @@
 import { error, header, info, step, success } from "../utils/colors";
 import { isMinikubeRunning } from "../utils/minikube";
-import { resolveService } from "../utils/services";
-import { runInteractive } from "../utils/shell";
+import { getAllServices, resolveService } from "../utils/services";
+import { run, runInteractive } from "../utils/shell";
 
 export async function deploy(service?: string): Promise<void> {
 	const label = service ? `Deploy ${service}` : "Deploy All Services";
@@ -18,6 +18,7 @@ export async function deploy(service?: string): Promise<void> {
 	console.log();
 
 	const cmd = ["pnpm", "turbo", "run", "deploy:k8s:local"];
+	let deploymentNames: string[];
 
 	if (service) {
 		const resolved = resolveService(service);
@@ -26,6 +27,9 @@ export async function deploy(service?: string): Promise<void> {
 			process.exit(1);
 		}
 		cmd.push("--filter", resolved.package);
+		deploymentNames = [resolved.name];
+	} else {
+		deploymentNames = getAllServices().map((s) => s.name);
 	}
 
 	step("Deploying services with Helm...");
@@ -35,6 +39,24 @@ export async function deploy(service?: string): Promise<void> {
 		process.exit(1);
 	}
 	success("Services deployed");
+	console.log();
+
+	// Restart deployments so pods pick up rebuilt images
+	step("Restarting deployments...");
+	for (const name of deploymentNames) {
+		const result = await run([
+			"kubectl",
+			"rollout",
+			"restart",
+			`deployment/${name}`,
+		]);
+		if (result.success) {
+			success(`Restarted ${name}`);
+		} else {
+			// Deployment may not exist yet (first deploy) — not fatal
+			info(`Skipped ${name} (${result.error || "not found"})`);
+		}
+	}
 	console.log();
 
 	header("Deployment Complete");

@@ -1,6 +1,8 @@
 export { build } from "./build";
+export { clean } from "./clean";
 export { deploy } from "./deploy";
 export { logs } from "./logs";
+export { migrate } from "./migrate";
 export { setup } from "./setup";
 export { start } from "./start";
 export { status } from "./status";

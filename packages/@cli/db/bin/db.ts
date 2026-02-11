@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { parseArgs } from "node:util";
-import { dump, logs, shell, studio } from "../src/commands";
+import { dump, logs, migrate, shell, studio } from "../src/commands";
 import { loadConfig } from "../src/config";
 import type { DbConfig, Environment } from "../src/types";
 
@@ -12,6 +12,7 @@ USAGE:
   db <command> [flags]
 
 COMMANDS:
+  migrate   Run prisma migrate deploy
   studio    Open Prisma Studio
   shell     Open psql shell
   logs      View postgres logs
@@ -23,6 +24,8 @@ ENVIRONMENT FLAGS:
   --prod      Connect to production (requires confirmation)
 
 EXAMPLES:
+  db migrate             # Run migrations against local docker
+  db migrate --minikube  # Run migrations against minikube
   db studio              # Open Prisma Studio for local docker
   db studio --prod       # Open Prisma Studio for production
   db shell --minikube    # Open psql shell for minikube
@@ -88,6 +91,10 @@ async function main() {
 	}
 
 	switch (command) {
+		case "migrate":
+			await migrate(env, config);
+			break;
+
 		case "studio":
 			await studio(env, config);
 			break;

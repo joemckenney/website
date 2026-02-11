@@ -32,12 +32,13 @@ export async function run(
  */
 export async function runInteractive(
 	command: string[],
-	options?: { env?: Record<string, string> },
+	options?: { env?: Record<string, string>; cwd?: string },
 ): Promise<number> {
 	const proc = Bun.spawn(command, {
 		stdout: "inherit",
 		stderr: "inherit",
 		stdin: "inherit",
+		cwd: options?.cwd,
 		env: { ...process.env, ...options?.env },
 	});
 
