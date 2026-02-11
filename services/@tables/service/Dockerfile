@@ -75,4 +75,4 @@ RUN chmod -R a+r /app
 
 EXPOSE 3005
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "--import", "@website/tracing/register", "dist/index.js"]

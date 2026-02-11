@@ -1,0 +1,31 @@
+# Grafana Tempo - Distributed tracing backend
+# Install with:
+#   KUBECONFIG=~/.kube/vultr-prod-config helm repo add grafana https://grafana.github.io/helm-charts
+#   KUBECONFIG=~/.kube/vultr-prod-config helm install tempo grafana/tempo \
+#     -f infra/monitoring/tempo-values-prod.yaml
+
+tempo:
+  storage:
+    trace:
+      backend: local
+      local:
+        path: /var/tempo/traces
+      wal:
+        path: /var/tempo/wal
+  retention: 168h  # 7 days
+  resources:
+    limits:
+      cpu: 200m
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  receivers:
+    otlp:
+      protocols:
+        http:
+          endpoint: "0.0.0.0:4318"
+
+persistence:
+  enabled: true
+  size: 10Gi

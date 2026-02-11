@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { tracingMixin } from "@website/tracing";
 import { mkdir, writeFile } from "node:fs/promises";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
@@ -16,9 +17,9 @@ import { registerRoutes } from "./routes.js";
 const fastify = Fastify({
   logger:
     process.env.NODE_ENV === "production"
-      ? true // JSON logging in production
+      ? { mixin: tracingMixin }
       : {
-          // Pretty logging in development
+          mixin: tracingMixin,
           transport: {
             target: "pino-pretty",
             options: {

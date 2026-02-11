@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { tracingMixin } from "@website/tracing";
 import { mkdir, writeFile } from "node:fs/promises";
 import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
@@ -14,8 +15,9 @@ import { HealthResponse } from "./schemas.js";
 const fastify = Fastify({
   logger:
     config.nodeEnv === "production"
-      ? true
+      ? { mixin: tracingMixin }
       : {
+          mixin: tracingMixin,
           transport: {
             target: "pino-pretty",
             options: {
