@@ -59,7 +59,6 @@ check_package "@app/dashboard" "app_web"
 check_package "@gateway/service" "api_service"
 check_package "@users/service" "user_service"
 check_package "@agent/service" "agent_service"
-check_package "@strava/mcp-server" "strava_service"
 
 echo ""
 echo "=== Summary ==="

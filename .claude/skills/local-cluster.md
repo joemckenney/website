@@ -37,7 +37,6 @@ When using `logs`, these shortcuts resolve to full service names:
 | `api`, `gateway` | api-service |
 | `user`, `users` | user-service |
 | `agent` | agent-service |
-| `strava` | strava-mcp-server |
 | `www` | www-web |
 | `app`, `dashboard` | app-web |
 

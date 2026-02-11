@@ -150,23 +150,6 @@ jobs:
         if: needs.build-production-images.outputs.tables_service_built != 'true'
         run: echo "Skipping tables-service deployment - no changes detected"
 
-      - name: Deploy strava-mcp-server
-        if: needs.build-production-images.outputs.strava_service_built == 'true'
-        run: |
-          helm upgrade --install strava-mcp-server services/@strava/mcp-server/helm \
-            -f services/@strava/mcp-server/helm/values-prod.yaml \
-            --set image.tag=sha-${{ github.sha }} \
-            --set secrets.databaseUrl="${{ secrets.STRAVA_SERVICE_DATABASE_URL }}" \
-            --set secrets.stravaClientId="${{ secrets.STRAVA_CLIENT_ID }}" \
-            --set secrets.stravaClientSecret="${{ secrets.STRAVA_CLIENT_SECRET }}" \
-            --set secrets.encryptionKey="${{ secrets.STRAVA_ENCRYPTION_KEY }}" \
-            --wait \
-            --timeout=5m
-
-      - name: Skip strava-mcp-server deployment (no changes)
-        if: needs.build-production-images.outputs.strava_service_built != 'true'
-        run: echo "Skipping strava-mcp-server deployment - no changes detected"
-
       - name: Wait for rollout
         run: |
           # Only wait for deployments that were updated
@@ -187,9 +170,6 @@ jobs:
           fi
           if [ "${{ needs.build-production-images.outputs.tables_service_built }}" == "true" ]; then
             kubectl rollout status deployment/tables-service --timeout=3m
-          fi
-          if [ "${{ needs.build-production-images.outputs.strava_service_built }}" == "true" ]; then
-            kubectl rollout status deployment/strava-mcp-server --timeout=3m
           fi
 
       - name: Run production smoke tests
@@ -213,7 +193,6 @@ jobs:
           wait_for_deployment user-service
           wait_for_deployment agent-service
           wait_for_deployment tables-service
-          wait_for_deployment strava-mcp-server
 
           # Brief pause for ingress backend propagation
           sleep 5
@@ -255,9 +234,6 @@ jobs:
           if [ "${{ needs.build-production-images.outputs.tables_service_built }}" == "true" ]; then
             helm rollback tables-service 0 --wait || true
           fi
-          if [ "${{ needs.build-production-images.outputs.strava_service_built }}" == "true" ]; then
-            helm rollback strava-mcp-server 0 --wait || true
-          fi
 
       - name: Get deployment status
         if: always()
@@ -287,7 +263,6 @@ jobs:
           echo "| user-service | ${{ needs.build-production-images.outputs.user_service_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| agent-service | ${{ needs.build-production-images.outputs.agent_service_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| tables-service | ${{ needs.build-production-images.outputs.tables_service_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| strava-mcp-server | ${{ needs.build-production-images.outputs.strava_service_built == 'true' && 'Deployed ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
 
   deployment-notification:
     name: Deployment Notification

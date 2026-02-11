@@ -84,7 +84,6 @@ secrets:
   backendUrl: ""
   userServiceUrl: ""
   agentServiceUrl: ""
-  stravaServiceUrl: ""
   tablesServiceUrl: ""
 
 # Prometheus metrics

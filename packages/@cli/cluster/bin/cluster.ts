@@ -56,7 +56,6 @@ ${colors.yellow("Service shortcuts:")}
   user, users    → user-service
   agent          → agent-service
   tables         → tables-service
-  strava         → strava-mcp-server
   www            → www-web
   app, dashboard → app-web
 `);

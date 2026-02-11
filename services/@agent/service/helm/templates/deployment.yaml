@@ -63,8 +63,6 @@ spec:
         - name: AGENT_SYSTEM_PROMPT
           value: {{ .Values.agent.systemPrompt | quote }}
         # MCP service URLs
-        - name: STRAVA_SERVICE_URL
-          value: {{ .Values.strava.serviceUrl | quote }}
         - name: TABLES_SERVICE_URL
           value: {{ .Values.tables.serviceUrl | quote }}
         # Secrets

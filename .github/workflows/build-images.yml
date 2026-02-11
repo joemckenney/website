@@ -47,9 +47,6 @@ on:
       tables_service_built:
         description: 'Whether tables-service was built'
         value: ${{ jobs.build.outputs.tables_service_built }}
-      strava_service_built:
-        description: 'Whether strava-mcp-server was built'
-        value: ${{ jobs.build.outputs.strava_service_built }}
 
 env:
   DOCKERHUB_USERNAME: crowprose
@@ -68,7 +65,6 @@ jobs:
       user_service: ${{ steps.changes.outputs.user_service }}
       agent_service: ${{ steps.changes.outputs.agent_service }}
       tables_service: ${{ steps.changes.outputs.tables_service }}
-      strava_service: ${{ steps.changes.outputs.strava_service }}
 
     steps:
       - name: Checkout code
@@ -113,7 +109,6 @@ jobs:
             echo "user_service=true" >> $GITHUB_OUTPUT
             echo "agent_service=true" >> $GITHUB_OUTPUT
             echo "tables_service=true" >> $GITHUB_OUTPUT
-            echo "strava_service=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -126,7 +121,6 @@ jobs:
             echo "user_service=true" >> $GITHUB_OUTPUT
             echo "agent_service=true" >> $GITHUB_OUTPUT
             echo "tables_service=true" >> $GITHUB_OUTPUT
-            echo "strava_service=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -139,7 +133,6 @@ jobs:
             echo "user_service=true" >> $GITHUB_OUTPUT
             echo "agent_service=true" >> $GITHUB_OUTPUT
             echo "tables_service=true" >> $GITHUB_OUTPUT
-            echo "strava_service=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -189,7 +182,6 @@ jobs:
           check_package "@users/service" "user_service"
           check_package "@agent/service" "agent_service"
           check_package "@tables/service" "tables_service"
-          check_package "@strava/mcp-server" "strava_service"
 
   build:
     name: Build & Push Images
@@ -206,7 +198,6 @@ jobs:
       user_service_built: ${{ steps.build-user-service.outcome == 'success' || steps.check-images.outputs.user_service_exists == 'true' }}
       agent_service_built: ${{ steps.build-agent-service.outcome == 'success' || steps.check-images.outputs.agent_service_exists == 'true' }}
       tables_service_built: ${{ steps.build-tables-service.outcome == 'success' || steps.check-images.outputs.tables_service_exists == 'true' }}
-      strava_service_built: ${{ steps.build-strava-service.outcome == 'success' || steps.check-images.outputs.strava_service_exists == 'true' }}
 
     steps:
       - name: Checkout code
@@ -248,7 +239,6 @@ jobs:
           echo "agent_service_migrate_exists=$(check_image ${USERNAME}/agent-service-migrate ${TAG})" >> $GITHUB_OUTPUT
           echo "tables_service_exists=$(check_image ${USERNAME}/tables-service ${TAG})" >> $GITHUB_OUTPUT
           echo "tables_service_migrate_exists=$(check_image ${USERNAME}/tables-service-migrate ${TAG})" >> $GITHUB_OUTPUT
-          echo "strava_service_exists=$(check_image ${USERNAME}/strava-mcp-server ${TAG})" >> $GITHUB_OUTPUT
 
           echo "Image existence check complete"
 
@@ -484,34 +474,6 @@ jobs:
         if: needs.detect-changes.outputs.tables_service == 'true' && steps.check-images.outputs.tables_service_exists == 'true'
         run: echo "Skipping tables-service build - image already exists"
 
-      - name: Build and push strava-mcp-server
-        id: build-strava-service
-        if: needs.detect-changes.outputs.strava_service == 'true' && steps.check-images.outputs.strava_service_exists != 'true'
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: services/@strava/mcp-server/Dockerfile
-          push: true
-          tags: |
-            ${{ env.DOCKERHUB_USERNAME }}/strava-mcp-server:${{ steps.meta.outputs.tag }}
-          build-args: |
-            TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
-            TURBO_TEAM=${{ secrets.TURBO_TEAM }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          labels: |
-            org.opencontainers.image.source=${{ github.repositoryUrl }}
-            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
-            org.opencontainers.image.revision=${{ github.sha }}
-
-      - name: Skip strava-mcp-server (no changes)
-        if: needs.detect-changes.outputs.strava_service != 'true'
-        run: echo "Skipping strava-mcp-server build - no changes detected"
-
-      - name: Skip strava-mcp-server (image exists)
-        if: needs.detect-changes.outputs.strava_service == 'true' && steps.check-images.outputs.strava_service_exists == 'true'
-        run: echo "Skipping strava-mcp-server build - image already exists"
-
       - name: Summary
         run: |
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
@@ -524,4 +486,3 @@ jobs:
           echo "| user-service | ${{ needs.detect-changes.outputs.user_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| agent-service | ${{ needs.detect-changes.outputs.agent_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| tables-service | ${{ needs.detect-changes.outputs.tables_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| strava-mcp-server | ${{ needs.detect-changes.outputs.strava_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY

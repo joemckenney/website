@@ -12,7 +12,6 @@ const SERVICES: ServiceInfo[] = [
 	{ name: "tables-service", package: "@tables/service" },
 	{ name: "www-web", package: "@app/www" },
 	{ name: "app-web", package: "@app/dashboard" },
-	{ name: "strava-mcp-server", package: "@strava/mcp-server" },
 ];
 
 const SHORTCUTS: Record<string, string> = {
@@ -22,7 +21,6 @@ const SHORTCUTS: Record<string, string> = {
 	users: "user-service",
 	agent: "agent-service",
 	tables: "tables-service",
-	strava: "strava-mcp-server",
 	www: "www-web",
 	app: "app-web",
 	dashboard: "app-web",
