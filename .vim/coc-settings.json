@@ -1,5 +1,0 @@
-{
-  "prettier.enable": false,
-  "coc.preferences.formatOnSave": true,
-  "biome.enable": true
-}
