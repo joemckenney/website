@@ -1,10 +1,10 @@
 import "dotenv/config";
-import { tracingMixin } from "@website/tracing";
 import { mkdir, writeFile } from "node:fs/promises";
 import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
+import { tracingMixin } from "@website/tracing";
 import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
 import { Type } from "typebox";

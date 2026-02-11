@@ -1,6 +1,6 @@
-import { trace, context } from "@opentelemetry/api";
+import { trace } from "@opentelemetry/api";
 
-export { trace, context, SpanStatusCode } from "@opentelemetry/api";
+export { context, SpanStatusCode, trace } from "@opentelemetry/api";
 
 /**
  * Pino mixin that injects trace_id and span_id from the active OTel span.
@@ -10,11 +10,11 @@ export { trace, context, SpanStatusCode } from "@opentelemetry/api";
  * it doesn't depend on ESM loader hooks (which conflict with tsx).
  */
 export function tracingMixin(): Record<string, string> {
-	const span = trace.getActiveSpan();
-	if (!span) return {};
-	const ctx = span.spanContext();
-	return {
-		traceId: ctx.traceId,
-		spanId: ctx.spanId,
-	};
+  const span = trace.getActiveSpan();
+  if (!span) return {};
+  const ctx = span.spanContext();
+  return {
+    traceId: ctx.traceId,
+    spanId: ctx.spanId,
+  };
 }
