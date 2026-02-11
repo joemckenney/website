@@ -108,7 +108,6 @@ pnpm exec cluster stop
 | `api`, `gateway` | api-service |
 | `user`, `users` | user-service |
 | `agent` | agent-service |
-| `strava` | strava-mcp-server |
 | `www` | www-web |
 | `app`, `dashboard` | app-web |
 

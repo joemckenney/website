@@ -100,11 +100,6 @@ spec:
             secretKeyRef:
               name: {{ include "app-server.fullname" . }}-secrets
               key: agentServiceUrl
-        - name: STRAVA_SERVICE_URL
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "app-server.fullname" . }}-secrets
-              key: stravaServiceUrl
         - name: TABLES_SERVICE_URL
           valueFrom:
             secretKeyRef:
