@@ -1,6 +1,12 @@
 import { trace } from "@opentelemetry/api";
 
-export { context, SpanStatusCode, trace } from "@opentelemetry/api";
+export {
+  context,
+  propagation,
+  type Span,
+  SpanStatusCode,
+  trace,
+} from "@opentelemetry/api";
 
 /**
  * Pino mixin that injects trace_id and span_id from the active OTel span.
