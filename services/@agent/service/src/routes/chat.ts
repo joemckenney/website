@@ -184,7 +184,12 @@ export async function registerChatRoutes(
       const mcpServers: Record<string, McpServerConfig> = {};
 
       if (tableId) {
-        const tablesUrl = `${config.tablesServiceUrl}/mcp/sse`;
+        // Use shard-specific URL if provided by gateway (routes SSE + POST to same pod)
+        const tablesShardUrl = request.headers["x-tables-shard-url"] as
+          | string
+          | undefined;
+        const tablesBaseUrl = tablesShardUrl || config.tablesServiceUrl;
+        const tablesUrl = `${tablesBaseUrl}/mcp/sse`;
         console.log(`[Chat] Adding Tables MCP server: ${tablesUrl}`);
         mcpServers.tables = {
           type: "sse",

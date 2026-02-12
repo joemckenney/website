@@ -1,6 +1,7 @@
 import httpProxy from "@fastify/http-proxy";
 import type { FastifyInstance } from "fastify";
 import { config } from "../config.js";
+import { getTablesUpstream } from "../lib/tables-router.js";
 import { authenticateRequest } from "../middleware/auth.js";
 
 /**
@@ -23,16 +24,25 @@ export async function registerAgentRoutes(fastify: FastifyInstance) {
       rewriteRequestHeaders: (originalRequest, headers) => {
         // Get user from request (set by authenticateRequest)
         const user = (originalRequest as { user?: { email: string } }).user;
+        const newHeaders: Record<string, string | string[] | undefined> = {
+          ...headers,
+        };
+
         if (user) {
-          return {
-            ...headers,
-            "x-user": JSON.stringify({
-              id: user.email,
-              email: user.email,
-            }),
-          };
+          newHeaders["x-user"] = JSON.stringify({
+            id: user.email,
+            email: user.email,
+          });
         }
-        return headers;
+
+        // Compute shard-specific tables service URL for MCP connections.
+        // The agent service uses this to route MCP SSE + POST to the same pod.
+        const baseId = headers["x-base-id"] as string | undefined;
+        if (baseId) {
+          newHeaders["x-tables-shard-url"] = getTablesUpstream(baseId);
+        }
+
+        return newHeaders;
       },
     },
   });
