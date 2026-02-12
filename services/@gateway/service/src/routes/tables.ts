@@ -216,9 +216,10 @@ export async function registerTablesRoutes(fastify: FastifyInstance) {
     },
   );
 
-  // Agent routes (agents.ts registers at /:tableId/agents — no /tables prefix)
+  // Agent routes (agents.ts registers at /:tableId/agents — no /tables prefix).
+  // The dashboard calls /tables/:tableId/agents directly (not /tables/tables/...).
   fastify.all(
-    "/tables/tables/:tableId/agents",
+    "/tables/:tableId/agents",
     { preHandler: authenticateRequest },
     async (req, reply) => {
       const { tableId } = req.params as { tableId: string };
@@ -228,7 +229,7 @@ export async function registerTablesRoutes(fastify: FastifyInstance) {
   );
 
   fastify.all(
-    "/tables/tables/:tableId/agents/:agentId/toggle",
+    "/tables/:tableId/agents/:agentId/toggle",
     { preHandler: authenticateRequest },
     async (req, reply) => {
       const { tableId, agentId } = req.params as {
@@ -246,7 +247,7 @@ export async function registerTablesRoutes(fastify: FastifyInstance) {
   );
 
   fastify.all(
-    "/tables/tables/:tableId/agents/:agentId",
+    "/tables/:tableId/agents/:agentId",
     { preHandler: authenticateRequest },
     async (req, reply) => {
       const { tableId, agentId } = req.params as {
