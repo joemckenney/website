@@ -87,6 +87,21 @@ export async function registerTablesRoutes(fastify: FastifyInstance) {
   );
 
   fastify.all(
+    "/tables/tables/:tableId/columns/reorder",
+    { preHandler: authenticateRequest },
+    async (req, reply) => {
+      const { tableId } = req.params as { tableId: string };
+      const upstream = await resolveUpstreamForTable(tableId);
+      return proxyToUpstream(
+        req,
+        reply,
+        upstream,
+        `/tables/${tableId}/columns/reorder`,
+      );
+    },
+  );
+
+  fastify.all(
     "/tables/tables/:tableId/columns",
     { preHandler: authenticateRequest },
     async (req, reply) => {
@@ -130,6 +145,21 @@ export async function registerTablesRoutes(fastify: FastifyInstance) {
         ? `/tables/${tableId}/rows?${qs}`
         : `/tables/${tableId}/rows`;
       return proxyToUpstream(req, reply, upstream, path);
+    },
+  );
+
+  fastify.all(
+    "/tables/tables/:tableId/rows/bulk",
+    { preHandler: authenticateRequest },
+    async (req, reply) => {
+      const { tableId } = req.params as { tableId: string };
+      const upstream = await resolveUpstreamForTable(tableId);
+      return proxyToUpstream(
+        req,
+        reply,
+        upstream,
+        `/tables/${tableId}/rows/bulk`,
+      );
     },
   );
 
@@ -186,19 +216,20 @@ export async function registerTablesRoutes(fastify: FastifyInstance) {
     },
   );
 
-  // Agent routes
+  // Agent routes (agents.ts registers at /:tableId/agents — no /tables prefix).
+  // The dashboard calls /tables/:tableId/agents directly (not /tables/tables/...).
   fastify.all(
-    "/tables/tables/:tableId/agents",
+    "/tables/:tableId/agents",
     { preHandler: authenticateRequest },
     async (req, reply) => {
       const { tableId } = req.params as { tableId: string };
       const upstream = await resolveUpstreamForTable(tableId);
-      return proxyToUpstream(req, reply, upstream, `/tables/${tableId}/agents`);
+      return proxyToUpstream(req, reply, upstream, `/${tableId}/agents`);
     },
   );
 
   fastify.all(
-    "/tables/tables/:tableId/agents/:agentId",
+    "/tables/:tableId/agents/:agentId/toggle",
     { preHandler: authenticateRequest },
     async (req, reply) => {
       const { tableId, agentId } = req.params as {
@@ -210,7 +241,25 @@ export async function registerTablesRoutes(fastify: FastifyInstance) {
         req,
         reply,
         upstream,
-        `/tables/${tableId}/agents/${agentId}`,
+        `/${tableId}/agents/${agentId}/toggle`,
+      );
+    },
+  );
+
+  fastify.all(
+    "/tables/:tableId/agents/:agentId",
+    { preHandler: authenticateRequest },
+    async (req, reply) => {
+      const { tableId, agentId } = req.params as {
+        tableId: string;
+        agentId: string;
+      };
+      const upstream = await resolveUpstreamForTable(tableId);
+      return proxyToUpstream(
+        req,
+        reply,
+        upstream,
+        `/${tableId}/agents/${agentId}`,
       );
     },
   );
