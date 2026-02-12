@@ -55,12 +55,18 @@ secrets:
   googleClientSecret: ""
   googleRedirectUri: "https://api.joemckenney.com/auth/google/callback"
   jwtSecret: ""
-  allowedEmail: "j.mckenney00@gmail.com"
+  allowedEmails: "j.mckenney00@gmail.com"
   frontendUrl: "https://app.joemckenney.com"
   backendUrl: "https://api.joemckenney.com"
   userServiceUrl: "http://user-service:3002"
   agentServiceUrl: "http://agent-service:3003"
   tablesServiceUrl: "http://tables-service:3005"
+
+# Tables service sharding config
+tablesSharding:
+  headlessService: "tables-service-headless"
+  port: 3005
+  shardCount: 2
 
 # Prometheus metrics
 metrics:

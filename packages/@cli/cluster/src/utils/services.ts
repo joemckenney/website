@@ -3,13 +3,15 @@ export interface ServiceInfo {
 	name: string;
 	/** pnpm workspace package name (for turbo --filter) */
 	package: string;
+	/** Kubernetes workload kind (defaults to "deployment") */
+	kind?: "deployment" | "statefulset";
 }
 
 const SERVICES: ServiceInfo[] = [
 	{ name: "api-service", package: "@gateway/service" },
 	{ name: "user-service", package: "@users/service" },
 	{ name: "agent-service", package: "@agent/service" },
-	{ name: "tables-service", package: "@tables/service" },
+	{ name: "tables-service", package: "@tables/service", kind: "statefulset" },
 	{ name: "www-web", package: "@app/www" },
 	{ name: "app-web", package: "@app/dashboard" },
 ];

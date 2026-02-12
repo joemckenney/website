@@ -41,14 +41,17 @@ export async function deploy(service?: string): Promise<void> {
 	success("Services deployed");
 	console.log();
 
-	// Restart deployments so pods pick up rebuilt images
-	step("Restarting deployments...");
+	// Restart workloads so pods pick up rebuilt images
+	step("Restarting workloads...");
+	const allServices = getAllServices();
 	for (const name of deploymentNames) {
+		const svc = allServices.find((s) => s.name === name);
+		const kind = svc?.kind ?? "deployment";
 		const result = await run([
 			"kubectl",
 			"rollout",
 			"restart",
-			`deployment/${name}`,
+			`${kind}/${name}`,
 		]);
 		if (result.success) {
 			success(`Restarted ${name}`);

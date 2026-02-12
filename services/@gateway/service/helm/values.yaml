@@ -79,7 +79,7 @@ secrets:
   googleClientId: ""
   googleClientSecret: ""
   jwtSecret: ""
-  allowedEmail: ""
+  allowedEmails: ""
   frontendUrl: ""
   backendUrl: ""
   userServiceUrl: ""

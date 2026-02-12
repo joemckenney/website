@@ -14,6 +14,7 @@ import { registerMcpRoutes } from "./mcp/transport.js";
 import { registerAgentRoutes } from "./routes/agents.js";
 import { registerBaseRoutes } from "./routes/bases.js";
 import { registerColumnRoutes } from "./routes/columns.js";
+import { registerInternalRoutes } from "./routes/internal.js";
 import { registerRowRoutes } from "./routes/rows.js";
 import { registerTableRoutes } from "./routes/tables.js";
 import { registerWebSocketRoutes } from "./routes/websocket.js";
@@ -106,6 +107,7 @@ await registerRowRoutes(fastify);
 await registerAgentRoutes(fastify);
 await registerMcpRoutes(fastify);
 await registerWebSocketRoutes(fastify);
+await registerInternalRoutes(fastify);
 
 // Initialize materializer (singleton for PostgreSQL sync)
 const materializer = new Materializer();
@@ -113,7 +115,11 @@ const materializer = new Materializer();
 // Start server
 const start = async () => {
   try {
-    // Initialize memory store from WAL
+    console.log(
+      `Starting tables-service (shard ${config.shardIndex}/${config.totalShards})`,
+    );
+
+    // Initialize memory store from WAL (shard-filtered)
     await memoryStore.initialize();
 
     // Start agent runner (subscribes to tables with enabled agents)

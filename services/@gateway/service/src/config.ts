@@ -6,7 +6,10 @@ export const config = {
       process.env.GOOGLE_REDIRECT_URI ||
       "http://localhost:3000/auth/google/callback",
   },
-  allowedEmail: process.env.ALLOWED_EMAIL || "",
+  allowedEmails: (process.env.ALLOWED_EMAILS || process.env.ALLOWED_EMAIL || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean),
   jwt: {
     accessSecret:
       process.env.JWT_ACCESS_SECRET ||
@@ -23,5 +26,10 @@ export const config = {
   userServiceUrl: process.env.USER_SERVICE_URL || "http://localhost:3002",
   agentServiceUrl: process.env.AGENT_SERVICE_URL || "http://localhost:3003",
   tablesServiceUrl: process.env.TABLES_SERVICE_URL || "http://localhost:3005",
+  // Sharding config for tables service StatefulSet
+  tablesServiceHeadless:
+    process.env.TABLES_SERVICE_HEADLESS || "tables-service-headless",
+  tablesServicePort: Number(process.env.TABLES_SERVICE_PORT) || 3005,
+  tablesShardCount: Number(process.env.TABLES_SHARD_COUNT) || 1,
   yjsServiceUrl: process.env.YJS_SERVICE_URL || "ws://localhost:3006",
 };

@@ -1,6 +1,7 @@
 # Production values for tables-service
 # Secrets are injected via GitHub Actions using --set flags
-replicaCount: 1
+# replicaCount also sets TOTAL_SHARDS — each pod owns 1/N of bases
+replicaCount: 2
 
 image:
   repository: crowprose/tables-service

@@ -1,50 +1,232 @@
-import httpProxy from "@fastify/http-proxy";
 import { context, propagation, trace } from "@website/tracing";
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { config } from "../config.js";
 import { verifyAccessToken } from "../lib/jwt.js";
+import { tableBaseCache } from "../lib/table-base-cache.js";
+import { getTablesUpstream } from "../lib/tables-router.js";
 import { authenticateRequest } from "../middleware/auth.js";
 
 const tracer = trace.getTracer("gateway-ws");
 
 /**
  * Proxy routes for the tables service.
- * All requests to /tables/* are forwarded to the tables service
- * with the authenticated user context.
  *
- * Uses @fastify/http-proxy for automatic proxying including WebSocket support.
+ * When sharding is enabled (tablesShardCount > 1), requests are routed
+ * to the specific StatefulSet pod that owns the target base. When
+ * sharding is disabled, all requests go to the ClusterIP service.
+ *
+ * baseId extraction strategy:
+ *   /tables/bases          → ClusterIP (any pod, queries PostgreSQL)
+ *   /tables/bases/:baseId  → URL param
+ *   /tables/tables?baseId  → query param
+ *   /tables/tables (POST)  → request body
+ *   /tables/tables/:tableId/* → cache lookup (tableId → baseId)
+ *   /tables/ws/:tableId    → cache lookup
  */
 export async function registerTablesRoutes(fastify: FastifyInstance) {
-  // HTTP proxy for REST API
-  await fastify.register(httpProxy, {
-    upstream: config.tablesServiceUrl,
-    prefix: "/tables",
-    rewritePrefix: "",
-    // Only proxy these methods - let CORS handle OPTIONS
-    httpMethods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    // Authenticate all requests before proxying
-    preHandler: authenticateRequest,
-    // Add user context header to proxied requests
-    replyOptions: {
-      rewriteRequestHeaders: (originalRequest, headers) => {
-        // Get user from request (set by authenticateRequest)
-        const user = (originalRequest as { user?: { email: string } }).user;
-        if (user) {
-          return {
-            ...headers,
-            // Use email as the user ID (consistent with agent proxy)
-            "x-user-id": user.email,
-            "x-user-email": user.email,
-          };
-        }
-        return headers;
-      },
+  // ── Base routes (no shard logic — all hit ClusterIP / any pod) ──
+
+  fastify.all(
+    "/tables/bases",
+    { preHandler: authenticateRequest },
+    async (req, reply) => {
+      return proxyToUpstream(req, reply, config.tablesServiceUrl, "/bases");
     },
-    // Note: WebSocket handled separately below with custom auth
+  );
+
+  fastify.all(
+    "/tables/bases/:baseId",
+    { preHandler: authenticateRequest },
+    async (req, reply) => {
+      const { baseId } = req.params as { baseId: string };
+      const upstream = getTablesUpstream(baseId);
+      return proxyToUpstream(req, reply, upstream, `/bases/${baseId}`);
+    },
+  );
+
+  // ── Table routes ──
+
+  // POST /tables/tables — create table (baseId in body)
+  fastify.post(
+    "/tables/tables",
+    { preHandler: authenticateRequest },
+    async (req, reply) => {
+      const body = req.body as { baseId?: string } | undefined;
+      const baseId = body?.baseId;
+      const upstream = baseId
+        ? getTablesUpstream(baseId)
+        : config.tablesServiceUrl;
+      return proxyToUpstream(req, reply, upstream, "/tables");
+    },
+  );
+
+  // GET /tables/tables — list tables (optional baseId query param)
+  fastify.get(
+    "/tables/tables",
+    { preHandler: authenticateRequest },
+    async (req, reply) => {
+      const query = req.query as { baseId?: string };
+      const upstream = query.baseId
+        ? getTablesUpstream(query.baseId)
+        : config.tablesServiceUrl;
+      const qs = req.url.split("?")[1];
+      const path = qs ? `/tables?${qs}` : "/tables";
+      return proxyToUpstream(req, reply, upstream, path);
+    },
+  );
+
+  // Routes with :tableId — resolve via cache
+  fastify.all(
+    "/tables/tables/:tableId",
+    { preHandler: authenticateRequest },
+    async (req, reply) => {
+      const { tableId } = req.params as { tableId: string };
+      const upstream = await resolveUpstreamForTable(tableId);
+      return proxyToUpstream(req, reply, upstream, `/tables/${tableId}`);
+    },
+  );
+
+  fastify.all(
+    "/tables/tables/:tableId/columns",
+    { preHandler: authenticateRequest },
+    async (req, reply) => {
+      const { tableId } = req.params as { tableId: string };
+      const upstream = await resolveUpstreamForTable(tableId);
+      return proxyToUpstream(
+        req,
+        reply,
+        upstream,
+        `/tables/${tableId}/columns`,
+      );
+    },
+  );
+
+  fastify.all(
+    "/tables/tables/:tableId/columns/:columnId",
+    { preHandler: authenticateRequest },
+    async (req, reply) => {
+      const { tableId, columnId } = req.params as {
+        tableId: string;
+        columnId: string;
+      };
+      const upstream = await resolveUpstreamForTable(tableId);
+      return proxyToUpstream(
+        req,
+        reply,
+        upstream,
+        `/tables/${tableId}/columns/${columnId}`,
+      );
+    },
+  );
+
+  fastify.all(
+    "/tables/tables/:tableId/rows",
+    { preHandler: authenticateRequest },
+    async (req, reply) => {
+      const { tableId } = req.params as { tableId: string };
+      const upstream = await resolveUpstreamForTable(tableId);
+      const qs = req.url.split("?")[1];
+      const path = qs
+        ? `/tables/${tableId}/rows?${qs}`
+        : `/tables/${tableId}/rows`;
+      return proxyToUpstream(req, reply, upstream, path);
+    },
+  );
+
+  fastify.all(
+    "/tables/tables/:tableId/rows/:rowId",
+    { preHandler: authenticateRequest },
+    async (req, reply) => {
+      const { tableId, rowId } = req.params as {
+        tableId: string;
+        rowId: string;
+      };
+      const upstream = await resolveUpstreamForTable(tableId);
+      return proxyToUpstream(
+        req,
+        reply,
+        upstream,
+        `/tables/${tableId}/rows/${rowId}`,
+      );
+    },
+  );
+
+  fastify.all(
+    "/tables/tables/:tableId/rows/:rowId/cells/:columnId",
+    { preHandler: authenticateRequest },
+    async (req, reply) => {
+      const { tableId, rowId, columnId } = req.params as {
+        tableId: string;
+        rowId: string;
+        columnId: string;
+      };
+      const upstream = await resolveUpstreamForTable(tableId);
+      return proxyToUpstream(
+        req,
+        reply,
+        upstream,
+        `/tables/${tableId}/rows/${rowId}/cells/${columnId}`,
+      );
+    },
+  );
+
+  // Aggregate endpoint
+  fastify.all(
+    "/tables/tables/:tableId/aggregate",
+    { preHandler: authenticateRequest },
+    async (req, reply) => {
+      const { tableId } = req.params as { tableId: string };
+      const upstream = await resolveUpstreamForTable(tableId);
+      return proxyToUpstream(
+        req,
+        reply,
+        upstream,
+        `/tables/${tableId}/aggregate`,
+      );
+    },
+  );
+
+  // Agent routes
+  fastify.all(
+    "/tables/tables/:tableId/agents",
+    { preHandler: authenticateRequest },
+    async (req, reply) => {
+      const { tableId } = req.params as { tableId: string };
+      const upstream = await resolveUpstreamForTable(tableId);
+      return proxyToUpstream(req, reply, upstream, `/tables/${tableId}/agents`);
+    },
+  );
+
+  fastify.all(
+    "/tables/tables/:tableId/agents/:agentId",
+    { preHandler: authenticateRequest },
+    async (req, reply) => {
+      const { tableId, agentId } = req.params as {
+        tableId: string;
+        agentId: string;
+      };
+      const upstream = await resolveUpstreamForTable(tableId);
+      return proxyToUpstream(
+        req,
+        reply,
+        upstream,
+        `/tables/${tableId}/agents/${agentId}`,
+      );
+    },
+  );
+
+  // Health/docs passthrough (no auth needed, any pod)
+  fastify.get("/tables/health", async (req, reply) => {
+    return proxyToUpstream(req, reply, config.tablesServiceUrl, "/health");
   });
 
-  // WebSocket endpoint for real-time table updates
-  // This handles the WebSocket upgrade and authentication
+  fastify.get("/tables/docs/*", async (req, reply) => {
+    const path = req.url.replace(/^\/tables/, "");
+    return proxyToUpstream(req, reply, config.tablesServiceUrl, path);
+  });
+
+  // ── WebSocket endpoint for real-time table updates ──
+
   fastify.get(
     "/tables/ws/:tableId",
     { websocket: true },
@@ -65,8 +247,9 @@ export async function registerTablesRoutes(fastify: FastifyInstance) {
         return;
       }
 
-      // Forward to tables service WebSocket
-      const upstreamUrl = `${config.tablesServiceUrl.replace("http", "ws")}/ws/${tableId}`;
+      // Resolve shard-aware upstream URL
+      const upstream = await resolveUpstreamForTable(tableId);
+      const upstreamUrl = `${upstream.replace("http", "ws")}/ws/${tableId}`;
       const upstreamWs = new (await import("ws")).WebSocket(upstreamUrl, {
         headers: {
           "x-user-id": authResult.user.id,
@@ -170,8 +353,8 @@ export async function registerTablesRoutes(fastify: FastifyInstance) {
     },
   );
 
-  // Yjs WebSocket proxy for real-time collaborative editing
-  // This handles Hocuspocus protocol connections
+  // ── Yjs WebSocket proxy ──
+
   fastify.get("/yjs", { websocket: true }, async (socket, req) => {
     fastify.log.info("[Yjs Proxy] New connection");
 
@@ -259,6 +442,83 @@ export async function registerTablesRoutes(fastify: FastifyInstance) {
   });
 }
 
+// ── Helpers ──
+
+/**
+ * Resolve the upstream URL for a tableId by looking up its baseId
+ * from the cache (or fetching from tables service on miss).
+ */
+async function resolveUpstreamForTable(tableId: string): Promise<string> {
+  const baseId = await tableBaseCache.resolve(tableId);
+  if (!baseId) return config.tablesServiceUrl;
+  return getTablesUpstream(baseId);
+}
+
+/**
+ * Proxy an HTTP request to the given upstream URL + path.
+ * Injects user context headers from the authenticated request.
+ */
+async function proxyToUpstream(
+  req: FastifyRequest,
+  reply: FastifyReply,
+  upstream: string,
+  path: string,
+): Promise<void> {
+  const user = (req as { user?: { email: string } }).user;
+  const headers: Record<string, string> = {};
+
+  // Copy relevant headers
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (typeof value === "string") {
+      headers[key] = value;
+    } else if (Array.isArray(value)) {
+      headers[key] = value.join(", ");
+    }
+  }
+
+  // Override with user context
+  if (user) {
+    headers["x-user-id"] = user.email;
+    headers["x-user-email"] = user.email;
+  }
+
+  // Remove host header (will be set by fetch)
+  delete headers.host;
+
+  const url = `${upstream}${path}`;
+
+  const fetchOptions: RequestInit = {
+    method: req.method,
+    headers,
+  };
+
+  // Include body for methods that support it
+  if (req.body !== undefined && req.body !== null) {
+    fetchOptions.body = JSON.stringify(req.body);
+    headers["content-type"] = "application/json";
+  }
+
+  const response = await fetch(url, fetchOptions);
+
+  // Forward status code
+  reply.status(response.status);
+
+  // Forward response headers
+  for (const [key, value] of response.headers.entries()) {
+    if (
+      key !== "transfer-encoding" &&
+      key !== "connection" &&
+      key !== "keep-alive"
+    ) {
+      reply.header(key, value);
+    }
+  }
+
+  // Forward body
+  const body = await response.text();
+  return reply.send(body);
+}
+
 /**
  * Authenticate a WebSocket upgrade request.
  * Extracts the token from the Authorization header or query parameter.
@@ -294,7 +554,7 @@ async function authenticateWebSocket(
       return { success: false, error: "Invalid token type" };
     }
 
-    if (payload.email !== config.allowedEmail) {
+    if (!config.allowedEmails.includes(payload.email.toLowerCase())) {
       return { success: false, error: "Access denied" };
     }
 

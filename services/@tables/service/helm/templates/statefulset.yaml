@@ -1,13 +1,13 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "tables-service.fullname" . }}
   labels:
     {{- include "tables-service.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
+  serviceName: {{ include "tables-service.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
-  {{- end }}
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       {{- include "tables-service.selectorLabels" . | nindent 6 }}
@@ -58,6 +58,9 @@ spec:
         # Agent model configuration (non-sensitive)
         - name: AGENT_MODEL
           value: {{ .Values.agentModel | quote }}
+        # Sharding — totalShards derived from replicaCount
+        - name: TOTAL_SHARDS
+          value: {{ .Values.replicaCount | quote }}
         # Secrets
         - name: DATABASE_URL
           valueFrom:

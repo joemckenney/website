@@ -1,6 +1,7 @@
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { FastifyInstrumentation } from "@opentelemetry/instrumentation-fastify";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
+import { UndiciInstrumentation } from "@opentelemetry/instrumentation-undici";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { PrismaInstrumentation } from "@prisma/instrumentation";
 
@@ -13,6 +14,7 @@ const sdk = new NodeSDK({
   ...(otlpEndpoint ? { traceExporter: new OTLPTraceExporter() } : {}),
   instrumentations: [
     new HttpInstrumentation(),
+    new UndiciInstrumentation(),
     new FastifyInstrumentation(),
     new PrismaInstrumentation(),
   ],

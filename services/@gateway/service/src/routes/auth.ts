@@ -152,7 +152,7 @@ export async function registerAuthRoutes(
         };
 
         // Check if email is allowed
-        if (userInfo.email !== config.allowedEmail) {
+        if (!config.allowedEmails.includes(userInfo.email.toLowerCase())) {
           return reply.redirect(`${config.frontendUrl}?error=unauthorized`);
         }
 
@@ -263,7 +263,7 @@ export async function registerAuthRoutes(
           return reply.status(400).send({ error: "Invalid token type" });
         }
 
-        if (payload.email !== config.allowedEmail) {
+        if (!config.allowedEmails.includes(payload.email.toLowerCase())) {
           return reply.status(403).send({ error: "Access denied" });
         }
 
@@ -353,7 +353,7 @@ export async function registerAuthRoutes(
           const { verifyAccessToken } = await import("../lib/jwt.js");
           const payload = verifyAccessToken(token);
 
-          if (payload.email !== config.allowedEmail) {
+          if (!config.allowedEmails.includes(payload.email.toLowerCase())) {
             return reply.status(403).send({ error: "Access denied" });
           }
 
