@@ -6,7 +6,10 @@ export const config = {
       process.env.GOOGLE_REDIRECT_URI ||
       "http://localhost:3000/auth/google/callback",
   },
-  allowedEmail: process.env.ALLOWED_EMAIL || "",
+  allowedEmails: (process.env.ALLOWED_EMAILS || process.env.ALLOWED_EMAIL || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean),
   jwt: {
     accessSecret:
       process.env.JWT_ACCESS_SECRET ||

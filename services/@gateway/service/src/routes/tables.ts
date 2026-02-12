@@ -554,7 +554,7 @@ async function authenticateWebSocket(
       return { success: false, error: "Invalid token type" };
     }
 
-    if (payload.email !== config.allowedEmail) {
+    if (!config.allowedEmails.includes(payload.email.toLowerCase())) {
       return { success: false, error: "Access denied" };
     }
 

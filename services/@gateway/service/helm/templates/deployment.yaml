@@ -75,11 +75,11 @@ spec:
             secretKeyRef:
               name: {{ include "app-server.fullname" . }}-secrets
               key: jwtSecret
-        - name: ALLOWED_EMAIL
+        - name: ALLOWED_EMAILS
           valueFrom:
             secretKeyRef:
               name: {{ include "app-server.fullname" . }}-secrets
-              key: allowedEmail
+              key: allowedEmails
         - name: FRONTEND_URL
           valueFrom:
             secretKeyRef:

@@ -35,7 +35,7 @@ export async function authenticateRequest(
       return reply.status(401).send({ error: "Invalid token type" });
     }
 
-    if (payload.email !== config.allowedEmail) {
+    if (!config.allowedEmails.includes(payload.email.toLowerCase())) {
       return reply.status(403).send({ error: "Access denied" });
     }
 
