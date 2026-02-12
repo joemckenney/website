@@ -1,3 +1,1 @@
-export function doNothing(): void {
-  // Does nothing
-}
+export { shardForBase, shardPodUrl } from "./shard.js";

@@ -1,4 +1,6 @@
+import { shardForBase } from "@website/utils";
 import Database from "better-sqlite3";
+import { config } from "../config.js";
 import { prisma } from "../db/client.js";
 import type { ColumnType, TableEvent } from "../lib/events.js";
 import {
@@ -64,15 +66,23 @@ class MemoryStore {
   private dependencyGraph = new Map<string, Set<string>>();
 
   /**
-   * Initialize the memory store by replaying WAL events
+   * Initialize the memory store by replaying WAL events.
+   * When sharding is active (totalShards > 1), only loads tables
+   * whose baseId hashes to this pod's shard index.
    */
   async initialize(): Promise<void> {
-    console.log("Initializing memory store from WAL...");
+    const { shardIndex, totalShards } = config;
+    console.log(
+      `Initializing memory store from WAL (shard ${shardIndex}/${totalShards})...`,
+    );
 
     // Get all active tables from table metadata
     const tableMetas = await prisma.tableMeta.findMany();
 
     for (const meta of tableMetas) {
+      // Only load tables that belong to this shard
+      if (shardForBase(meta.baseId, totalShards) !== shardIndex) continue;
+
       await this.replayTable(meta.id, meta.userId, meta.name, meta.baseId);
     }
 
@@ -133,6 +143,13 @@ class MemoryStore {
    */
   hasTable(tableId: string): boolean {
     return this.tables.has(tableId);
+  }
+
+  /**
+   * Get all table IDs loaded in this shard
+   */
+  getAllTableIds(): string[] {
+    return Array.from(this.tables.keys());
   }
 
   /**

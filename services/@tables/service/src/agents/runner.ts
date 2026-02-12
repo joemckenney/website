@@ -59,10 +59,12 @@ class AgentRunner {
   }
 
   /**
-   * Subscribe to events for a table
+   * Subscribe to events for a table.
+   * Skips tables not loaded on this shard.
    */
   subscribeToTable(tableId: string): void {
     if (this.subscriptions.has(tableId)) return;
+    if (!memoryStore.hasTable(tableId)) return;
 
     const unsubscribe = memoryStore.subscribe(tableId, (event) => {
       this.handleEvent(event).catch((err) => {

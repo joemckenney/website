@@ -100,6 +100,33 @@ export class WAL {
   }
 
   /**
+   * Get pending events filtered to specific table IDs.
+   * Used by the materializer when sharding is active so each pod
+   * only materializes events for its own tables.
+   */
+  async getPendingEventsForTables(
+    tableIds: string[],
+    limit: number,
+  ): Promise<Array<{ id: bigint; tableId: string; payload: TableEvent }>> {
+    if (tableIds.length === 0) return [];
+
+    const events = await prisma.tableEvent.findMany({
+      where: {
+        appliedToPg: false,
+        tableId: { in: tableIds },
+      },
+      orderBy: { id: "asc" },
+      take: limit,
+    });
+
+    return events.map((e) => ({
+      id: e.id,
+      tableId: e.tableId,
+      payload: e.payload as unknown as TableEvent,
+    }));
+  }
+
+  /**
    * Mark events as applied to PostgreSQL
    */
   async markAsApplied(eventIds: bigint[]): Promise<void> {

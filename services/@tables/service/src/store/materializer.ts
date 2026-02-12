@@ -1,6 +1,7 @@
 import { config } from "../config.js";
 import { prisma } from "../db/client.js";
 import type { ColumnType, TableEvent } from "../lib/events.js";
+import { memoryStore } from "./memory.js";
 import { wal } from "./wal.js";
 
 /**
@@ -95,7 +96,15 @@ export class Materializer {
     this.isRunning = true;
 
     try {
-      const events = await wal.getPendingEvents(config.materializerBatchSize);
+      // When sharding, only materialize events for tables on this shard.
+      // When totalShards === 1, getPendingEvents returns all pending events.
+      const events =
+        config.totalShards > 1
+          ? await wal.getPendingEventsForTables(
+              memoryStore.getAllTableIds(),
+              config.materializerBatchSize,
+            )
+          : await wal.getPendingEvents(config.materializerBatchSize);
 
       if (events.length === 0) {
         return;

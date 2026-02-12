@@ -1,3 +1,18 @@
+import { hostname } from "node:os";
+
+/**
+ * Parse the StatefulSet ordinal from the pod hostname.
+ * e.g. "tables-service-2" → 2
+ * Falls back to 0 for non-StatefulSet environments (local dev).
+ */
+function parseShardIndex(): number {
+  const explicit = process.env.SHARD_INDEX;
+  if (explicit !== undefined) return Number(explicit);
+
+  const match = hostname().match(/-(\d+)$/);
+  return match ? Number(match[1]) : 0;
+}
+
 export const config = {
   port: Number(process.env.PORT) || 3005,
   databaseUrl:
@@ -10,4 +25,7 @@ export const config = {
   // Agent runner config
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   agentModel: process.env.AGENT_MODEL || "claude-sonnet-4-20250514",
+  // Sharding config
+  shardIndex: parseShardIndex(),
+  totalShards: Number(process.env.TOTAL_SHARDS) || 1,
 };

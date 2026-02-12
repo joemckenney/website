@@ -28,6 +28,7 @@
     "@fastify/websocket": "^11.0.2",
     "@users/sdk": "workspace:*",
     "@website/tracing": "workspace:*",
+    "@website/utils": "workspace:*",
     "arctic": "^3.7.0",
     "dotenv": "^17.2.3",
     "fastify": "^5.6.2",

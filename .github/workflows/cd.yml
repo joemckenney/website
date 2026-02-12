@@ -112,6 +112,7 @@ jobs:
             --set secrets.googleClientId="${{ secrets.GOOGLE_CLIENT_ID }}" \
             --set secrets.googleClientSecret="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
             --set secrets.jwtSecret="${{ secrets.JWT_SECRET }}" \
+            --set tablesSharding.shardCount=${{ vars.TABLES_SHARD_COUNT || '2' }} \
             --wait \
             --timeout=5m
 
@@ -169,7 +170,7 @@ jobs:
             kubectl rollout status deployment/agent-service --timeout=3m
           fi
           if [ "${{ needs.build-production-images.outputs.tables_service_built }}" == "true" ]; then
-            kubectl rollout status deployment/tables-service --timeout=3m
+            kubectl rollout status statefulset/tables-service --timeout=3m
           fi
 
       - name: Run production smoke tests
@@ -192,7 +193,11 @@ jobs:
           wait_for_deployment api-service
           wait_for_deployment user-service
           wait_for_deployment agent-service
-          wait_for_deployment tables-service
+          # tables-service is a StatefulSet, wait for its pods directly
+          if kubectl get statefulset tables-service >/dev/null 2>&1; then
+            echo "Waiting for tables-service StatefulSet..."
+            kubectl rollout status statefulset/tables-service --timeout=120s
+          fi
 
           # Brief pause for ingress backend propagation
           sleep 5

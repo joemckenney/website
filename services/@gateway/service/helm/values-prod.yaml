@@ -62,6 +62,12 @@ secrets:
   agentServiceUrl: "http://agent-service:3003"
   tablesServiceUrl: "http://tables-service:3005"
 
+# Tables service sharding config
+tablesSharding:
+  headlessService: "tables-service-headless"
+  port: 3005
+  shardCount: 2
+
 # Prometheus metrics
 metrics:
   enabled: true
