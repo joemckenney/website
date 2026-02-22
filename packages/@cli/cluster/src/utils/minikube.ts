@@ -145,8 +145,9 @@ export async function startRegistryForward(): Promise<{
 		return { success: false };
 	}
 
-	// Save PID
+	// Save PID and detach so the parent process can exit
 	writeFileSync(REGISTRY_PID_FILE, String(proc.pid));
+	proc.unref();
 
 	return { success: true, pid: proc.pid };
 }
@@ -169,13 +170,40 @@ export function stopRegistryForward(): boolean {
 }
 
 /**
- * Wait for a pod to be ready
+ * Wait for a pod to be ready.
+ *
+ * kubectl wait hangs indefinitely when no pods match the selector,
+ * ignoring --timeout. We poll for pod existence first, then wait
+ * for readiness.
  */
 export async function waitForPod(
 	namespace: string,
 	selector: string,
 	timeoutSeconds = 60,
 ): Promise<boolean> {
+	const deadline = Date.now() + timeoutSeconds * 1000;
+
+	// Poll until at least one pod matches the selector
+	while (Date.now() < deadline) {
+		const check = await run([
+			"kubectl",
+			"get",
+			"pods",
+			`--namespace=${namespace}`,
+			`--selector=${selector}`,
+			"--no-headers",
+		]);
+		if (check.success && check.output.length > 0) {
+			break;
+		}
+		await Bun.sleep(2000);
+	}
+
+	if (Date.now() >= deadline) {
+		return false;
+	}
+
+	const remaining = Math.max(1, Math.ceil((deadline - Date.now()) / 1000));
 	const result = await run([
 		"kubectl",
 		"wait",
@@ -183,7 +211,7 @@ export async function waitForPod(
 		"--for=condition=ready",
 		"pod",
 		`--selector=${selector}`,
-		`--timeout=${timeoutSeconds}s`,
+		`--timeout=${remaining}s`,
 	]);
 	return result.success;
 }
