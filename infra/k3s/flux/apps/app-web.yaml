@@ -15,8 +15,8 @@ spec:
         namespace: flux-system
       reconcileStrategy: Revision
       valuesFiles:
-        - values.yaml
-        - values-selfhosted.yaml
+        - ./apps/dashboard/helm/values.yaml
+        - ./apps/dashboard/helm/values-selfhosted.yaml
   values:
     image:
       tag: latest
