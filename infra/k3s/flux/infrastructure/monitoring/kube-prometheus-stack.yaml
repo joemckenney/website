@@ -51,6 +51,11 @@ spec:
 
       assertNoLeakedSecrets: false
 
+      # Inject OAuth credentials via env vars (Grafana maps GF_* env to grafana.ini)
+      envFromSecrets:
+        - name: grafana-oauth-secrets
+          optional: false
+
       resources:
         limits:
           cpu: 200m
@@ -155,12 +160,3 @@ spec:
                   summary: "High CPU usage on {{ $labels.instance }}"
                   description: "CPU usage is above 85% for 10 minutes"
 
-  valuesFrom:
-    - kind: Secret
-      name: grafana-oauth-secrets
-      valuesKey: clientId
-      targetPath: grafana."grafana\.ini"."auth\.google".client_id
-    - kind: Secret
-      name: grafana-oauth-secrets
-      valuesKey: clientSecret
-      targetPath: grafana."grafana\.ini"."auth\.google".client_secret
