@@ -19,7 +19,7 @@ spec:
         - ./services/@agent/service/helm/values-selfhosted.yaml
   values:
     image:
-      tag: latest
+      tag: selfhosted-sha-47b601da7a5658954e116ddb8d2bbd3af7ea2be9
   valuesFrom:
     - kind: Secret
       name: agent-service-secrets-values
