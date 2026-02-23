@@ -1,0 +1,34 @@
+#cloud-config
+users:
+  - name: joe
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: wheel
+    shell: /bin/bash
+    lock_passwd: false
+    plain_text_passwd: changeme
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAEodOMTqXGTdDgCSTmjwhlDs7DqXtfxCN4kweHbykq3 j.mckenney00@gmail.com
+
+# Grow the root partition to fill the 500GB disk
+growpart:
+  mode: auto
+  devices: ['/']
+
+resize_rootfs: true
+
+# Install useful packages on first boot
+packages:
+  - htop
+  - curl
+  - vim
+  - openssh
+
+# Explicitly enable and start sshd
+runcmd:
+  - systemctl enable --now sshd
+
+# Enable SSH
+ssh_pwauth: true
+
+# Set timezone
+timezone: America/Los_Angeles

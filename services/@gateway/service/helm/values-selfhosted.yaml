@@ -1,0 +1,51 @@
+# Self-hosted values for api-service (api.crowprose.com)
+# Deployed to k3s via FluxCD — Cloudflare Tunnel handles ingress + TLS
+# Secrets injected via FluxCD valuesFrom (see infra/k3s/flux/apps/api-service.yaml)
+replicaCount: 1
+
+image:
+  repository: crowprose/api-service
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 3000
+  targetPort: 3000
+
+# No ingress — Cloudflare Tunnel routes api.crowprose.com to this service
+ingress:
+  enabled: false
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 384Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
+
+env:
+  - name: NODE_ENV
+    value: "production"
+  - name: PORT
+    value: "3000"
+
+secrets:
+  googleRedirectUri: "https://api.crowprose.com/auth/google/callback"
+  allowedEmails: "j.mckenney00@gmail.com"
+  frontendUrl: "https://app.crowprose.com"
+  backendUrl: "https://api.crowprose.com"
+  userServiceUrl: "http://user-service:3002"
+  agentServiceUrl: "http://agent-service:3003"
+  tablesServiceUrl: "http://tables-service:3005"
+
+# Tables service sharding config (single replica = 1 shard on self-hosted)
+tablesSharding:
+  headlessService: "tables-service-headless"
+  port: 3005
+  shardCount: 1
+
+# Prometheus metrics
+metrics:
+  enabled: true

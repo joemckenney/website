@@ -1,0 +1,35 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: api-service
+  namespace: default
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: ./services/@gateway/service/helm
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      reconcileStrategy: Revision
+      valuesFiles:
+        - values.yaml
+        - values-selfhosted.yaml
+  values:
+    image:
+      tag: latest
+  valuesFrom:
+    - kind: Secret
+      name: api-service-secrets-values
+      valuesKey: googleClientId
+      targetPath: secrets.googleClientId
+    - kind: Secret
+      name: api-service-secrets-values
+      valuesKey: googleClientSecret
+      targetPath: secrets.googleClientSecret
+    - kind: Secret
+      name: api-service-secrets-values
+      valuesKey: jwtSecret
+      targetPath: secrets.jwtSecret

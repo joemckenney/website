@@ -1,0 +1,108 @@
+name: CD (Self-Hosted)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      force_build:
+        description: 'Force rebuild all images'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  DOCKERHUB_USERNAME: crowprose
+
+jobs:
+  build-selfhosted-images:
+    name: Build Self-Hosted Images
+    uses: ./.github/workflows/build-images.yml
+    secrets: inherit
+    with:
+      environment: production
+      api_url: https://api.crowprose.com
+      tag_suffix: selfhosted-sha-${{ github.sha }}
+      base_ref: HEAD~1
+      force_build: ${{ inputs.force_build == true }}
+
+  update-flux-manifests:
+    name: Update FluxCD Manifests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: build-selfhosted-images
+    # Skip if triggered by the bot's own commit (prevent infinite loop)
+    if: github.actor != 'github-actions[bot]'
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Update image tags in HelmRelease manifests
+        env:
+          TAG: selfhosted-sha-${{ github.sha }}
+          APP_WEB_BUILT: ${{ needs.build-selfhosted-images.outputs.app_web_built }}
+          API_SERVICE_BUILT: ${{ needs.build-selfhosted-images.outputs.api_service_built }}
+          USER_SERVICE_BUILT: ${{ needs.build-selfhosted-images.outputs.user_service_built }}
+          AGENT_SERVICE_BUILT: ${{ needs.build-selfhosted-images.outputs.agent_service_built }}
+          TABLES_SERVICE_BUILT: ${{ needs.build-selfhosted-images.outputs.tables_service_built }}
+        run: |
+          CHANGED=false
+
+          update_tag() {
+            local file=$1
+            local built=$2
+            local name=$3
+            if [ "$built" = "true" ]; then
+              echo "Updating $name to tag: $TAG"
+              yq e ".spec.values.image.tag = \"$TAG\"" -i "$file"
+              CHANGED=true
+            else
+              echo "Skipping $name — no new image"
+            fi
+          }
+
+          update_tag infra/k3s/flux/apps/app-web.yaml "$APP_WEB_BUILT" "app-web"
+          update_tag infra/k3s/flux/apps/api-service.yaml "$API_SERVICE_BUILT" "api-service"
+          update_tag infra/k3s/flux/apps/user-service.yaml "$USER_SERVICE_BUILT" "user-service"
+          update_tag infra/k3s/flux/apps/agent-service.yaml "$AGENT_SERVICE_BUILT" "agent-service"
+          update_tag infra/k3s/flux/apps/tables-service.yaml "$TABLES_SERVICE_BUILT" "tables-service"
+
+          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+        id: update
+
+      - name: Commit and push
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add infra/k3s/flux/apps/
+          git diff --staged --quiet && echo "No changes to commit" && exit 0
+          git commit -m "chore(flux): update selfhosted image tags to ${{ github.sha }}"
+          git push
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "## Self-Hosted Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "FluxCD will reconcile updated HelmReleases on rookery." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Image Updated |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|---------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| app-web | ${{ needs.build-selfhosted-images.outputs.app_web_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| api-service | ${{ needs.build-selfhosted-images.outputs.api_service_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| user-service | ${{ needs.build-selfhosted-images.outputs.user_service_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| agent-service | ${{ needs.build-selfhosted-images.outputs.agent_service_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| tables-service | ${{ needs.build-selfhosted-images.outputs.tables_service_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY

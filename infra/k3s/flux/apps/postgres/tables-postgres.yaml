@@ -1,0 +1,44 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: tables-postgres
+  namespace: default
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: postgresql
+      version: "16.x"
+      sourceRef:
+        kind: HelmRepository
+        name: bitnami
+        namespace: flux-system
+      interval: 24h
+  values:
+    auth:
+      username: tables
+      database: tables
+    primary:
+      persistence:
+        enabled: true
+        size: 10Gi
+        storageClass: local-path
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 100m
+          memory: 256Mi
+    metrics:
+      enabled: false
+  valuesFrom:
+    - kind: Secret
+      name: tables-postgres-auth
+      valuesKey: password
+      targetPath: auth.password
+    - kind: Secret
+      name: tables-postgres-auth
+      valuesKey: postgres-password
+      targetPath: auth.postgresPassword

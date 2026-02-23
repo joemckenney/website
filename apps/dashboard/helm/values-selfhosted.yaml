@@ -1,0 +1,25 @@
+# Self-hosted values for app-web (app.crowprose.com)
+# Deployed to k3s via FluxCD — Cloudflare Tunnel handles ingress + TLS
+replicaCount: 1
+
+image:
+  repository: crowprose/app-web
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+# No ingress — Cloudflare Tunnel routes app.crowprose.com to this service
+ingress:
+  enabled: false
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi

@@ -1,0 +1,46 @@
+# Self-hosted values for user-service
+# Deployed to k3s via FluxCD — internal service (no ingress)
+# Secrets injected via FluxCD valuesFrom (see infra/k3s/flux/apps/user-service.yaml)
+replicaCount: 1
+
+image:
+  repository: crowprose/user-service
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 3002
+  targetPort: 3002
+
+# Internal service — no ingress
+ingress:
+  enabled: false
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
+
+env:
+  - name: NODE_ENV
+    value: "production"
+  - name: PORT
+    value: "3002"
+  - name: LOG_LEVEL
+    value: "info"
+
+# Prometheus metrics
+metrics:
+  enabled: true
+
+# Database migrations
+migration:
+  enabled: true
+  image:
+    repository: crowprose/user-service-migrate
+    pullPolicy: IfNotPresent
+    tag: ""

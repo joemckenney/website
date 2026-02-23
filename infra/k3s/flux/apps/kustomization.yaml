@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  # PostgreSQL databases (deploy first)
+  - postgres/users-postgres.yaml
+  - postgres/agent-postgres.yaml
+  - postgres/tables-postgres.yaml
+  # Application services
+  - app-web.yaml
+  - api-service.yaml
+  - user-service.yaml
+  - agent-service.yaml
+  - tables-service.yaml
