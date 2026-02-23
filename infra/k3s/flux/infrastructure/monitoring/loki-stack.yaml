@@ -1,0 +1,44 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: loki
+  namespace: monitoring
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: loki-stack
+      version: "2.x"
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+      interval: 24h
+  values:
+    loki:
+      enabled: true
+      persistence:
+        enabled: true
+        size: 10Gi
+        storageClassName: local-path
+      resources:
+        limits:
+          cpu: 200m
+          memory: 256Mi
+        requests:
+          cpu: 50m
+          memory: 128Mi
+
+    promtail:
+      enabled: true
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 20m
+          memory: 64Mi
+
+    grafana:
+      enabled: false  # Already have Grafana via kube-prometheus-stack

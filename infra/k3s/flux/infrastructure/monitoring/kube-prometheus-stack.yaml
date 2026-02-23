@@ -49,6 +49,15 @@ spec:
         users:
           auto_assign_org_role: Admin
 
+      additionalDataSources:
+        - name: Loki
+          type: loki
+          access: proxy
+          url: http://loki:3100
+          isDefault: false
+          jsonData:
+            maxLines: 1000
+
       assertNoLeakedSecrets: false
 
       # Inject OAuth credentials via env vars (Grafana maps GF_* env to grafana.ini)
