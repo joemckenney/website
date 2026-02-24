@@ -1,0 +1,77 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: loki
+  namespace: monitoring
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: loki
+      version: "6.x"
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+      interval: 24h
+  values:
+    deploymentMode: SingleBinary
+
+    loki:
+      auth_enabled: false
+      commonConfig:
+        replication_factor: 1
+      schemaConfig:
+        configs:
+          - from: "2024-01-01"
+            store: tsdb
+            object_store: filesystem
+            schema: v13
+            index:
+              prefix: index_
+              period: 24h
+      storage:
+        type: filesystem
+
+    singleBinary:
+      replicas: 1
+      persistence:
+        enabled: true
+        size: 10Gi
+        storageClassName: local-path
+      resources:
+        limits:
+          cpu: 200m
+          memory: 256Mi
+        requests:
+          cpu: 50m
+          memory: 128Mi
+
+    # Disable distributed components (not needed for single-binary)
+    backend:
+      replicas: 0
+    read:
+      replicas: 0
+    write:
+      replicas: 0
+
+    # Disable built-in gateway (direct access via service)
+    gateway:
+      enabled: false
+
+    # Disable caches (filesystem is fast enough for single-node)
+    chunksCache:
+      enabled: false
+    resultsCache:
+      enabled: false
+
+    # Disable self-monitoring and canary
+    monitoring:
+      selfMonitoring:
+        enabled: false
+      lokiCanary:
+        enabled: false
+
+    test:
+      enabled: false

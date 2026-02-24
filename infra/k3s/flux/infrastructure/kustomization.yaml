@@ -9,4 +9,5 @@ resources:
   - cloudflared/deployment.yaml
   - monitoring/namespace.yaml
   - monitoring/kube-prometheus-stack.yaml
-  - monitoring/loki-stack.yaml
+  - monitoring/loki.yaml
+  - monitoring/promtail.yaml
