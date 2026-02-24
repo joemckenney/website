@@ -11,6 +11,10 @@ data:
     metrics: 0.0.0.0:2000
     no-autoupdate: true
     ingress:
+      - hostname: www.crowprose.com
+        service: http://www-web.default.svc.cluster.local:80
+      - hostname: crowprose.com
+        service: http://www-web.default.svc.cluster.local:80
       - hostname: app.crowprose.com
         service: http://app-web.default.svc.cluster.local:80
       - hostname: api.crowprose.com

@@ -52,6 +52,7 @@ jobs:
       - name: Update image tags in HelmRelease manifests
         env:
           TAG: selfhosted-sha-${{ github.sha }}
+          WWW_WEB_BUILT: ${{ needs.build-selfhosted-images.outputs.www_web_built }}
           APP_WEB_BUILT: ${{ needs.build-selfhosted-images.outputs.app_web_built }}
           API_SERVICE_BUILT: ${{ needs.build-selfhosted-images.outputs.api_service_built }}
           USER_SERVICE_BUILT: ${{ needs.build-selfhosted-images.outputs.user_service_built }}
@@ -73,6 +74,7 @@ jobs:
             fi
           }
 
+          update_tag infra/k3s/flux/apps/www-web.yaml "$WWW_WEB_BUILT" "www-web"
           update_tag infra/k3s/flux/apps/app-web.yaml "$APP_WEB_BUILT" "app-web"
           update_tag infra/k3s/flux/apps/api-service.yaml "$API_SERVICE_BUILT" "api-service"
           update_tag infra/k3s/flux/apps/user-service.yaml "$USER_SERVICE_BUILT" "user-service"
@@ -101,6 +103,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Service | Image Updated |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|---------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| www-web | ${{ needs.build-selfhosted-images.outputs.www_web_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| app-web | ${{ needs.build-selfhosted-images.outputs.app_web_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| api-service | ${{ needs.build-selfhosted-images.outputs.api_service_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| user-service | ${{ needs.build-selfhosted-images.outputs.user_service_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
