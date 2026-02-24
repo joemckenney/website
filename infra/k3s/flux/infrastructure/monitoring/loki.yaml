@@ -31,8 +31,12 @@ spec:
             index:
               prefix: index_
               period: 24h
+      limits_config:
+        retention_period: 168h
       storage:
         type: filesystem
+      compactor:
+        retention_enabled: true
 
     singleBinary:
       replicas: 1
