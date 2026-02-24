@@ -58,14 +58,14 @@ ARG TURBO_TEAM
 ENV TURBO_TOKEN=${TURBO_TOKEN}
 ENV TURBO_TEAM=${TURBO_TEAM}
 
-# Build using turbo (builds all dependencies including devDependencies)
-RUN pnpm turbo build --filter=@app/www...
+# Build SSG (prerender all routes to static HTML)
+RUN pnpm --filter @app/www build:ssg
 
 # Production stage - nginx to serve static files
 FROM nginx:alpine
 
-# Copy built static files (Vite output)
-COPY --from=builder /app/apps/www/dist /usr/share/nginx/html
+# Copy built static files (SSG output from dist/client/)
+COPY --from=builder /app/apps/www/dist/client/ /usr/share/nginx/html/
 
 # Copy nginx configuration (replace main config for non-root support)
 COPY --from=builder /app/apps/www/nginx.conf /etc/nginx/nginx.conf

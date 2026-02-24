@@ -1,0 +1,22 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: www-web
+  namespace: default
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: ./apps/www/helm
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      reconcileStrategy: Revision
+      valuesFiles:
+        - ./apps/www/helm/values.yaml
+        - ./apps/www/helm/values-selfhosted.yaml
+  values:
+    image:
+      tag: selfhosted-sha-initial

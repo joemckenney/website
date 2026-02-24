@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import "./styles/global.css";
 import * as styles from "./app.css";
 import { FrequencyVisualizer } from "./components/frequency-visualizer";
-import { LoginButton } from "./components/login-button";
 import { Terminal, type TerminalLine } from "./components/terminal";
 import { AudioEvolutionEngine } from "./lib/audio-evolution-engine";
 import { AudioSynthesizer } from "./lib/audio-synthesizer";
@@ -17,7 +15,7 @@ import { getSetupInstructions, performSystemCheck } from "./lib/system-check";
 import { fetchWeatherData } from "./lib/weather";
 import type { WeatherData } from "./types/weather";
 
-function App() {
+export function WeatherStation() {
   const [terminalLines, setTerminalLines] = useState<TerminalLine[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [_isEvolving, setIsEvolving] = useState(false);
@@ -28,8 +26,6 @@ function App() {
   const coordinatesRef = useRef<{ latitude: number; longitude: number } | null>(
     null,
   );
-  const _detectingLineIndexRef = useRef<number | null>(null);
-  const _dotCountRef = useRef<number>(0);
 
   const addLog = useCallback(
     (text: string, type: TerminalLine["type"] = "output") => {
@@ -63,30 +59,26 @@ function App() {
   const hasLoggedInitial = useRef(false);
 
   useEffect(() => {
-    // Only log initial messages once (prevents double logging in StrictMode)
     if (!hasLoggedInitial.current) {
       hasLoggedInitial.current = true;
 
-      // Sequential initialization to ensure proper order
       const initializeApp = async () => {
         addLog("weather-station v1.0.0", "info");
         addLog("", "output");
         addLog("Running system check...", "info");
 
-        // Run system check
         const checkResult = await performSystemCheck();
         const instructions = getSetupInstructions(checkResult);
 
-        // Log all instructions
         for (const instruction of instructions) {
           if (
-            instruction.startsWith("⚠️") ||
-            instruction.startsWith("✓") ||
-            instruction.startsWith("ℹ️")
+            instruction.startsWith("\u26A0\uFE0F") ||
+            instruction.startsWith("\u2713") ||
+            instruction.startsWith("\u2139\uFE0F")
           ) {
-            const type = instruction.startsWith("✓")
+            const type = instruction.startsWith("\u2713")
               ? "success"
-              : instruction.startsWith("ℹ️")
+              : instruction.startsWith("\u2139\uFE0F")
                 ? "info"
                 : "warning";
             addLog(instruction, type);
@@ -100,20 +92,18 @@ function App() {
         addLog("", "output");
         addLog("Initializing audio synthesizer...", "info");
 
-        // Initialize synthesizer
         const synth = new AudioSynthesizer();
         try {
           await synth.initialize();
-          addLog("✓ Audio synthesizer ready", "success");
+          addLog("\u2713 Audio synthesizer ready", "success");
         } catch (err) {
           addLog(
-            `✗ Failed to initialize audio: ${(err as Error).message}`,
+            `\u2717 Failed to initialize audio: ${(err as Error).message}`,
             "error",
           );
         }
         synthRef.current = synth;
 
-        // Check Chrome AI availability
         addLog("Checking Chrome AI availability...", "info");
         const status = await checkGeminiAvailability((text, type) => {
           if (type) addLog(text, type);
@@ -121,14 +111,12 @@ function App() {
         });
         setAiStatus(status);
 
-        // Final message
         addLog("", "output");
         addLog('Type "help" for available commands', "output");
       };
 
       initializeApp();
     } else {
-      // Still need to initialize synth for StrictMode re-mount
       const synth = new AudioSynthesizer();
       synth.initialize().catch(() => {});
       synthRef.current = synth;
@@ -137,7 +125,6 @@ function App() {
     return () => {
       synthRef.current?.destroy();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addLog]);
 
   const handleCommand = (command: string) => {
@@ -166,12 +153,9 @@ function App() {
       if (isPlaying) {
         addLog('Already playing. Use "stop" first.', "warning");
       } else {
-        // Parse optional coordinates from command
-        // Expected format: "start 40.7128,-74.0060" or "start 40.7128, -74.0060"
         const parts = command.trim().split(/\s+/);
         if (parts.length > 1) {
-          // User provided coordinates
-          const coordStr = parts.slice(1).join("").trim(); // Join remaining parts and remove spaces
+          const coordStr = parts.slice(1).join("").trim();
           const coordParts = coordStr.split(",");
 
           if (coordParts.length === 2) {
@@ -199,7 +183,6 @@ function App() {
             addLog("Example: start 40.7128,-74.0060", "output");
           }
         } else {
-          // No coordinates provided, use geolocation
           handleStart();
         }
       }
@@ -229,7 +212,6 @@ function App() {
     });
 
     if (success) {
-      // Re-check availability after triggering download
       const status = await checkGeminiAvailability((text, type) => {
         if (type) addLog(text, type);
         else addLog(text);
@@ -246,13 +228,13 @@ function App() {
     addLog("", "output");
     for (const instruction of instructions) {
       if (
-        instruction.startsWith("⚠️") ||
-        instruction.startsWith("✓") ||
-        instruction.startsWith("ℹ️")
+        instruction.startsWith("\u26A0\uFE0F") ||
+        instruction.startsWith("\u2713") ||
+        instruction.startsWith("\u2139\uFE0F")
       ) {
-        const type = instruction.startsWith("✓")
+        const type = instruction.startsWith("\u2713")
           ? "success"
-          : instruction.startsWith("ℹ️")
+          : instruction.startsWith("\u2139\uFE0F")
             ? "info"
             : "warning";
         addLog(instruction, type);
@@ -269,17 +251,15 @@ function App() {
     addLog("=== System Debug Information ===", "info");
     addLog("", "output");
 
-    // Browser Section
     addLog("BROWSER", "info");
     addLog(`  User Agent: ${navigator.userAgent}`, "output");
     addLog(`  Platform: ${navigator.platform}`, "output");
     addLog("", "output");
 
-    // Audio Section
     addLog("AUDIO SYSTEM", "info");
     const synthInitialized = synthRef.current?.getIsPlaying !== undefined;
     addLog(
-      `  Synthesizer: ${synthInitialized ? "✓ Initialized" : "✗ Not initialized"}`,
+      `  Synthesizer: ${synthInitialized ? "\u2713 Initialized" : "\u2717 Not initialized"}`,
       synthInitialized ? "success" : "error",
     );
     addLog(`  Playing: ${isPlaying ? "Yes" : "No"}`, "output");
@@ -297,12 +277,11 @@ function App() {
       // biome-ignore lint/suspicious/noExplicitAny: Checking for legacy webkit API
       typeof (window as any).webkitAudioContext !== "undefined";
     addLog(
-      `  Web Audio API: ${audioApiSupported ? "✓ Supported" : "✗ Not supported"}`,
+      `  Web Audio API: ${audioApiSupported ? "\u2713 Supported" : "\u2717 Not supported"}`,
       audioApiSupported ? "success" : "error",
     );
     addLog("", "output");
 
-    // Chrome AI Section
     addLog("CHROME AI (GEMINI NANO)", "info");
     const hasLanguageModel =
       // biome-ignore lint/suspicious/noExplicitAny: Chrome AI experimental API
@@ -310,7 +289,7 @@ function App() {
       // biome-ignore lint/suspicious/noExplicitAny: Chrome AI experimental API
       typeof (window as any).ai?.languageModel !== "undefined";
     addLog(
-      `  API Available: ${hasLanguageModel ? "✓ Yes" : "✗ No"}`,
+      `  API Available: ${hasLanguageModel ? "\u2713 Yes" : "\u2717 No"}`,
       hasLanguageModel ? "success" : "error",
     );
 
@@ -325,17 +304,17 @@ function App() {
           const availability = await languageModel.availability();
           const statusIcon =
             availability === "available"
-              ? "✓"
+              ? "\u2713"
               : availability === "downloading"
-                ? "ℹ️"
-                : "⚠️";
+                ? "\u2139\uFE0F"
+                : "\u26A0\uFE0F";
           const statusType =
             availability === "available" ? "success" : "warning";
           addLog(`  Status: ${statusIcon} ${availability}`, statusType);
         }
       } catch (err) {
         addLog(
-          `  Status: ✗ Error - ${err instanceof Error ? err.message : "Unknown"}`,
+          `  Status: \u2717 Error - ${err instanceof Error ? err.message : "Unknown"}`,
           "error",
         );
       }
@@ -345,11 +324,10 @@ function App() {
     }
     addLog("", "output");
 
-    // Geolocation Section
     addLog("GEOLOCATION", "info");
     const geoSupported = "geolocation" in navigator;
     addLog(
-      `  API Available: ${geoSupported ? "✓ Yes" : "✗ No"}`,
+      `  API Available: ${geoSupported ? "\u2713 Yes" : "\u2717 No"}`,
       geoSupported ? "success" : "error",
     );
 
@@ -360,10 +338,10 @@ function App() {
         });
         const permIcon =
           geoPermission.state === "granted"
-            ? "✓"
+            ? "\u2713"
             : geoPermission.state === "denied"
-              ? "✗"
-              : "⚠️";
+              ? "\u2717"
+              : "\u26A0\uFE0F";
         const permType =
           geoPermission.state === "granted"
             ? "success"
@@ -372,7 +350,7 @@ function App() {
               : "warning";
         addLog(`  Permission: ${permIcon} ${geoPermission.state}`, permType);
       } catch (_err) {
-        addLog(`  Permission: Error checking`, "warning");
+        addLog("  Permission: Error checking", "warning");
       }
     }
 
@@ -385,7 +363,6 @@ function App() {
     longitude: number;
   }) => {
     try {
-      // Use provided coordinates or get user location
       let coords: { latitude: number; longitude: number };
 
       if (providedCoords) {
@@ -406,24 +383,22 @@ function App() {
       coordinatesRef.current = coords;
       addLog("Fetching weather data...", "info");
 
-      // Fetch weather
       const weatherData = await fetchWeatherData(coords);
       weatherDataRef.current = weatherData;
       addLog(
-        `Weather: ${weatherData.temperature}°F, ${weatherData.conditions}`,
+        `Weather: ${weatherData.temperature}\u00B0F, ${weatherData.conditions}`,
         "success",
       );
       addLog(
-        `Wind: ${weatherData.windSpeed}mph, Humidity: ${weatherData.humidity}%, Solar: ${weatherData.solar.shortwaveRadiation.toFixed(0)}W/m²`,
+        `Wind: ${weatherData.windSpeed}mph, Humidity: ${weatherData.humidity}%, Solar: ${weatherData.solar.shortwaveRadiation.toFixed(0)}W/m\u00B2`,
         "output",
       );
       addLog("Generating initial soundscape...", "info");
 
-      // Generate audio parameters with Chrome AI (no previous params for initial generation)
       const audioParams = await generateAudioParameters(
         weatherData,
-        null, // previousParams
-        undefined, // onProgress
+        null,
+        undefined,
         (text, type) => {
           if (type) addLog(text, type);
           else addLog(text);
@@ -436,34 +411,27 @@ function App() {
       );
       addLog("Starting audio playback...", "info");
 
-      // Start audio synthesis
       if (synthRef.current) {
         await synthRef.current.start(audioParams);
         setIsPlaying(true);
         addLog('Audio playing. Use "stop" command to end.', "success");
 
-        // Initialize and start continuous weather-driven evolution
         addLog("Starting continuous weather-driven evolution...", "info");
         if (!evolutionEngineRef.current) {
           evolutionEngineRef.current = new AudioEvolutionEngine({
-            weatherUpdateInterval: 10, // Fetch new weather every 10 seconds
-            crossfadeDuration: 8, // 8 second crossfade
+            weatherUpdateInterval: 10,
+            crossfadeDuration: 8,
           });
         }
 
-        // Start evolution loop
         await evolutionEngineRef.current.start(
           coords,
           weatherData,
           audioParams,
           async (newParams, newWeather, _changes) => {
-            // Crossfade callback with updated weather
             if (synthRef.current) {
               await synthRef.current.crossfade(newParams, 8);
               weatherDataRef.current = newWeather;
-
-              // Changes are already logged by the evolution engine
-              // Just update the ref here
             }
           },
           (text, type) => {
@@ -471,11 +439,9 @@ function App() {
             else addLog(text);
           },
           (text, type) => {
-            // Update last log in place
             updateLastLog(text, type);
           },
           () => {
-            // Remove the "detecting" line when changes are found
             removeLastLog();
           },
         );
@@ -505,38 +471,23 @@ function App() {
   };
 
   return (
-    <>
-      <LoginButton />
-      <div className={styles.page}>
-        <section className={styles.section}>
-          {isPlaying ? (
-            <div className={styles.splitContainer}>
-              <div className={styles.terminalPane}>
-                <Terminal
-                  lines={terminalLines}
-                  isActive={true}
-                  onCommand={handleCommand}
-                />
-              </div>
-              <div className={styles.visualizerPane}>
-                <FrequencyVisualizer synthesizer={synthRef.current} />
-              </div>
-            </div>
-          ) : (
-            <div className={styles.splitContainer}>
-              <div className={styles.terminalPane}>
-                <Terminal
-                  lines={terminalLines}
-                  isActive={true}
-                  onCommand={handleCommand}
-                />
-              </div>
+    <div className={styles.page}>
+      <section className={styles.section}>
+        <div className={styles.splitContainer}>
+          <div className={styles.terminalPane}>
+            <Terminal
+              lines={terminalLines}
+              isActive={true}
+              onCommand={handleCommand}
+            />
+          </div>
+          {isPlaying && (
+            <div className={styles.visualizerPane}>
+              <FrequencyVisualizer synthesizer={synthRef.current} />
             </div>
           )}
-        </section>
-      </div>
-    </>
+        </div>
+      </section>
+    </div>
   );
 }
-
-export default App;

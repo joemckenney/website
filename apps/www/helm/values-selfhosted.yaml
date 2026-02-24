@@ -1,0 +1,30 @@
+# Self-hosted values for www-web (www.crowprose.com via Cloudflare Tunnel)
+replicaCount: 1
+
+image:
+  repository: crowprose/www-web
+  pullPolicy: Always
+  tag: "latest"
+
+imagePullSecrets: []
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+# No ingress - Cloudflare Tunnel handles routing
+ingress:
+  enabled: false
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

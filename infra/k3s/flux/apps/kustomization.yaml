@@ -6,6 +6,7 @@ resources:
   - postgres/agent-postgres.yaml
   - postgres/tables-postgres.yaml
   # Application services
+  - www-web.yaml
   - app-web.yaml
   - api-service.yaml
   - user-service.yaml
