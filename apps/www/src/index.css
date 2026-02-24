@@ -13,7 +13,9 @@
 }
 
 /* CSS Reset - minimal, opinionated */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -29,7 +31,8 @@ html {
 }
 
 body {
-  font-family: "DIN 1451 Std Mittelschrift", -apple-system, system-ui, sans-serif;
+  font-family:
+    "DIN 1451 Std Mittelschrift", -apple-system, system-ui, sans-serif;
   color: #1a1a1a;
   background-color: #ffffff;
   line-height: 1.5;
@@ -37,19 +40,36 @@ body {
 }
 
 /* Typography - newspaper inspired */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: "DIN 1451 Std Engschrift", -apple-system, system-ui, sans-serif;
   font-weight: normal;
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
 
-h1 { font-size: 3rem; }
-h2 { font-size: 2.25rem; }
-h3 { font-size: 1.875rem; }
-h4 { font-size: 1.5rem; }
-h5 { font-size: 1.25rem; }
-h6 { font-size: 1.125rem; }
+h1 {
+  font-size: 3rem;
+}
+h2 {
+  font-size: 2.25rem;
+}
+h3 {
+  font-size: 1.875rem;
+}
+h4 {
+  font-size: 1.5rem;
+}
+h5 {
+  font-size: 1.25rem;
+}
+h6 {
+  font-size: 1.125rem;
+}
 
 p {
   font-size: 1rem;
@@ -63,16 +83,30 @@ a {
   transition: opacity 0.15s ease;
 }
 
-a:hover { opacity: 0.6; }
+a:hover {
+  opacity: 0.6;
+}
 
 /* Remove list styles */
-ul, ol { list-style: none; }
+ul,
+ol {
+  list-style: none;
+}
 
 /* Ensure images and media are responsive */
-img, picture, video, canvas, svg {
+img,
+picture,
+video,
+canvas,
+svg {
   display: block;
   max-width: 100%;
 }
 
 /* Inherit fonts for form elements */
-input, button, textarea, select { font: inherit; }
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}

@@ -1,6 +1,6 @@
-import { Fragment } from "react";
 import type { ComponentType } from "react";
-import { Routes as Switch, Route } from "react-router-dom";
+import { Fragment } from "react";
+import { Route, Routes as Switch } from "react-router-dom";
 
 interface PageModule {
   default: ComponentType;
