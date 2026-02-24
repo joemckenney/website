@@ -19,7 +19,7 @@ spec:
         - ./services/@gateway/service/helm/values-selfhosted.yaml
   values:
     image:
-      tag: selfhosted-sha-c8b07b430f39a4ced089d2f0d8933edc56f9c1af
+      tag: selfhosted-sha-8c704bb39431d4fe2bc902c99fb49bedd2be6a91
   valuesFrom:
     - kind: Secret
       name: api-service-secrets-values
