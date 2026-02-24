@@ -13,7 +13,7 @@
     "prod": {
       "service": "user-postgres-postgresql",
       "localPort": 5440,
-      "kubeconfig": "~/.kube/vultr-prod-config"
+      "kubeconfig": "~/.kube/k3s-config"
     }
   }
 }

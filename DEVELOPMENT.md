@@ -8,7 +8,7 @@ This guide covers the three development environments for this project.
 |-------------|---------|----------|----------|
 | **Local** | Fast iteration | Docker Compose | `pnpm run dev` |
 | **Minikube** | K8s testing | PostgreSQL in cluster | Helm deployments |
-| **Production** | Live | Vultr VKE | CI/CD via GitHub Actions |
+| **Production** | Live | k3s on rookery | FluxCD GitOps |
 
 ---
 
@@ -138,40 +138,37 @@ helm rollback api-service 1
 
 ---
 
-## 3. Production (Vultr VKE)
+## 3. Production (k3s on rookery)
 
-Production is deployed via GitHub Actions CI/CD.
+Production is deployed via FluxCD GitOps on a self-hosted k3s cluster.
 
 ### Deployment Flow
 
 1. Push to `main` branch
-2. CI runs tests and builds Docker images
-3. CD deploys via Helm to Vultr VKE
+2. GitHub Actions builds Docker images with `selfhosted-sha-*` tags
+3. `cd-selfhosted.yml` updates FluxCD manifests with new image tags
+4. FluxCD reconciles and deploys to k3s
 
 ### Manual Operations
 
-Requires the production kubeconfig:
+Requires the k3s kubeconfig:
 
 ```bash
-export KUBECONFIG=~/.kube/vultr-prod-config
+export KUBECONFIG=~/.kube/k3s-config
 
 # Check status
-kubectl get pods
-helm list
+ssh rookery kubectl get pods -A
 
 # View logs
-kubectl logs -f deployment/api-service
-
-# Rollback
-helm rollback api-service 1
+ssh rookery kubectl logs -f deployment/api-service
 ```
 
 ### URLs
 
-- https://www.joemckenney.com - Main website
-- https://app.joemckenney.com - Dashboard
-- https://api.joemckenney.com - API Gateway
-- https://o11y.joemckenney.com - Monitoring (Grafana)
+- https://www.crowprose.com - Main website
+- https://app.crowprose.com - Dashboard
+- https://api.crowprose.com - API Gateway
+- https://o11y.crowprose.com - Monitoring (Grafana)
 
 ---
 
@@ -205,7 +202,7 @@ pnpm run dev  # Logs stream to terminal
 pnpm exec cluster logs <service> -f
 
 # Production: Check pod logs
-KUBECONFIG=~/.kube/vultr-prod-config kubectl logs -f deployment/<service>
+ssh rookery kubectl logs -f deployment/<service>
 ```
 
 ### Building Docker Images

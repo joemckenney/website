@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A production-ready TypeScript monorepo demonstrating modern full-stack development with type-safe API generation, Kubernetes deployment, and comprehensive observability. Deployed to Vultr VKE with automated CI/CD.
+A production-ready TypeScript monorepo with type-safe API generation, Kubernetes deployment, and comprehensive observability. Self-hosted on k3s with FluxCD GitOps and Cloudflare Tunnel ingress.
 
 ## Repository Structure
 
 ```
 apps/
-  www/                - Main web app: Weather sonification with Chrome AI
+  www/                - Crowprose homepage (SSG) with blog, projects, contributions
   dashboard/          - React + Vite demo client with sidebar UI
 
 services/
@@ -29,10 +29,15 @@ packages/
     config/           - Shared TypeScript + Biome configuration
     utils/            - Shared TypeScript utilities
 
+packages/
+  @website/
+    weather-station/  - Weather sonification app (Chrome AI + Web Audio)
+
 infra/
   helm/charts/        - Shared Helm chart templates
+  k3s/flux/           - FluxCD GitOps manifests for k3s
   monitoring/         - Prometheus + Grafana + Loki configuration
-  terraform/          - Vultr VKE infrastructure as code
+  cloudflare/         - Cloudflare Worker (maintenance page)
   scripts/            - Local development helper scripts
 ```
 
@@ -80,25 +85,24 @@ Turbo orchestrates dependency order automatically.
 
 ## Applications
 
-### @app/www - Weather Sonification (Primary App)
+### @app/www - Crowprose Homepage
 
 **Location**: `apps/www/`
-**URL**: https://www.joemckenney.com
+**URL**: https://www.crowprose.com
 
-Experimental web app using Chrome's built-in AI (Gemini Nano) to generate ambient soundscapes from weather data.
+SSG-rendered homepage with blog, projects, and contributions pages. Built with React Router file-based routing, MDX for blog posts, and Vanilla Extract for styling.
 
-**Key Features**:
-- Chrome Built-in AI (Gemini Nano via Prompt API)
-- Web Audio API synthesis with multi-oscillator additive synthesis
-- Real-time frequency visualization
-- Geolocation + Open-Meteo weather API
-
-**Browser Requirements**: Chrome Dev/Canary 127+ with experimental flags enabled.
+**Key Pages**:
+- `/` - Homepage with projects, writing, contributions
+- `/blog` - Blog listing and posts (MDX)
+- `/projects` - Projects listing
+- `/projects/weather-station` - Weather sonification app (imports from `@website/weather-station`)
+- `/contributions` - OSS contributions
 
 ### @gateway/service - API Gateway
 
 **Location**: `services/@gateway/service/`
-**URLs**: http://localhost:3000 (dev), https://api.joemckenney.com (prod)
+**URLs**: http://localhost:3000 (dev), https://api.crowprose.com (prod)
 
 Fastify REST API with:
 - TypeBox schema validation
@@ -110,7 +114,7 @@ Fastify REST API with:
 ### @app/dashboard - Demo Client
 
 **Location**: `apps/dashboard/`
-**URL**: https://app.joemckenney.com
+**URL**: https://app.crowprose.com
 
 React + Vite frontend demonstrating type-safe API integration:
 - Collapsible sidebar navigation (Claude.ai-style)
@@ -143,62 +147,35 @@ Server (TypeBox) → OpenAPI Spec → @hey-api/openapi-ts → SDK → Type-safe 
 ### Kubernetes Deployment
 
 **Local**: Minikube with local Docker registry
-**Production**: Vultr VKE (Kubernetes 1.34)
+**Production**: k3s on rookery VM, FluxCD GitOps, Cloudflare Tunnel ingress
 
 Each app has a Helm chart in its `helm/` directory:
 - `values.yaml` - Base values
 - `values-local.yaml` - Minikube overrides
-- `values-prod.yaml` - Production overrides
+- `values-selfhosted.yaml` - k3s/self-hosted overrides
 
 ### Monitoring Stack
 
-**URL**: https://o11y.joemckenney.com (Google OAuth protected)
+**URL**: https://o11y.crowprose.com (Google OAuth protected)
 
 - **Prometheus**: Metrics collection from ServiceMonitors
 - **Grafana**: Dashboards and alerting
 - **Loki**: Log aggregation via Promtail
 - **Alertmanager**: Email notifications for critical alerts
 
-Configuration in `infra/monitoring/values-prod.yaml`.
+Configuration in `infra/k3s/flux/infrastructure/monitoring/`.
 
 ### CI/CD (GitHub Actions)
 
 **Workflows**:
 - `ci.yml` - PR checks (build, lint, type-check)
 - `build-images.yml` - Docker image builds
-- `cd.yml` - Production deployment with smoke tests
+- `cd-selfhosted.yml` - Builds images, updates FluxCD manifests with new tags
 
 **Required Secrets**:
-- `KUBE_CONFIG_PROD` - Base64 Vultr kubeconfig
 - `DOCKERHUB_TOKEN` - Docker Hub credentials
 - `GOOGLE_CLIENT_ID/SECRET` - OAuth credentials
 - `JWT_SECRET` - Token signing key
-
-### Helm Deployment Commands
-
-```bash
-# Local (Minikube)
-pnpm run deploy:helm:local
-
-# Production (requires KUBECONFIG)
-KUBECONFIG=~/.kube/vultr-prod-config helm upgrade --install <release> <chart> \
-  -f values-prod.yaml \
-  --set image.tag=<tag>
-```
-
-### Monitoring Commands
-
-```bash
-# Check Prometheus targets
-kubectl exec prometheus-monitoring-kube-prometheus-prometheus-0 -c prometheus -- \
-  wget -qO- 'http://localhost:9090/api/v1/targets'
-
-# View Grafana
-kubectl port-forward svc/monitoring-grafana 3000:80
-
-# Check logs via Loki
-# Use Grafana Explore with Loki datasource
-```
 
 ## Styling
 
@@ -257,7 +234,7 @@ Clients use:
 
 ### Production URLs
 
-- https://www.joemckenney.com - Main web app
-- https://app.joemckenney.com - Demo client
-- https://api.joemckenney.com - API gateway
-- https://o11y.joemckenney.com - Grafana (monitoring)
+- https://www.crowprose.com - Main website
+- https://app.crowprose.com - Dashboard
+- https://api.crowprose.com - API gateway
+- https://o11y.crowprose.com - Grafana (monitoring)
