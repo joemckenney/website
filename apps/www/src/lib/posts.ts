@@ -4,6 +4,7 @@ interface PostFrontmatter {
   publishedTime: string;
   series?: string;
   image?: string;
+  draft?: boolean;
 }
 
 interface PostModule {
@@ -22,7 +23,7 @@ function pathToSlug(path: string): string {
   return path.replace(/^\/src\/pages/, "").replace(/\.mdx$/, "");
 }
 
-export function getAllPosts(): Post[] {
+function allPostsIncludingDrafts(): Post[] {
   return Object.entries(posts)
     .filter(([, module]) => module.frontmatter?.publishedTime)
     .map(([path, module]) => ({
@@ -36,8 +37,12 @@ export function getAllPosts(): Post[] {
     );
 }
 
+export function getAllPosts(): Post[] {
+  return allPostsIncludingDrafts().filter((p) => !p.draft);
+}
+
 export function getSeriesPosts(series: string): Post[] {
-  return getAllPosts()
+  return allPostsIncludingDrafts()
     .filter((p) => p.series === series)
     .sort(
       (a, b) =>

@@ -76,6 +76,19 @@ export const postItem = style({
   },
 });
 
+export const postItemDraft = style({
+  borderBottom: `1px solid ${vars.color.gray200}`,
+  paddingBottom: vars.spacing["6"],
+  opacity: 0.5,
+
+  selectors: {
+    "&:last-child": {
+      borderBottom: "none",
+      paddingBottom: 0,
+    },
+  },
+});
+
 export const postTitle = style({
   fontFamily: vars.font.heading,
   fontSize: vars.fontSize.xl,
@@ -105,4 +118,13 @@ export const postDescription = style({
       textDecoration: "none",
     },
   },
+});
+
+export const comingSoon = style({
+  fontFamily: vars.font.body,
+  fontSize: vars.fontSize.sm,
+  color: vars.color.textSecondary,
+  fontStyle: "italic",
+  display: "block",
+  marginTop: vars.spacing["2"],
 });
