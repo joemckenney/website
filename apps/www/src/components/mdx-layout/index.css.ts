@@ -55,6 +55,18 @@ export const title = style({
   },
 });
 
+export const meta = style({
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+});
+
+export const publishedDate = style({
+  fontFamily: vars.font.mono,
+  fontSize: vars.fontSize.sm,
+  color: vars.color.textSecondary,
+});
+
 export const article = style({
   fontFamily: vars.font.body,
   fontSize: vars.fontSize.lg,
