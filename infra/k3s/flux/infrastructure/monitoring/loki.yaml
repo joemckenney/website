@@ -37,6 +37,7 @@ spec:
         type: filesystem
       compactor:
         retention_enabled: true
+        delete_request_store: filesystem
 
     singleBinary:
       replicas: 1
