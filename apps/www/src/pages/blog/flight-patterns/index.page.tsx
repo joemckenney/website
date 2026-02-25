@@ -21,7 +21,7 @@ export default function FlightPatterns() {
         <BackLink to="/blog" label="Writing" />
         <h1 className={title}>Flight Patterns</h1>
         <p className={description}>
-          Browser AI to production K8s.{" "}
+          Self-hosting a Kubernetes cluster on a machine under my desk.{" "}
           <a href="https://github.com/joemckenney/website">
             The long way around
           </a>

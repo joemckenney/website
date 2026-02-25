@@ -1,0 +1,193 @@
+---
+title: "Part IV: Watching the Flock"
+description: Prometheus, Grafana, and Loki on a single k3s node. Full observability for 275 millicores and a Loki v2 to v3 migration story.
+publishedTime: 2026-02-24
+series: flight-patterns
+---
+
+import { CodeBlock } from "../../../components/code-block";
+import { MdxLayout } from "../../../components/mdx-layout";
+
+export const REPO = "https://github.com/joemckenney/website/blob/main";
+
+<MdxLayout frontmatter={frontmatter}>
+
+There are two kinds of developers: those who set up monitoring before something breaks, and liars. I became honest after the second time I SSH'd into the VM to figure out why a pod was crash-looping. The first time, I told myself I'd add dashboards later. The second time, I was already on my laptop at 11pm running `kubectl describe pod` and promised myself this was the last time.
+
+It was not the last time. But at least now I have graphs.
+
+## The Stack
+
+The monitoring setup is a <a href={`${REPO}/infra/k3s/flux/infrastructure/monitoring`}>handful of FluxCD HelmReleases</a>:
+
+- **Prometheus** — scrapes metrics from every pod, node, and Kubernetes component
+- **Grafana** — dashboards and alerting, the thing you actually look at
+- **Loki** — log aggregation, because `kubectl logs` stops being useful the moment a pod restarts
+- **Promtail** — DaemonSet that ships container logs to Loki
+
+All of it runs on a single k3s node. Total resource requests: roughly 275 millicores of CPU and 1.3Gi of memory. For context, that's less than most Java applications at idle.
+
+## The ServiceMonitor Trap
+
+Before I talk about anything interesting, a public service announcement. If you deploy a service with a `/metrics` endpoint and a ServiceMonitor, and Prometheus doesn't scrape it, and you spend an hour checking ports and paths and namespaces—it's the label.
+
+The <a href={`${REPO}/infra/k3s/flux/infrastructure/monitoring/kube-prometheus-stack.yaml`}>kube-prometheus-stack</a> is configured to only discover ServiceMonitors with a specific label:
+
+<CodeBlock language="yaml">{`prometheus:
+  prometheusSpec:
+    serviceMonitorSelector:
+      matchLabels:
+        release: monitoring`}</CodeBlock>
+
+Your ServiceMonitor needs `release: monitoring` in its metadata labels. That's the whole thing. It's documented somewhere in the chart's several-thousand-line `values.yaml`, between the retention policy and the remote write configuration. You will not find it when you need it.
+
+<CodeBlock language="yaml">{`apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: api-service
+  labels:
+    release: monitoring  # this line cost me two hours
+spec:
+  selector:
+    matchLabels:
+      app: api-service
+  endpoints:
+    - port: http
+      path: /metrics`}</CodeBlock>
+
+I'm putting this at the top of the post because I wish someone had put it at the top of a post for me.
+
+## Loki: v2 to v3
+
+Loki v2 worked fine for basic log queries. Search for an error, find it, move on. What it couldn't do—in my single-binary filesystem setup—was power Grafana's log volume panel. That's the histogram above your log results that shows log frequency over time. It's useful when something starts throwing errors at 3x the normal rate and you want to see exactly when it started. In v2, the queries behind that panel returned empty. The logs were there but the aggregation wasn't.
+
+<a href={`${REPO}/infra/k3s/flux/infrastructure/monitoring/loki.yaml`}>Loki v3</a> rewrote the storage engine around TSDB. The migration:
+
+<CodeBlock language="yaml">{`loki:
+  schemaConfig:
+    configs:
+      - from: "2024-01-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+  storage:
+    type: filesystem
+  compactor:
+    retention_enabled: true
+  limits_config:
+    retention_period: 168h  # 7 days`}</CodeBlock>
+
+SingleBinary deployment mode. Filesystem storage on the local SSD. Seven-day retention with compactor cleanup. For a single node, distributed Loki—where you'd run separate read, write, and backend processes—is architectural theater. SingleBinary is one process, one PVC, and it does everything.
+
+The non-obvious detail: disable the caches. SingleBinary Loki's default chunk and result caches eat memory for no measurable benefit at this scale. The filesystem is local and fast. Let it be fast.
+
+<CodeBlock language="yaml">{`# Disable distributed components (not needed for single-binary)
+backend:
+  replicas: 0
+read:
+  replicas: 0
+write:
+  replicas: 0
+
+# Disable caches (filesystem is fast enough for single-node)
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false`}</CodeBlock>
+
+After the migration, the log volume panel just worked. Seven-day retention means old logs get compacted away automatically. The PVC stays around 2-3Gi of its allocated 10Gi.
+
+## Grafana with Google OAuth
+
+Grafana is exposed at `o11y.crowprose.com` through the Cloudflare Tunnel. A dashboard accessible to the internet needs authentication. I already had Google OAuth configured for the API gateway, so I reused the same credentials:
+
+<CodeBlock language="yaml">{`grafana:
+  grafana.ini:
+    server:
+      root_url: https://o11y.crowprose.com
+    auth:
+      disable_login_form: true
+    auth.google:
+      enabled: true
+      auto_login: true
+      allow_sign_up: true
+      scopes: openid email profile
+      allowed_emails: j.mckenney00@gmail.com
+    users:
+      auto_assign_org_role: Admin
+  envFromSecrets:
+    - name: grafana-oauth-secrets`}</CodeBlock>
+
+`auto_login: true` skips the Grafana login page entirely—visitors go straight to Google. `disable_login_form: true` removes the username/password form. `allowed_emails` is a one-item list. Anyone else gets authenticated by Google and promptly rejected by Grafana. It's not sophisticated access control, but when the allowlist is one email, it doesn't need to be.
+
+The OAuth client ID and secret are injected via `envFromSecrets`. Grafana reads `GF_AUTH_GOOGLE_CLIENT_ID` and `GF_AUTH_GOOGLE_CLIENT_SECRET` from the environment at startup—its standard config-via-env-var convention. The secret lives in the cluster, not in git.
+
+## Alerts
+
+On a single node, most default Prometheus alerts are noise. I don't care about pod scheduling fairness or resource quota warnings—there's one node, and if it's down, so is everything else. I care about three things: crash loops, disk pressure, and memory pressure.
+
+<CodeBlock language="yaml">{`additionalPrometheusRulesMap:
+  custom-alerts:
+    groups:
+      - name: critical
+        rules:
+          - alert: PodCrashLooping
+            expr: rate(kube_pod_container_status_restarts_total[15m]) > 0.2
+            for: 5m
+            annotations:
+              summary: "Pod {{ $labels.pod }} is crash looping"
+
+          - alert: PodNotReady
+            expr: kube_pod_status_ready{condition="false"} == 1
+            for: 10m
+            annotations:
+              summary: "Pod {{ $labels.pod }} not ready for 10 minutes"
+
+          - alert: PVCAlmostFull
+            expr: >
+              kubelet_volume_stats_used_bytes
+              / kubelet_volume_stats_capacity_bytes > 0.85
+            for: 5m
+            annotations:
+              summary: "PVC {{ $labels.persistentvolumeclaim }} is >85% full"
+
+      - name: warning
+        rules:
+          - alert: HighMemoryUsage
+            expr: >
+              (1 - (node_memory_MemAvailable_bytes
+              / node_memory_MemTotal_bytes)) > 0.85
+            for: 10m
+            annotations:
+              summary: "Memory usage above 85% for 10 minutes"
+
+          - alert: HighCPUUsage
+            expr: >
+              100 - (avg by(instance)
+              (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+            for: 10m
+            annotations:
+              summary: "CPU usage above 85% for 10 minutes"`}</CodeBlock>
+
+Alertmanager is actually disabled in my setup—the alerts fire into the void. I check Grafana daily, which is monitoring the way a doctor checks vitals: manually, on a schedule, and with the quiet hope that nothing interesting has happened. Setting up email or Slack notifications is on my list, right next to "add proper health checks" and "write integration tests." The list grows faster than it shrinks.
+
+## The Bill
+
+| Component | CPU Request | Memory Request | Storage |
+|-----------|------------|---------------|---------|
+| Prometheus | 100m | 512Mi | 25Gi |
+| Grafana | 50m | 128Mi | 5Gi |
+| Loki | 50m | 128Mi | 10Gi |
+| Promtail | 20m | 64Mi | — |
+| Node Exporter | ~10m | ~20Mi | — |
+| Kube State Metrics | ~10m | ~20Mi | — |
+| **Total** | **~275m** | **~1.3Gi** | **40Gi** |
+
+Full metrics, log aggregation, dashboards, and alerting rules for 275 millicores and 1.3 gigs of memory. On a managed provider, the equivalent is three SaaS subscriptions billing by ingested data volume. Here, it's some YAML and a fraction of a CPU core.
+
+Is it over-engineered for a personal website? Obviously. Do I open the Grafana dashboard at least once a day to look at it? Also obviously. There's something satisfying about watching the metrics of a system you built from the VM up—even when the most exciting event is a brief CPU spike from a blog post redeploy. Especially then, actually. Boring monitoring is the best kind.
+
+</MdxLayout>

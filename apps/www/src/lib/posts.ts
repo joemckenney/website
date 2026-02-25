@@ -37,5 +37,11 @@ export function getAllPosts(): Post[] {
 }
 
 export function getSeriesPosts(series: string): Post[] {
-  return getAllPosts().filter((p) => p.series === series);
+  return getAllPosts()
+    .filter((p) => p.series === series)
+    .sort(
+      (a, b) =>
+        new Date(a.publishedTime).getTime() -
+        new Date(b.publishedTime).getTime(),
+    );
 }

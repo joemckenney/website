@@ -44,7 +44,7 @@ export default function Blog() {
       <div className={articleList}>
         <Tile
           title="Flight Patterns"
-          description="Browser AI to production K8s. The long way around."
+          description="Self-hosting a Kubernetes cluster on a machine under my desk. The long way around."
           href="/blog/flight-patterns"
         />
         {standalonePosts.map((post) => (

@@ -1,0 +1,108 @@
+---
+title: "Part II: No Public IP Required"
+description: Replacing ingress controllers, cert-manager, and public IPs with a single Cloudflare Tunnel pod. Plus a 30-line maintenance page at the edge.
+publishedTime: 2026-02-22
+series: flight-patterns
+---
+
+import { CodeBlock } from "../../../components/code-block";
+import { MdxLayout } from "../../../components/mdx-layout";
+
+export const REPO = "https://github.com/joemckenney/website/blob/main";
+
+<MdxLayout frontmatter={frontmatter}>
+
+Here's what you typically need to expose a Kubernetes service to the internet: a public IP, an ingress controller, cert-manager, a Let's Encrypt issuer, DNS records, firewall rules, and annotations on every Ingress resource. Seven moving pieces, each with its own failure mode, to serve some HTML and a REST API that returns JSON.
+
+I replaced all of it with one pod.
+
+## How It Works
+
+The concept is disarmingly simple. Instead of opening ports and routing traffic inward, you run a <a href={`${REPO}/infra/k3s/flux/infrastructure/cloudflared`}>cloudflared daemon</a> inside the cluster that dials *out* to Cloudflare's edge. Cloudflare receives requests for your domain, sends them through the tunnel, and the daemon proxies to the right internal service. Traffic flows outbound-only. Your cluster never opens a port.
+
+The <a href={`${REPO}/infra/k3s/flux/infrastructure/cloudflared/configmap.yaml`}>routing configuration</a> is a ConfigMap:
+
+<CodeBlock language="yaml">{`tunnel: 86ffa052-fefa-4ec1-ba6a-28cfc1c5efa0
+credentials-file: /etc/cloudflared/credentials.json
+metrics: 0.0.0.0:2000
+ingress:
+  - hostname: www.crowprose.com
+    service: http://www-web.default.svc.cluster.local:80
+  - hostname: crowprose.com
+    service: http://www-web.default.svc.cluster.local:80
+  - hostname: app.crowprose.com
+    service: http://app-web.default.svc.cluster.local:80
+  - hostname: api.crowprose.com
+    service: http://api-service.default.svc.cluster.local:3000
+  - hostname: o11y.crowprose.com
+    service: http://monitoring-grafana.monitoring.svc.cluster.local:80
+  - service: http_status:404`}</CodeBlock>
+
+Five hostnames. One tunnel. The catch-all at the bottom returns 404 for anything unmatched. The services are standard ClusterIP—no NodePort, no LoadBalancer type, nothing exposed beyond the cluster network. If you `nmap` the VM's IP, you get nothing. There's nothing to find.
+
+## What You Don't Install
+
+This is the part that makes the whole thing worth writing about. Here's what's *not* in my cluster:
+
+**No ingress controller.** No NGINX pods consuming 100m+ CPU to watch Ingress resources and reload config files. No Traefik. No envoy sidecars. The cloudflared configmap *is* the routing table.
+
+**No cert-manager.** Cloudflare terminates TLS at the edge. The tunnel itself is encrypted end-to-end. You never provision, renew, or debug a certificate. If you've ever had cert-manager silently fail to renew and learned about it from a browser warning, you understand why this matters.
+
+**No public IP.** The VM sits on a NAT network at `192.168.122.x`, behind a libvirt virtual bridge. It has no public-facing address. There is nothing to port scan, nothing to firewall, nothing for Shodan to index.
+
+**No DNS management.** Cloudflare creates the DNS records for tunnel hostnames automatically when you configure the tunnel. One less thing to fat-finger.
+
+The entire ingress layer is a single pod requesting 25m CPU and 64Mi memory. I've seen ingress controllers that use more resources than the applications behind them.
+
+## The Maintenance Page
+
+Here's something I didn't expect to care about: what happens when the tunnel goes down. Reboot the VM, restart k3s, bump a node—the cloudflared pod dies and Cloudflare returns its default error page. It's generic, it says "Cloudflare" prominently, and it makes a planned five-minute restart look like your site is fundamentally broken.
+
+The <a href={`${REPO}/infra/cloudflare/maintenance-worker.js`}>fix</a> is a Cloudflare Worker—JavaScript running at the edge that intercepts 502 and 503 responses before they reach the visitor:
+
+<CodeBlock language="javascript">{`export default {
+  async fetch(request) {
+    try {
+      const response = await fetch(request);
+      if (response.status === 502 || response.status === 503) {
+        return new Response(MAINTENANCE_HTML, {
+          status: 503,
+          headers: { "Content-Type": "text/html;charset=UTF-8" },
+        });
+      }
+      return response;
+    } catch {
+      return new Response(MAINTENANCE_HTML, {
+        status: 503,
+        headers: { "Content-Type": "text/html;charset=UTF-8" },
+      });
+    }
+  },
+};`}</CodeBlock>
+
+The `MAINTENANCE_HTML` is self-contained—inline CSS, no external dependencies. When the tunnel is down, visitors see a branded "We'll be right back" page that looks intentional. When the tunnel recovers, the worker transparently steps aside. The whole file is under a hundred lines.
+
+It's the kind of detail that doesn't matter until it does. The difference between "this site is down" and "this site is being maintained" is entirely vibes, and vibes are free at the Cloudflare edge.
+
+## Security
+
+My VM has no public IP. It sits behind NAT on a libvirt virtual bridge on a machine under my desk. The only way traffic reaches it is through the Cloudflare Tunnel, which means:
+
+- Cloudflare's DDoS protection applies to all inbound traffic, automatically
+- WAF rules, bot management, rate limiting—available at the edge before a single byte reaches my cluster
+- The attack surface is the cloudflared daemon, which only makes outbound connections
+- If Cloudflare itself is compromised, my personal website is not the thing I'm worried about
+
+For something that serves a blog and a demo dashboard, this is more security than the content deserves. But it came for free with the tunnel, so I'll take it.
+
+## Tradeoffs
+
+**Cloudflare dependency.** If Cloudflare goes down, I go down. For a personal project, I genuinely do not care. For something with an SLA, you'd want a fallback.
+
+**No remote cluster access.** There's no VPN, no bastion host, no way to run `kubectl` from a coffee shop. I manage everything over SSH from the host machine. If I'm not at my desk, I'm not deploying. This has the unintended benefit of keeping me from deploying at midnight, which is historically when my worst ideas happen.
+
+**Tunnel latency.** Every request takes an extra hop through Cloudflare's nearest edge node. For a static site and a REST API, the added milliseconds are invisible. For latency-sensitive WebSocket workloads, you'd want to measure it.
+
+For serving a homepage, a dashboard, a Grafana instance, and an API—a Cloudflare Tunnel is the right amount of infrastructure. Which is to say: barely any.
+
+</MdxLayout>
