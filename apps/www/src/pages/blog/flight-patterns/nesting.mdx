@@ -12,40 +12,49 @@ export const REPO = "https://github.com/joemckenney/website/blob/main";
 
 <MdxLayout frontmatter={frontmatter}>
 
-I was paying for a managed Kubernetes cluster on Vultr to host a personal website, a dashboard nobody uses, and an API with exactly one consumer. The cluster had three nodes, a load balancer, and a monthly bill that arrived like clockwork to remind me of my choices.
+I've always had someone else handling infrastructure. At startups, I did enough to keep things running given competing priorities. I never had a reason to go deep on networking, storage, or how a cluster actually works under the covers.
 
-I'd recently bought a Framework Desktop—AMD Ryzen AI MAX+ 395, 64GB of RAM—for gaming, local AI workloads, and general tinkering. It sat on my desk running Docker for local dev and otherwise doing very little. The math here is not complicated.
+So I built a reason. A full application on a managed Kubernetes cluster: an API gateway with typed SDK generation, a sharded tables service, AI agents that trigger on data mutations, PostgreSQL databases, WebSocket streams, a monitoring stack. A sandbox for building and a cluster to deploy into. Two nodes on Vultr, a load balancer, still under-provisioned.
+
+My daughter, Camille Rose McKenney, arrived on February 15th. My new machine arrived three days earlier, on the 12th—128GB of RAM, two 1TB NVMes. I'd been coding far more than usual since Claude Code came out and wanted a proper machine to develop on, self-host services, run AI workloads. Some people assemble cribs. I bought a computer that could run local LLMs.
+
+I didn't touch it until we got home from the hospital on the 18th. It turns out that sleepless nights and the slow, bleary days of feeding and consoling a newborn are a surprisingly good time to configure a machine. You're awake anyway. One hand is usually free. And there's something meditative about Linux sysadmin at 3am with a baby on your chest.
+
+This series is about migrating that cluster to a VM on my desk. The networking, the deployment pipeline, the monitoring, and every gotcha along the way.
 
 ## The VM
 
-I didn't want to run k3s directly on my workstation. Workstations accumulate state—package managers fighting each other, orphaned config files, the quiet entropy that makes you consider a fresh install every six months. A VM is a boundary. Break it, delete it, start over. Nobody gets hurt.
+I didn't want to run k3s directly on my workstation. Workstations accumulate state. Package managers fighting each other, orphaned config files, the quiet entropy that makes you consider a fresh install every six months. A VM is a boundary. Break it, delete it, start over. Nobody gets hurt.
+
+There's also the security question. I'm self-hosting something open to the internet, on a machine in my house. A VM is an isolation layer. If something goes sideways, the blast radius stops at the VM boundary, not at my NVMe full of family photos. More on how the networking locks this down in [Part II](/blog/flight-patterns/no-public-ip).
 
 The setup is <a href={`${REPO}/infra/k3s/README.md`}>libvirt/QEMU</a> with an Arch Linux cloud image:
 
 <CodeBlock language="bash">{`# Host prerequisites
 sudo pacman -S libvirt qemu-full virt-install dnsmasq edk2-ovmf
 
-# Create the VM: 64GB RAM, 12 vCPUs, 500GB disk
-# (setup-host.sh handles image download, chroot config, virt-install)
+# Create the VM (setup-host.sh handles image download, chroot config, virt-install)
 sudo ./setup-host.sh`}</CodeBlock>
 
-The VM is called "rookery"—a nesting colony. [Crowprose](https://crowprose.com) is my pseudonym, so the infrastructure inherits the bird theme whether it wants to or not.
+The VM is called "rookery"—a nesting colony. [Crowprose](https://crowprose.com) is my pseudonym, so the infrastructure inherits the bird theme.
 
 ## Why btrfs
 
 The VM's disk is a qcow2 image sitting on a btrfs subvolume at `/var/lib/libvirt/images/`. I chose btrfs for one reason: thin provisioning.
 
-Kubernetes is voracious about storage. Prometheus wants 25Gi. Loki wants 10Gi. Three PostgreSQL databases each want 10Gi. That's 65Gi of persistent volume claims before you deploy a single line of application code. On ext4, you'd need to actually have that space allocated upfront. On btrfs, the 500GB disk is thin-provisioned—it claims the space but only consumes what's been written. The actual disk usage is a fraction of the allocated total.
+Kubernetes is voracious about storage. Prometheus wants 25Gi. Loki wants 10Gi. Three PostgreSQL databases each want 10Gi. That's 65Gi of persistent volume claims before you deploy a single line of application code. On ext4, you'd need to actually have that space allocated upfront. On btrfs, the 500GB disk is thin-provisioned. It claims the space but only consumes what's been written. The actual disk usage is a fraction of the allocated total.
 
-btrfs also gives you snapshots for free. Before doing something stupid in the cluster—which, on a personal project, is a daily occurrence—you can snapshot the VM disk and roll back in seconds. I haven't needed it yet. This is the kind of statement that ages poorly.
+btrfs also gives you snapshots for free. I haven't used them yet, but my next project is a systemd service that snapshots the VM disk before running system updates on some cadence. Cheap rollbacks for when `pacman -Syu` inevitably breaks something.
 
 ## The Gotchas
 
-Setting up a VM should be straightforward. Three of them cost me a combined evening.
+Setting up a VM should be straightforward, but I ran into a few problems that aren't well documented anywhere.
 
-**Docker vs. libvirt iptables.** Docker, in its infinite wisdom, sets the iptables FORWARD chain policy to DROP. This is fine for Docker. It is catastrophic for libvirt, which relies on that chain for NAT forwarding. Your VM boots, gets an IP address, and cannot reach the internet. `ping 8.8.8.8` just hangs while you stare at packet counts going nowhere.
+**Docker vs. libvirt iptables.** Docker sets the iptables FORWARD chain default policy to DROP. This secures Docker's own container networking, but it's a global policy change that breaks anything else on the system that relies on packet forwarding. libvirt's NAT networking is one of those things. Your VM boots, gets an IP address via the virtual bridge, and cannot reach the internet. `ping 8.8.8.8` just hangs.
 
-The <a href={`${REPO}/infra/k3s/README.md`}>fix</a> is a systemd service that re-inserts the forwarding rules Docker overwrites:
+This is a [well-known issue](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=865975) that's been filed as a Debian bug, discussed on the [Arch forums](https://bbs.archlinux.org/viewtopic.php?id=233727), and affects anyone running Docker alongside bridge-based virtualization on any Linux distro. The problem is documented, but scattered across forum threads and bug trackers. There's no single canonical "if you run Docker and libvirt together, do this" page.
+
+My <a href={`${REPO}/infra/k3s/README.md`}>fix</a> is a systemd service that inserts forwarding rules after both Docker and libvirt start:
 
 <CodeBlock language="bash">{`# /etc/systemd/system/libvirt-forward.service
 [Unit]
@@ -62,7 +71,7 @@ ExecStart=/usr/bin/iptables -I FORWARD -i wlp192s0 -o virbr0 \\
 [Install]
 WantedBy=multi-user.target`}</CodeBlock>
 
-Two iptables rules. That's the fix. Finding out you need them is the part that takes hours. Nothing in the Docker docs mentions this. Nothing in the libvirt docs mentions this. You discover it by running `iptables -L FORWARD -n -v`, seeing `policy DROP`, and having the specific kind of bad day that teaches you things.
+Two rules: allow packets from the VM bridge to the host's NIC, and allow return traffic for established connections. The `-I` flag inserts them at the top of the FORWARD chain so they're evaluated before Docker's DROP policy takes effect.
 
 **Cloud-init doesn't enable sshd on Arch.** Cloud-init on Arch Linux cloud images doesn't reliably start the SSH daemon. You write your cloud-init YAML, boot the VM, and sit there wondering why SSH hangs. The VM is running. The network is up. sshd just isn't.
 
@@ -70,7 +79,10 @@ The workaround is to skip cloud-init for SSH configuration entirely and use `qem
 
 <CodeBlock language="bash">{`qemu-nbd -c /dev/nbd0 "$VM_DISK"
 mount /dev/nbd0p3 /mnt
-arch-chroot /mnt
+mount --bind /dev /mnt/dev
+mount --bind /proc /mnt/proc
+mount --bind /sys /mnt/sys
+chroot /mnt /bin/bash
 
 # Now you're inside the image filesystem
 systemctl enable sshd
@@ -78,7 +90,7 @@ systemctl enable sshd
 
 It's not elegant. But it works every time, which is more than cloud-init can claim.
 
-**systemd-time-wait-sync.** On a fresh Arch VM, `systemd-time-wait-sync.service` waits for NTP to synchronize before letting dependent services proceed. If NTP isn't reachable yet—say, because the network is still coming up—it waits. Indefinitely. Your VM boots to a state where sshd is enabled but blocked behind a service that's waiting for a clock that will never sync because the thing that would sync it is also waiting.
+**systemd-time-wait-sync.** On a fresh Arch VM, `systemd-time-wait-sync.service` waits for NTP to synchronize before letting dependent services proceed. If NTP isn't reachable yet (say, because the network is still coming up) it waits. Indefinitely. Your VM boots to a state where sshd is enabled but blocked behind a service that's waiting for a clock that will never sync because the thing that would sync it is also waiting.
 
 <CodeBlock language="bash">{`sudo systemctl mask systemd-time-wait-sync.service`}</CodeBlock>
 
@@ -93,7 +105,7 @@ With the VM running and reachable, k3s is the easy part:
   --disable servicelb \\
   --write-kubeconfig-mode 644`}</CodeBlock>
 
-The `--disable` flags are deliberate. Traefik and ServiceLB are k3s defaults for ingress and load balancing. I don't need either—Cloudflare Tunnel handles all ingress, and on a single node there's nothing to load balance across. Every component you don't install is one less thing sending you alerts at midnight.
+The `--disable` flags are deliberate. Traefik and ServiceLB are k3s defaults for ingress and load balancing. I don't need either. Cloudflare Tunnel handles all ingress, and on a single node there's nothing to load balance across.
 
 Copy the kubeconfig to your host, fix the server address, and you've got `kubectl` from your desk:
 
@@ -103,8 +115,31 @@ export KUBECONFIG="$HOME/.kube/k3s-config"`}</CodeBlock>
 
 ## What's Running
 
-The full stack—application pods, PostgreSQL databases, Prometheus, Grafana, Loki, and a Cloudflare Tunnel—runs on 12 vCPUs and 64GB of RAM. The VM idles at around 15% CPU and 8GB of memory. Most of that is Prometheus doing what Prometheus does.
+<CodeBlock language="bash">{`$ KUBECONFIG=~/.kube/k3s-config kubectl get pods -A
+NAMESPACE     NAME                                          READY   STATUS
+cloudflared   cloudflared-96bbd6b5d-9pzzg                   1/1     Running
+default       agent-postgres-postgresql-0                   1/1     Running
+default       agent-service-65659595ff-4vgxg                1/1     Running
+default       api-service-56d86b87d5-4fh7g                  1/1     Running
+default       app-web-65bbc6d5cb-tb5f9                      1/1     Running
+default       tables-postgres-postgresql-0                  1/1     Running
+default       tables-service-0                              1/1     Running
+default       user-service-74bf69656d-xf9xg                 1/1     Running
+default       users-postgres-postgresql-0                   1/1     Running
+default       www-web-6b6f6db4ff-6tvl8                      1/1     Running
+flux-system   helm-controller-68578f8447-hzqbr              1/1     Running
+flux-system   kustomize-controller-7ddfbb5875-rdn2f         1/1     Running
+flux-system   source-controller-6679d8bdb-xck5j             1/1     Running
+monitoring    loki-0                                        2/2     Running
+monitoring    monitoring-grafana-847dfbc55d-r4lwl            3/3     Running
+monitoring    monitoring-kube-prometheus-operator-...        1/1     Running
+monitoring    monitoring-kube-state-metrics-...              1/1     Running
+monitoring    monitoring-prometheus-node-exporter-zct2v      1/1     Running
+monitoring    prometheus-monitoring-kube-prometheus-...      2/2     Running
+monitoring    promtail-jcfgc                                1/1     Running`}</CodeBlock>
 
-Could I have done this with Docker Compose on the bare metal? Absolutely. Would it have taught me anything about Kubernetes networking, GitOps, or debugging iptables chains at 11pm? No. And honestly, the iptables thing alone was worth it. I'll never forget how Linux packet forwarding works. Some lessons only stick when they cost you an evening.
+Twenty pods. The whole thing idles at around 15% CPU and 8GB of memory. Most of that is Prometheus.
+
+Could I have done this with Docker Compose on the bare metal? Absolutely. Would it have taught me anything about Kubernetes networking, GitOps, or debugging iptables chains? No. The whole point of the Vultr cluster was to learn this stuff, and now the whole point of the VM is the same thing, minus the monthly bill. Some lessons only stick when they cost you an evening. I have fewer of those to spare now, so I'd rather spend them at home.
 
 </MdxLayout>

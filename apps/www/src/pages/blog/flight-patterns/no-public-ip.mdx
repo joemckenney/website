@@ -99,7 +99,7 @@ For something that serves a blog and a demo dashboard, this is more security tha
 
 **Cloudflare dependency.** If Cloudflare goes down, I go down. For a personal project, I genuinely do not care. For something with an SLA, you'd want a fallback.
 
-**No remote cluster access.** There's no VPN, no bastion host, no way to run `kubectl` from a coffee shop. I manage everything over SSH from the host machine. If I'm not at my desk, I'm not deploying. This has the unintended benefit of keeping me from deploying at midnight, which is historically when my worst ideas happen.
+**No remote cluster access.** There's no VPN, no bastion host, no way to run `kubectl` from a coffee shop. I manage everything over SSH from the host machine. If I'm not at my desk, I'm not deploying.
 
 **Tunnel latency.** Every request takes an extra hop through Cloudflare's nearest edge node. For a static site and a REST API, the added milliseconds are invisible. For latency-sensitive WebSocket workloads, you'd want to measure it.
 
