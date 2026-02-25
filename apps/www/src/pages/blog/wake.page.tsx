@@ -1,9 +1,11 @@
+import { BackLink } from "../../components/back-link";
 import { article, header, headerContent, logo, page, title } from "./wake.css";
 
 export default function BuildingWake() {
   return (
     <div className={page}>
       <header className={header}>
+        <BackLink to="/blog" label="Writing" />
         <div className={headerContent}>
           <img src="/wake-logo.svg" alt="Wake" className={logo} />
           <h1 className={title}>Wake: Terminal History for Claude Code</h1>

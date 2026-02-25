@@ -1,3 +1,4 @@
+import { BackLink } from "../../components/back-link";
 import { Tile } from "../../components/tile";
 import { getAllPosts } from "../../lib/posts";
 import {
@@ -32,6 +33,7 @@ export default function Blog() {
   return (
     <div className={page}>
       <header className={pageHeader}>
+        <BackLink to="/" home />
         <h1 className={pageTitle}>Writing</h1>
         <p className={pageDescription}>
           Essays and notes on software engineering, tooling, and building

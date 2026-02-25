@@ -1,3 +1,4 @@
+import { BackLink } from "../../components/back-link";
 import { Tile } from "../../components/tile";
 import {
   page,
@@ -11,6 +12,7 @@ export default function Projects() {
   return (
     <div className={page}>
       <header className={pageHeader}>
+        <BackLink to="/" home />
         <h1 className={pageTitle}>Projects</h1>
         <p className={pageDescription}>
           Open source tools and libraries for TypeScript, monorepos, and

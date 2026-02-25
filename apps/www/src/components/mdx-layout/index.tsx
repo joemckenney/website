@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { BackLink } from "../back-link";
 import {
   article,
   header,
@@ -30,6 +31,7 @@ export function MdxLayout({ children, frontmatter }: MdxLayoutProps) {
   return (
     <div className={page}>
       <header className={header}>
+        <BackLink to="/blog" label="Writing" />
         {seriesName && seriesSlug && (
           <Link to={`/blog/${seriesSlug}`} className={seriesLink}>
             <span className={seriesTag}>{seriesName}</span>

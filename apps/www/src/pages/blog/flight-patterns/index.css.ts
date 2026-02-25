@@ -20,7 +20,7 @@ export const page = style({
 export const header = style({
   display: "flex",
   flexDirection: "column",
-  gap: vars.spacing["4"],
+  gap: vars.spacing["3"],
   borderBottom: `${vars.borderWidth.thick} solid ${vars.color.black}`,
   paddingBottom: vars.spacing["6"],
 });

@@ -22,7 +22,7 @@ export const pageHeader = style({
   paddingBottom: vars.spacing["6"],
   display: "flex",
   flexDirection: "column",
-  gap: vars.spacing["2"],
+  gap: vars.spacing["4"],
 });
 
 export const pageTitle = style({

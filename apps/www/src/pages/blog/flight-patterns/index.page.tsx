@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { BackLink } from "../../../components/back-link";
 import { getSeriesPosts } from "../../../lib/posts";
 import {
   description,
@@ -17,6 +18,7 @@ export default function FlightPatterns() {
   return (
     <div className={page}>
       <header className={header}>
+        <BackLink to="/blog" label="Writing" />
         <h1 className={title}>Flight Patterns</h1>
         <p className={description}>
           Browser AI to production K8s.{" "}

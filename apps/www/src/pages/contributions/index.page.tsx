@@ -1,3 +1,4 @@
+import { BackLink } from "../../components/back-link";
 import { Tile } from "../../components/tile";
 import {
   contributionList,
@@ -11,6 +12,7 @@ export default function Contributions() {
   return (
     <div className={page}>
       <header className={pageHeader}>
+        <BackLink to="/" home />
         <h1 className={pageTitle}>Open Source Contributions</h1>
         <p className={pageDescription}>
           Contributing to the open source ecosystem through pull requests, bug
