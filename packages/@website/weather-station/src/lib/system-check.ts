@@ -25,7 +25,7 @@ export async function performSystemCheck(): Promise<SystemCheckResult> {
   const chromeMatch = userAgent.match(/Chrome\/(\d+)/);
   const isChrome = chromeMatch !== null;
   const version = chromeMatch ? chromeMatch[1] : null;
-  const meetsMinimumVersion = version ? parseInt(version, 10) >= 127 : false;
+  const meetsMinimumVersion = version ? parseInt(version, 10) >= 139 : false;
 
   // Check Chrome AI API
   const languageModel =
@@ -97,23 +97,29 @@ export function getSetupInstructions(check: SystemCheckResult): string[] {
   const instructions: string[] = [];
 
   if (!check.browser.isChrome) {
-    instructions.push("⚠️  This app requires Google Chrome (version 127+)");
+    instructions.push("⚠️  This app requires Google Chrome (version 139+)");
     instructions.push("   Download Chrome at: https://www.google.com/chrome/");
     return instructions;
   }
 
   if (!check.browser.meetsMinimumVersion) {
     instructions.push(
-      `⚠️  Chrome ${check.browser.version} detected. Chrome 127+ required.`,
+      `⚠️  Chrome ${check.browser.version} detected. Chrome 139+ required.`,
     );
     instructions.push("   Update Chrome: chrome://settings/help");
     return instructions;
   }
 
   if (check.chromeAI.needsFlags) {
-    instructions.push("⚠️  Chrome AI (Gemini Nano) flags not enabled!");
+    instructions.push("⚠️  Chrome AI (Gemini Nano) not available");
     instructions.push("");
-    instructions.push("Enable these Chrome flags:");
+    instructions.push("Requirements:");
+    instructions.push("  - Chrome 139+ (current: " + (check.browser.version || "unknown") + ")");
+    instructions.push("  - 22GB free disk space");
+    instructions.push("  - GPU with >4GB VRAM, or 16GB+ RAM with 4+ CPU cores");
+    instructions.push("");
+    instructions.push("If you meet the requirements and it's still not working,");
+    instructions.push("try enabling these Chrome flags:");
     instructions.push("");
     instructions.push(
       "1. Visit: chrome://flags/#optimization-guide-on-device-model",
@@ -123,20 +129,11 @@ export function getSetupInstructions(check: SystemCheckResult): string[] {
     instructions.push("2. Visit: chrome://flags/#prompt-api-for-gemini-nano");
     instructions.push("   Set to: Enabled");
     instructions.push("");
-    instructions.push("3. Restart Chrome completely");
-    instructions.push("");
-    instructions.push("4. Visit: chrome://components/");
-    instructions.push('   Find "Optimization Guide On Device Model"');
-    instructions.push(
-      '   Click "Check for update" and wait for download (~1.7GB)',
-    );
-    instructions.push("");
-    instructions.push("5. Reload this page");
+    instructions.push("3. Restart Chrome completely and reload this page");
     instructions.push("");
     instructions.push(
       "Note: Without AI, the app will use rule-based sound generation.",
     );
-    instructions.push("      Evolution features require AI.");
   } else if (check.chromeAI.status === "downloading") {
     instructions.push("ℹ️  Chrome AI model is downloading...");
     instructions.push("   Check progress: chrome://components/");
