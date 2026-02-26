@@ -73,7 +73,12 @@ export async function refreshAccessToken(): Promise<boolean> {
       });
 
       if (response.error) {
-        clearTokens();
+        // Distinguish network errors from auth errors.
+        // Network errors (server down) have no response object — preserve tokens
+        // so the user isn't logged out by a transient outage.
+        if (response.response) {
+          clearTokens();
+        }
         return false;
       }
 
@@ -84,8 +89,8 @@ export async function refreshAccessToken(): Promise<boolean> {
 
       return false;
     } catch (error) {
+      // Unexpected errors (network failures, etc.) — don't clear tokens
       console.error("Failed to refresh token:", error);
-      clearTokens();
       return false;
     } finally {
       refreshPromise = null;

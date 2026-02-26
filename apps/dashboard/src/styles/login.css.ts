@@ -87,6 +87,16 @@ export const googleIcon = style({
   height: "18px",
 });
 
+export const errorMessage = style({
+  marginBottom: vars.space[6],
+  padding: vars.space[4],
+  background: vars.colors.stone200,
+  border: `1px solid ${vars.colors.stone400}`,
+  color: vars.colors.stone900,
+  fontSize: vars.fontSizes.sm.fontSize,
+  textAlign: "center",
+});
+
 export const footer = style({
   marginTop: vars.space[8],
   textAlign: "center",

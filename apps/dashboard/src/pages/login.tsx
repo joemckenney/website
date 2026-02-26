@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { isAuthenticated, setAccessToken } from "../lib/auth";
+import { isAuthenticated } from "../lib/auth";
 import * as styles from "../styles/login.css";
 
 export default function LoginPage() {
@@ -8,20 +8,13 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    // Handle OAuth callback with access_token in URL
-    const accessToken = searchParams.get("access_token");
-    if (accessToken) {
-      setAccessToken(accessToken);
-      navigate("/new", { replace: true });
-      return;
-    }
-
     // If already authenticated, redirect to app
     if (isAuthenticated()) {
-      navigate("/new", { replace: true });
+      navigate("/bases", { replace: true });
     }
-  }, [searchParams, navigate]);
+  }, [navigate]);
 
+  const error = searchParams.get("error");
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
   const googleAuthUrl = `${apiUrl}/auth/google`;
 
@@ -32,6 +25,12 @@ export default function LoginPage() {
           <h1 className={styles.title}>Agent</h1>
           <p className={styles.subtitle}>AI agent testbed</p>
         </div>
+
+        {error && (
+          <div className={styles.errorMessage}>
+            Authentication failed: {error}
+          </div>
+        )}
 
         <div className={styles.divider}>
           <span className={styles.dividerLine} />

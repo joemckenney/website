@@ -2,7 +2,6 @@ import { client as agentClient } from "@agent/sdk";
 import { client } from "@gateway/sdk";
 import { client as tablesClient } from "@tables/sdk";
 import {
-  clearTokens,
   ensureValidToken,
   getAccessToken,
   refreshAccessToken,
@@ -114,17 +113,17 @@ export function setupApiClient(baseUrl: string) {
           return await fetch(request);
         }
       } else {
+        // refreshAccessToken already handled clearing tokens if appropriate
         isRefreshing = false;
         onRefreshed(null);
-        clearTokens();
-        window.location.href = "/";
+        window.location.href = "/login";
         return response;
       }
     } catch (_error) {
+      // Network error — don't clear tokens, preserve session
       isRefreshing = false;
       onRefreshed(null);
-      clearTokens();
-      window.location.href = "/";
+      window.location.href = "/login";
       return response;
     }
 
