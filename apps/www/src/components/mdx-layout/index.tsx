@@ -43,8 +43,13 @@ export function MdxLayout({ children, frontmatter }: MdxLayoutProps) {
             <span />
           )}
           {frontmatter.publishedTime && (
-            <time className={publishedDate} dateTime={frontmatter.publishedTime}>
-              {new Date(frontmatter.publishedTime + "T00:00:00").toLocaleDateString("en-US", {
+            <time
+              className={publishedDate}
+              dateTime={frontmatter.publishedTime}
+            >
+              {new Date(
+                frontmatter.publishedTime + "T00:00:00",
+              ).toLocaleDateString("en-US", {
                 year: "numeric",
                 month: "long",
                 day: "numeric",

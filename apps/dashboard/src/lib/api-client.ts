@@ -1,11 +1,7 @@
 import { client as agentClient } from "@agent/sdk";
 import { client } from "@gateway/sdk";
 import { client as tablesClient } from "@tables/sdk";
-import {
-  ensureValidToken,
-  getAccessToken,
-  refreshAccessToken,
-} from "./auth";
+import { ensureValidToken, getAccessToken, refreshAccessToken } from "./auth";
 
 // Track if we're currently refreshing to prevent loops
 let isRefreshing = false;
