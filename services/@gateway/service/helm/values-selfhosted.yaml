@@ -30,6 +30,10 @@ env:
     value: "production"
   - name: PORT
     value: "3000"
+  - name: RELAY_BASE_URL
+    value: "http://192.168.122.1:4000/v1"
+  - name: AGENT_MODEL
+    value: "small"
 
 secrets:
   googleRedirectUri: "https://api.crowprose.com/auth/google/callback"

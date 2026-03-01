@@ -6,6 +6,7 @@ packages:
   - packages/@agent/*
   - packages/@tools/*
   - packages/@cli/*
+  - packages/@signal/*
 
 catalog:
   '@biomejs/biome': 2.2.6

@@ -11,6 +11,7 @@ import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
 import { registerAgentRoutes } from "./routes/agent.js";
 import { registerAuthRoutes } from "./routes/auth.js";
+import { registerSignalRoutes } from "./routes/signal.js";
 import { registerTablesRoutes } from "./routes/tables.js";
 import { registerRoutes } from "./routes.js";
 
@@ -92,6 +93,7 @@ await fastify.register(websocket);
 
 await registerAuthRoutes(fastify);
 await registerAgentRoutes(fastify);
+await registerSignalRoutes(fastify);
 await registerTablesRoutes(fastify);
 await registerRoutes(fastify, {});
 
