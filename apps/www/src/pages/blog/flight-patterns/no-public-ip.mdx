@@ -1,9 +1,8 @@
 ---
 title: "Part II: No Public IP Required"
 description: Replacing ingress controllers, cert-manager, and public IPs with a single Cloudflare Tunnel pod. Plus a 30-line maintenance page at the edge.
-publishedTime: 2026-02-22
+publishedTime: 2026-03-01
 series: flight-patterns
-draft: true
 ---
 
 import { CodeBlock } from "../../../components/code-block";
@@ -13,11 +12,25 @@ export const REPO = "https://github.com/joemckenney/website/blob/main";
 
 <MdxLayout frontmatter={frontmatter}>
 
-Here's what you typically need to expose a Kubernetes service to the internet: a public IP, an ingress controller, cert-manager, a Let's Encrypt issuer, DNS records, firewall rules, and annotations on every Ingress resource. Seven moving pieces, each with its own failure mode, to serve some HTML and a REST API that returns JSON.
+At the end of [Part I](/blog/flight-patterns/nesting), the VM is running. k3s is up. Twenty pods are humming along on a machine under my desk. But the VM sits behind libvirt NAT at `192.168.122.x`, on a desktop with no static public IP. Nobody can reach it.
 
-I replaced all of it with one pod.
+I replaced the entire traditional ingress stack with one pod.
 
-## How It Works
+## Bridging the Gap
+
+Without a public IP, something has to bridge the gap between the internet and a VM on a NAT network. The options:
+
+**Port forwarding + dynamic DNS.** Forward ports through the host into the VM's NAT network, register a dynamic DNS name, run cert-manager for TLS. Only works if your ISP doesn't use CGNAT—and even then, you're exposing your home IP, managing iptables rules across two NAT layers, and hoping your address doesn't rotate while cert-manager tries to validate a challenge. Fragile and exposed.
+
+**VPS relay.** Rent a cheap VPS with a static IP, WireGuard from the cluster to it, reverse proxy on the VPS. More control, more to maintain, and a monthly cost for what amounts to a relay.
+
+**Tailscale Funnel / ngrok.** Same pattern as Cloudflare Tunnel—outbound connection to a publicly reachable relay. Tailscale Funnel is the closest equivalent and a solid option.
+
+Every alternative follows the same shape: connect outbound to something publicly reachable. Cloudflare Tunnel is the version where that relay also gives you TLS termination, automatic DNS records, and a security layer you didn't ask for but won't refuse. DDoS protection applies to all inbound traffic automatically. WAF rules and rate limiting sit at the edge before a single byte reaches the cluster. The attack surface shrinks to one daemon that only makes outbound connections—there's nothing to port scan, nothing for Shodan to index. If Cloudflare itself is compromised, my personal website is not the thing I'm worried about.
+
+Rather than fighting NAT, I leaned into the constraint.
+
+## One Pod
 
 The concept is disarmingly simple. Instead of opening ports and routing traffic inward, you run a <a href={`${REPO}/infra/k3s/flux/infrastructure/cloudflared`}>cloudflared daemon</a> inside the cluster that dials *out* to Cloudflare's edge. Cloudflare receives requests for your domain, sends them through the tunnel, and the daemon proxies to the right internal service. Traffic flows outbound-only. Your cluster never opens a port.
 
@@ -39,71 +52,36 @@ ingress:
     service: http://monitoring-grafana.monitoring.svc.cluster.local:80
   - service: http_status:404`}</CodeBlock>
 
-Five hostnames. One tunnel. The catch-all at the bottom returns 404 for anything unmatched. The services are standard ClusterIP—no NodePort, no LoadBalancer type, nothing exposed beyond the cluster network. If you `nmap` the VM's IP, you get nothing. There's nothing to find.
+Five hostnames. One tunnel. The catch-all returns 404 for anything unmatched. The services are standard ClusterIP—no NodePort, no LoadBalancer type, nothing exposed beyond the cluster network.
 
-## What You Don't Install
+Here's what's *not* in my cluster as a result:
 
-This is the part that makes the whole thing worth writing about. Here's what's *not* in my cluster:
-
-**No ingress controller.** No NGINX pods consuming 100m+ CPU to watch Ingress resources and reload config files. No Traefik. No envoy sidecars. The cloudflared configmap *is* the routing table.
+**No ingress controller.** No NGINX pods consuming 100m+ CPU to watch Ingress resources and reload config files. No Traefik. No envoy sidecars. The cloudflared ConfigMap *is* the routing table.
 
 **No cert-manager.** Cloudflare terminates TLS at the edge. The tunnel itself is encrypted end-to-end. You never provision, renew, or debug a certificate. If you've ever had cert-manager silently fail to renew and learned about it from a browser warning, you understand why this matters.
 
-**No public IP.** The VM sits on a NAT network at `192.168.122.x`, behind a libvirt virtual bridge. It has no public-facing address. There is nothing to port scan, nothing to firewall, nothing for Shodan to index.
-
-**No DNS management.** Cloudflare creates the DNS records for tunnel hostnames automatically when you configure the tunnel. One less thing to fat-finger.
+**No DNS management.** Cloudflare creates the DNS records for tunnel hostnames automatically. One less thing to fat-finger.
 
 The entire ingress layer is a single pod requesting 25m CPU and 64Mi memory. I've seen ingress controllers that use more resources than the applications behind them.
 
 ## The Maintenance Page
 
-Here's something I didn't expect to care about: what happens when the tunnel goes down. Reboot the VM, restart k3s, bump a node—the cloudflared pod dies and Cloudflare returns its default error page. It's generic, it says "Cloudflare" prominently, and it makes a planned five-minute restart look like your site is fundamentally broken.
+I self-host on a desktop. I restart it—kernel updates, k3s bumps, the occasional "I wonder if a reboot fixes this." Every time, the cloudflared pod dies and Cloudflare's default error page takes over. It's generic, branded with Cloudflare's logo, and makes a planned five-minute restart look like the site is fundamentally broken.
 
-The <a href={`${REPO}/infra/cloudflare/maintenance-worker.js`}>fix</a> is a Cloudflare Worker—JavaScript running at the edge that intercepts 502 and 503 responses before they reach the visitor:
-
-<CodeBlock language="javascript">{`export default {
-  async fetch(request) {
-    try {
-      const response = await fetch(request);
-      if (response.status === 502 || response.status === 503) {
-        return new Response(MAINTENANCE_HTML, {
-          status: 503,
-          headers: { "Content-Type": "text/html;charset=UTF-8" },
-        });
-      }
-      return response;
-    } catch {
-      return new Response(MAINTENANCE_HTML, {
-        status: 503,
-        headers: { "Content-Type": "text/html;charset=UTF-8" },
-      });
-    }
-  },
-};`}</CodeBlock>
-
-The `MAINTENANCE_HTML` is self-contained—inline CSS, no external dependencies. When the tunnel is down, visitors see a branded "We'll be right back" page that looks intentional. When the tunnel recovers, the worker transparently steps aside. The whole file is under a hundred lines.
+The <a href={`${REPO}/infra/cloudflare/maintenance-worker.js`}>fix</a> is a Cloudflare Worker—a few lines of JavaScript at the edge that intercepts 502 and 503 responses before they reach the visitor. When the tunnel is down, it returns a self-contained HTML page with inline CSS and no external dependencies. When the tunnel recovers, the Worker transparently steps aside. The whole file is under a hundred lines.
 
 It's the kind of detail that doesn't matter until it does. The difference between "this site is down" and "this site is being maintained" is entirely vibes, and vibes are free at the Cloudflare edge.
-
-## Security
-
-My VM has no public IP. It sits behind NAT on a libvirt virtual bridge on a machine under my desk. The only way traffic reaches it is through the Cloudflare Tunnel, which means:
-
-- Cloudflare's DDoS protection applies to all inbound traffic, automatically
-- WAF rules, bot management, rate limiting—available at the edge before a single byte reaches my cluster
-- The attack surface is the cloudflared daemon, which only makes outbound connections
-- If Cloudflare itself is compromised, my personal website is not the thing I'm worried about
-
-For something that serves a blog and a demo dashboard, this is more security than the content deserves. But it came for free with the tunnel, so I'll take it.
 
 ## Tradeoffs
 
 **Cloudflare dependency.** If Cloudflare goes down, I go down. For a personal project, I genuinely do not care. For something with an SLA, you'd want a fallback.
 
-**No remote cluster access.** There's no VPN, no bastion host, no way to run `kubectl` from a coffee shop. I manage everything over SSH from the host machine. If I'm not at my desk, I'm not deploying.
+**No remote cluster access.** There's no VPN or bastion host—I can't `kubectl` from a coffee shop. No tailing logs, no exec-ing into pods, no manual intervention unless I'm at my desk. But deploying works from anywhere: push to main, GitHub Actions builds the images, and FluxCD on the cluster pulls the changes. The deploy path is entirely git-based and never touches the cluster API. And Grafana is exposed through the tunnel at `o11y.crowprose.com`, so I have observability from any browser.
+
+The operational gap is solvable if I want it. Tailscale would give me encrypted access to the cluster API from anywhere—same outbound-only pattern as the Cloudflare Tunnel. A WireGuard tunnel to the host would work too. For now, git-push deploys and browser-based monitoring cover what I actually need.
 
 **Tunnel latency.** Every request takes an extra hop through Cloudflare's nearest edge node. For a static site and a REST API, the added milliseconds are invisible. For latency-sensitive WebSocket workloads, you'd want to measure it.
 
-For serving a homepage, a dashboard, a Grafana instance, and an API—a Cloudflare Tunnel is the right amount of infrastructure. Which is to say: barely any.
+For twenty pods—three Postgres databases, an API gateway with typed SDK generation, AI agents, a sharded tables service, a full Prometheus and Grafana stack, and GitOps pulling it all together—a single Cloudflare Tunnel is the entire ingress layer. Which is to say: barely any.
 
 </MdxLayout>

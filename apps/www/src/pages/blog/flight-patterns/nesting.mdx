@@ -26,7 +26,7 @@ This series is about migrating that cluster to a VM on my desk. The networking, 
 
 I didn't want to run k3s directly on my workstation. Workstations accumulate state. Package managers fighting each other, orphaned config files, the quiet entropy that makes you consider a fresh install every six months. A VM is a boundary. Break it, delete it, start over. Nobody gets hurt.
 
-There's also the security question. I'm self-hosting something open to the internet, on a machine in my house. A VM is an isolation layer. If something goes sideways, the blast radius stops at the VM boundary, not at my NVMe full of family photos. More on how the networking locks this down in [Part II](/blog/flight-patterns/no-public-ip).
+There's also the security question. I'm self-hosting something open to the internet, on a machine in my house. A VM is an isolation layer. If something goes sideways, the blast radius stops at the VM boundary, not at my NVMe full of family photos. More on how traffic actually reaches it in [Part II](/blog/flight-patterns/no-public-ip).
 
 The setup is <a href={`${REPO}/infra/k3s/README.md`}>libvirt/QEMU</a> with an Arch Linux cloud image:
 
