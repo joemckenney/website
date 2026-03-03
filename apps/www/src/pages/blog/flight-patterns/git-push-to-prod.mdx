@@ -1,7 +1,7 @@
 ---
 title: "Part III: Git Push to Production"
-description: FluxCD GitOps on a single node. Smart monorepo change detection, Docker image pruning, and the CI/CD infinite loop rite of passage.
-publishedTime: 2026-02-23
+description: FluxCD GitOps on a single node. Smart monorepo change detection, the CI/CD infinite loop rite of passage, and the rough edges of YAML-driven deployment.
+publishedTime: 2026-03-02
 series: flight-patterns
 draft: true
 ---
@@ -13,49 +13,41 @@ export const REPO = "https://github.com/joemckenney/website/blob/main";
 
 <MdxLayout frontmatter={frontmatter}>
 
-The pitch for GitOps is elegant: your cluster's desired state lives in git. Push a change, the cluster converges. No `kubectl apply` from your laptop. No SSH. No "let me just fix this one thing in prod real quick." The repo is the truth and the cluster obeys.
+At the end of [Part II](/blog/flight-patterns/no-public-ip), Cloudflare Tunnel routes traffic to the cluster. Requests arrive. Services respond. But the question shifts: when code changes, how does it reach those pods?
 
-The reality involves a non-trivial amount of YAML, a CI/CD pipeline that needs to be taught not to trigger itself, and at least one evening wondering why your image tags aren't updating. But once it works, it genuinely works. Push to main, go make coffee, come back to running pods.
+## Getting Code to the Cluster
 
-## FluxCD
+**`kubectl apply` from my laptop.** The obvious starting point. Copy manifests, run the command, watch pods restart. No pipeline, no automation, no audit trail. You have to be at your desk, and "I forgot to deploy" becomes a failure mode. Fine for debugging, not a workflow.
 
-<a href={`${REPO}/infra/k3s/flux/clusters/rookery`}>FluxCD</a> watches the `main` branch of this repo. Every sixty seconds, it checks for new commits. When it finds one, it reconciles the manifests against the cluster's actual state and applies whatever differs.
+**CI pushes directly.** GitHub Actions builds the image, then runs `kubectl apply` or `helm upgrade` against the cluster. Straightforward, but the pipeline needs cluster credentials—your kubeconfig lives in GitHub Secrets, and CI has production access. If the pipeline is compromised, so is the cluster.
 
-The manifests are organized in two layers with an explicit dependency:
+**Pull-based GitOps.** An agent running *inside* the cluster watches the repo and pulls desired state from git. CI never touches the cluster. It builds images and updates manifests in the repo; the agent handles the rest. The repo becomes the audit trail—every deployment is a commit.
 
-<CodeBlock language="yaml">{`# clusters/rookery/infrastructure.yaml
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: infrastructure
-  namespace: flux-system
-spec:
-  interval: 1h
-  path: ./infra/k3s/flux/infrastructure
-  prune: true
-  wait: true`}</CodeBlock>
+I went with GitOps because I wanted to learn it, and the model is genuinely simple once you stop fighting the YAML. Push to main, make coffee, come back to running pods. The two main options are ArgoCD and FluxCD. ArgoCD ships with a dashboard and an API server—more moving parts, more resource overhead, designed for teams that need visibility across many clusters. FluxCD is a set of controllers and nothing else. On a single node where every pod competes for the same resources, lighter wins.
+
+## The Reconciliation Loop
+
+<a href={`${REPO}/infra/k3s/flux/clusters/rookery`}>FluxCD</a> watches the `main` branch. Every sixty seconds, it checks for new commits. When it finds one, it reconciles—compares the manifests in git to the cluster's actual state and applies whatever differs.
+
+The manifests are split into an `infrastructure` Kustomization (monitoring, tunnel, databases) and an `apps` Kustomization (the services behind them). The apps layer declares the dependency explicitly:
 
 <CodeBlock language="yaml">{`# clusters/rookery/apps.yaml
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: apps
-  namespace: flux-system
 spec:
-  interval: 30m
   path: ./infra/k3s/flux/apps
-  prune: true
-  wait: true
   dependsOn:
     - name: infrastructure`}</CodeBlock>
 
-`dependsOn` is doing the work here. Infrastructure—Prometheus, Grafana, Loki, Cloudflare Tunnel—must fully reconcile before applications deploy. Without this, your pods start before the monitoring stack exists or before the tunnel is ready to route traffic. On a single node where everything competes for the same resources, ordering matters more than the docs suggest.
+Infrastructure must fully reconcile before applications deploy. Without this, pods start before the monitoring stack exists or before the tunnel is ready to route traffic. On a single node where everything competes for the same resources, ordering matters more than the docs suggest. I learned this the obvious way: deploying everything at once and watching pods crashloop while waiting for services that hadn't been created yet.
 
-## Smart Change Detection
+So the full sequence: a human pushes to main. GitHub Actions builds the changed images and a bot commits new image tags to the FluxCD manifests. Within sixty seconds, FluxCD detects the new commit. It reconciles infrastructure first—monitoring, tunnel, databases—then applications. The tunnel routes traffic to the new pods. Push to production in under five minutes, most of it Docker builds. The actual rollout takes about thirty seconds.
 
-This is a monorepo. The homepage, the API gateway, the user service, the dashboard—they all live in the same repo with shared TypeScript packages. A typo fix in a blog post should not rebuild the API gateway. A change to a shared utility should rebuild everything that imports it.
+## What Actually Changed
 
-The <a href={`${REPO}/.github/workflows/build-images.yml`}>build pipeline</a> uses pnpm's workspace-aware filtering to figure out what actually changed:
+This is a monorepo. The homepage, the API gateway, the user service, the dashboard—six deployable services sharing TypeScript packages. A typo in a blog post should not rebuild the API gateway. A change to a shared utility should rebuild everything that imports it.
+
+The first version of the pipeline didn't bother with any of this. Every push built every image. Six Docker builds, every time, whether anything changed or not. It worked, in the way that doing everything twice works—and the builds took long enough that I stopped ignoring it.
+
+The <a href={`${REPO}/.github/workflows/build-images.yml`}>fix</a> uses pnpm's workspace-aware filtering to figure out what actually changed:
 
 <CodeBlock language="bash">{`# Get all packages affected by changes since the last commit
 AFFECTED_PACKAGES=$(pnpm ls -r --depth -1 --filter="...[$BASE_REF]" --json \\
@@ -89,47 +81,23 @@ check_package "@gateway/service" "api_service"
 check_package "@users/service" "user_service"
 # ...`}</CodeBlock>
 
-The `...[HEAD~1]` filter syntax is pnpm's "what changed since this ref" query. It walks the dependency graph. If `@website/utils` changed, every package that depends on it shows up. The result is a set of booleans—`www_web=true`, `api_service=false`—that downstream build jobs use to decide what Docker images to build.
+The `...[HEAD~1]` filter syntax is pnpm's "what changed since this ref" query. It walks the dependency graph—if `@website/utils` changed, every package that depends on it shows up. Downstream build jobs use the results to decide which Docker images to build. Each Dockerfile uses `turbo prune` to build a minimal workspace subset, so the images stay small—the www image is just nginx serving static HTML.
 
-A blog post change: one image, two minutes. A shared package change: everything, five minutes. A CI-only change: nothing built at all. On a repo with six deployable services, skipping unnecessary builds saves real time and bandwidth.
-
-## Slim Docker Images
-
-Each service uses multi-stage builds with Turbo's <a href={`${REPO}/apps/www/Dockerfile`}>workspace pruning</a>:
-
-<CodeBlock language="dockerfile">{`# Stage 1: Prune the monorepo to just this package's dependency tree
-FROM node:24-alpine AS workspace-pruner
-RUN corepack enable
-RUN pnpm add -g turbo
-COPY . .
-RUN turbo prune @app/www --docker
-
-# Stage 2: Install dependencies and build
-FROM node:24-alpine AS builder
-COPY --from=workspace-pruner /app/out/json/ .
-COPY --from=workspace-pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
-RUN pnpm install
-COPY --from=workspace-pruner /app/out/full/ .
-RUN pnpm --filter @app/www build:ssg
-
-# Stage 3: Serve static files
-FROM nginx:alpine
-COPY --from=builder /app/apps/www/dist/client/ /usr/share/nginx/html/`}</CodeBlock>
-
-`turbo prune --docker` generates a minimal subset of the monorepo—only the target package and its workspace dependencies. The final stage copies just the build output. No `node_modules`, no source files, no other workspace packages. The homepage image is nginx serving static HTML. It pulls in seconds.
+A blog post change: one image, two minutes. A shared package change: everything, five minutes. A CI-only change: nothing built at all.
 
 ## The Infinite Loop
 
-A rite of passage for anyone wiring up GitOps with CI/CD: the deployment pipeline builds images and commits updated image tags to the repo. That commit triggers the pipeline. Which builds images. Which commits tags. Which triggers the pipeline. You notice when your GitHub Actions bill looks wrong.
+The deployment pipeline builds images, then commits updated image tags to the FluxCD manifests so the cluster knows which versions to run. That commit is a push to main. Which triggers the pipeline. Which builds images. Which commits tags. Which triggers the pipeline.
 
-The <a href={`${REPO}/.github/workflows/cd-selfhosted.yml`}>fix</a> is one line:
+There are a few ways to break the cycle. You can use a [personal access token](https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication) so the bot's commits come from a different identity. You can push tag updates to a separate branch that doesn't trigger CI. Or you can let the loop trigger and <a href={`${REPO}/.github/workflows/cd-selfhosted.yml`}>skip it on the way in</a>:
 
 <CodeBlock language="yaml">{`jobs:
   update-flux-manifests:
-    # Skip if triggered by the bot's own manifest update commit
     if: github.actor != 'github-actions[bot]'`}</CodeBlock>
 
-When a human pushes to main, the pipeline runs. It builds the changed images, then a bot commits the new tags to the FluxCD manifests using `yq`:
+The bot's commit fires the workflow, the `if` catches it, and the run exits immediately. Simplest option, no extra tokens or branches.
+
+After the human-triggered run builds images, a bot commits the new tags using `yq`:
 
 <CodeBlock language="yaml">{`update_tag() {
   local file=$1
@@ -143,13 +111,13 @@ update_tag infra/k3s/flux/apps/www-web.yaml "$WWW_WEB_BUILT"
 update_tag infra/k3s/flux/apps/api-service.yaml "$API_SERVICE_BUILT"
 # ...`}</CodeBlock>
 
-The bot's commit triggers the pipeline again—but the `if` condition catches it and the workflow exits. FluxCD sees the new commit, notices the image tags changed, and rolls out new pods. Loop broken. The image tags follow the pattern `selfhosted-sha-{commit_sha}`, so if something goes wrong, the tag is a direct link to the exact code running in the cluster.
+The bot's commit triggers the pipeline again—but the `if` condition catches it and the workflow exits immediately. FluxCD sees the new commit, notices the image tags changed, and rolls out new pods. Loop broken.
 
-## Secrets Without Git
+The image tags follow the pattern `selfhosted-sha-{commit_sha}`. If something goes wrong, the tag on the running pod is a direct link to the exact source code that built it. No guessing which version is deployed. The SHA is right there.
 
-The one thing you never commit is secrets. But in GitOps, the repo is the source of truth. So where do the Google OAuth credentials, JWT signing keys, and database passwords live?
+## Rough Edges
 
-FluxCD solves this with <a href={`${REPO}/infra/k3s/flux/apps/api-service.yaml`}>`valuesFrom`</a>. Secrets live in Kubernetes Secret resources, created once via `kubectl create secret`. The HelmRelease references them by name:
+**Secrets.** The one thing that can't live in git. FluxCD solves this with <a href={`${REPO}/infra/k3s/flux/apps/api-service.yaml`}>`valuesFrom`</a>—secrets live in Kubernetes, created once via `kubectl create secret`, and the HelmRelease references them by name:
 
 <CodeBlock language="yaml">{`valuesFrom:
   - kind: Secret
@@ -165,20 +133,14 @@ FluxCD solves this with <a href={`${REPO}/infra/k3s/flux/apps/api-service.yaml`}
     valuesKey: jwtSecret
     targetPath: secrets.jwtSecret`}</CodeBlock>
 
-At deploy time, FluxCD reads the Secret values and injects them into the Helm chart's values. The git repo never contains the credentials. The cluster does. If you destroy the cluster, you recreate the secrets manually—which is fine, because there are four of them and you keep them in a password manager like a responsible adult.
+The git repo never sees the credentials. The cluster holds them. If you destroy the cluster, you recreate four secrets from a password manager like a responsible adult.
 
-## The Full Flow
+**The 60-second poll.** FluxCD checks for new commits on an interval, not a webhook. Push, open Grafana, stare at the dashboard, wait. You know the deploy worked when the build finished. You know the cluster caught up when the pod restarts. The gap between those two moments is dead air. It's fine. It also never stops feeling slow.
 
-<CodeBlock language="bash">{`git push origin main
-# 1. GitHub Actions detects affected packages via pnpm workspace filter
-# 2. Builds only the changed Docker images (~2-5 min)
-# 3. Bot commits new image tags to FluxCD manifests
-# 4. FluxCD detects new commit within 60 seconds
-# 5. Reconciles: pulls images, rolls out deployments
-# 6. Cloudflare Tunnel routes traffic to new pods`}</CodeBlock>
+**No dry runs.** There's no way to preview what FluxCD will do with a manifest change without pushing it to main. Flux has `flux diff kustomization` for local checks, but it requires cluster access, which I only have from my desk ([Part II](/blog/flight-patterns/no-public-ip)). In practice, I push and watch. For a personal project, the blast radius is small. For a team, you'd want a staging branch or a pull-request preview environment.
 
-Push to production in under five minutes. Most of that is Docker builds. The actual rollout—FluxCD detecting the change, pulling the image, cycling the pod—takes about thirty seconds.
+**YAML volume.** Each service needs a HelmRelease manifest, a values file, a Kustomization entry, a Dockerfile, a Helm chart, and CI workflow configuration. For six services, that's a lot of files that exist to say "deploy this container." It's the tax you pay for declarative infrastructure, and some days it feels like a lot of tax.
 
-Setting all of this up took considerably longer than thirty seconds. But that's a one-time cost, and now deploying is the most boring part of my workflow. Which is exactly what deployment should be.
+Setting all of this up took considerably longer than deploying with it does. But now deploying is the most boring part of my workflow—push, wait, done. That's the point. Boring deployment means interesting work happens somewhere else.
 
 </MdxLayout>
