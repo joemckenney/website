@@ -12,7 +12,7 @@ catalog:
   '@biomejs/biome': 2.2.6
   '@typescript/native-preview': 7.0.0-dev.20251017.1
 
-inject-workspace-packages: true
+forceLegacyDeploy: true
 
 onlyBuiltDependencies:
   - '@prisma/engines'
