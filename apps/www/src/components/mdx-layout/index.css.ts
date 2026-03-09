@@ -120,6 +120,26 @@ globalStyle(`${article} li`, {
   marginBottom: vars.spacing["2"],
 });
 
+globalStyle(`${article} table`, {
+  width: "100%",
+  borderCollapse: "collapse",
+  marginBottom: vars.spacing["4"],
+  fontFamily: vars.font.mono,
+  fontSize: vars.fontSize.sm,
+});
+
+globalStyle(`${article} th`, {
+  textAlign: "left",
+  fontWeight: vars.fontWeight.bold,
+  borderBottom: `${vars.borderWidth.base} solid ${vars.color.black}`,
+  padding: `${vars.spacing["2"]} ${vars.spacing["3"]}`,
+});
+
+globalStyle(`${article} td`, {
+  borderBottom: `${vars.borderWidth.thin} solid ${vars.color.gray200}`,
+  padding: `${vars.spacing["2"]} ${vars.spacing["3"]}`,
+});
+
 globalStyle(`${article} hr`, {
   border: "none",
   borderTop: `1px solid ${vars.color.gray200}`,
