@@ -47,7 +47,7 @@ function App() {
           />
           <Tile
             title="Weather station"
-            description="Experience your local weather as an AI-generated ambient soundscape. Uses Chrome's built-in AI to interpret real-time weather data into unique Web Audio synthesis."
+            description="Live weather from Mendocino, CA turned into ambient sound. Streams real-time data from a personal weather station and maps temperature, wind, humidity, and rain to Web Audio synthesis."
             href="/projects/weather-station"
           />
           <Tile

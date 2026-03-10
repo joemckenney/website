@@ -21,5 +21,7 @@ data:
         service: http://api-service.default.svc.cluster.local:3000
       - hostname: o11y.crowprose.com
         service: http://monitoring-grafana.monitoring.svc.cluster.local:80
+      - hostname: weather.crowprose.com
+        service: http://weather-service.default.svc.cluster.local:3004
       # Catch-all rule (required by cloudflared)
       - service: http_status:404
