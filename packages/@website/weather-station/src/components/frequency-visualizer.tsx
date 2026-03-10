@@ -40,7 +40,7 @@ export function FrequencyVisualizer({ synthesizer }: FrequencyVisualizerProps) {
       const height = canvas.height / (window.devicePixelRatio || 1);
 
       // Clear canvas
-      ctx.fillStyle = "#1d2021"; // Gruvbox dark background
+      ctx.fillStyle = "#1a1a1a";
       ctx.fillRect(0, 0, width, height);
 
       // Draw all frequency bins with emphasis on active ones

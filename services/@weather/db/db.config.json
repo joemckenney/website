@@ -1,0 +1,12 @@
+{
+  "database": "weather",
+  "user": "weather",
+  "environments": {
+    "dev": { "host": "localhost", "port": 5435 },
+    "prod": {
+      "service": "weather-postgres-postgresql",
+      "localPort": 5445,
+      "kubeconfig": "~/.kube/k3s-config"
+    }
+  }
+}

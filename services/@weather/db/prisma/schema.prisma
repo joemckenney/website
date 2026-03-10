@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model WeatherReading {
+  id             String   @id @default(uuid())
+  timestamp      DateTime @unique
+  tempf          Float
+  humidity       Int
+  windspeedmph   Float
+  windgustmph    Float
+  maxdailygust   Float
+  winddir        Int
+  winddir_avg10m Int
+  uv             Int
+  solarradiation Float
+  hourlyrainin   Float
+  dailyrainin    Float
+  baromrelin     Float
+  baromabsin     Float
+  tempinf        Float
+  humidityin     Int
+  feelsLike      Float
+  dewPoint       Float
+  raw            Json
+
+  @@index([timestamp])
+}

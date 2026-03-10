@@ -1,46 +1,29 @@
-import type { AudioParameters, LFOConfig, WeatherData } from "../types/weather";
-import { createSeededRandom } from "./weather-fingerprint";
+import type { AudioParameters, LFOConfig, WeatherReading } from "../types/weather";
 
 // --- Musical foundation ---
 // Temperature selects a root note from a pentatonic scale
 
-const PENTATONIC_ROOTS: Array<{ maxTemp: number; freq: number }> = [
-  { maxTemp: 40, freq: 110 }, // A2 — cold, low
-  { maxTemp: 55, freq: 131 }, // C3
-  { maxTemp: 70, freq: 147 }, // D3
-  { maxTemp: 85, freq: 165 }, // E3
-  { maxTemp: Infinity, freq: 196 }, // G3 — hot, bright
-];
-
-function getRootFrequency(temperature: number): number {
-  for (const { maxTemp, freq } of PENTATONIC_ROOTS) {
-    if (temperature <= maxTemp) return freq;
-  }
-  return 196;
-}
-
-/**
- * Interpolate root frequency within its bucket for smooth temperature response.
- * Maps exact temperature to a position between two pentatonic root frequencies.
- */
-function interpolateRootFrequency(temperature: number): number {
-  if (temperature <= 40) return 110;
-  if (temperature >= 86) return 196;
+function interpolateRootFrequency(tempf: number): number {
+  // Calibrated for Mendocino: typical range 38-75°F
+  // Spread the full pitch range across the actual temperature range
+  if (tempf <= 35) return 82.4; // E2 — cold night
+  if (tempf >= 80) return 220; // A3 — rare warm day
 
   const buckets = [
-    { lo: 40, hi: 55, freqLo: 110, freqHi: 131 },
-    { lo: 55, hi: 70, freqLo: 131, freqHi: 147 },
-    { lo: 70, hi: 85, freqLo: 147, freqHi: 165 },
-    { lo: 85, hi: 100, freqLo: 165, freqHi: 196 },
+    { lo: 35, hi: 45, freqLo: 82.4, freqHi: 110 }, // E2 → A2 (cold nights)
+    { lo: 45, hi: 52, freqLo: 110, freqHi: 131 }, // A2 → C3 (cool morning)
+    { lo: 52, hi: 58, freqLo: 131, freqHi: 147 }, // C3 → D3 (typical)
+    { lo: 58, hi: 65, freqLo: 147, freqHi: 165 }, // D3 → E3 (mild afternoon)
+    { lo: 65, hi: 80, freqLo: 165, freqHi: 220 }, // E3 → A3 (warm day)
   ];
 
   for (const b of buckets) {
-    if (temperature <= b.hi) {
-      const t = (temperature - b.lo) / (b.hi - b.lo);
+    if (tempf <= b.hi) {
+      const t = (tempf - b.lo) / (b.hi - b.lo);
       return b.freqLo + t * (b.freqHi - b.freqLo);
     }
   }
-  return 196;
+  return 220;
 }
 
 // --- Normalization helpers ---
@@ -54,260 +37,264 @@ function norm(value: number, min: number, max: number): number {
 }
 
 /**
- * Generate a complete set of audio parameters from weather data and a deterministic seed.
- * Pure math — no network calls, no AI.
+ * Map wind direction (0-360 degrees) to stereo pan (-1 to 1).
+ * North (0°) = center, East (90°) = right, South (180°) = center, West (270°) = left.
+ */
+function windDirToPan(winddir: number): number {
+  // Convert to radians, offset so 0° = center
+  const rad = (winddir * Math.PI) / 180;
+  return Math.sin(rad);
+}
+
+/**
+ * Generate audio parameters from a single AWN weather reading.
+ * Pure math — deterministic mapping from weather to sound.
  */
 export function generateAudioParameters(
-  weather: WeatherData,
-  seed: number,
+  reading: WeatherReading,
 ): AudioParameters {
-  const rand = createSeededRandom(seed);
-  const root = interpolateRootFrequency(weather.temperature);
+  const root = interpolateRootFrequency(reading.tempf);
 
-  // Normalized weather values
-  const humidityN = norm(weather.humidity, 0, 100);
-  const windSpeedN = norm(weather.windSpeed, 0, 30);
-  const windGustsN = norm(weather.windGusts, 0, 40);
-  const cloudN = norm(weather.cloudCover, 0, 100);
-  const uvN = norm(weather.uvIndex, 0, 11);
-  const solarN = norm(weather.solar.shortwaveRadiation, 0, 1000);
-  const visibilityN = norm(weather.visibility, 0, 50000);
-  const capeN = norm(weather.cape, 0, 2000);
-  const pressureDev = (weather.pressure - 1013) / 50; // deviation from standard
-  const dewPointN = norm(weather.dewPoint, 20, 80);
-  const isNight = weather.isDay === 0;
+  // Normalized weather values — calibrated for Mendocino coastal climate
+  // Mendocino: very humid (avg 93%), light wind (p95: 2.7mph), mild temps
+  const humidityN = norm(reading.humidity, 50, 100);
+  const windN = norm(reading.windspeedmph, 0, 8);
+  const gustN = norm(reading.windgustmph, 0, 12);
+  const uvN = norm(reading.uv, 0, 7);
+  const solarN = norm(reading.solarradiation, 0, 400);
+  const rainN = norm(reading.hourlyrainin, 0, 0.1);
+  const dewPointN = norm(reading.dewPoint, 35, 65);
+  const pan = windDirToPan(reading.winddir);
 
-  const avgPrecipProb =
-    weather.hourly.precipitationProbability.length > 0
-      ? weather.hourly.precipitationProbability.reduce((a, b) => a + b, 0) /
-        weather.hourly.precipitationProbability.length /
-        100
-      : 0;
+  // Barometric pressure deviation from standard (29.92 inHg)
+  const baromDev = (reading.baromrelin - 29.92) * 10; // amplify for audibility
 
-  // Small seeded variations for organic feel (±small amounts)
-  const sv = () => (rand() - 0.5) * 0.02;
+  // Indoor/outdoor temperature difference → dissonance
+  // Indoor stays 53-62°F, outdoor 38-75°F, so diff is typically 0-20
+  const tempDiff = Math.abs(reading.tempinf - reading.tempf);
+  const tempDiffN = norm(tempDiff, 0, 15);
 
-  // --- 9 oscillators, each with a purpose ---
+  // Feels-like deviation → vibrato
+  // In mild Mendocino, feels-like is usually close to actual temp
+  const feelsLikeDev = Math.abs(reading.feelsLike - reading.tempf);
+  const feelsLikeN = norm(feelsLikeDev, 0, 8);
+
+  // Is it nighttime? (solar radiation < 10 W/m2)
+  const isNight = reading.solarradiation < 10;
+
+  // --- 8 oscillators, each mapped to a weather dimension ---
 
   const oscillators: AudioParameters["oscillators"] = [
-    // 0: Sub-bass drone — pressure deviation from 1013hPa
+    // 0: Sub-bass drone — barometric pressure
     {
       type: "sine",
-      frequency: root * 0.5 + pressureDev * 2,
-      gain: 0.12 + Math.abs(pressureDev) * 0.003 + sv(),
-      detune: pressureDev * 3,
+      frequency: root * 0.5 + baromDev * 0.5,
+      gain: 0.12 + Math.abs(baromDev) * 0.002,
+      detune: baromDev * 2,
+      pan: 0, // center
     },
-    // 1: Root fundamental — temperature (exact freq interpolated)
+    // 1: Root fundamental — temperature
     {
       type: "sine",
       frequency: root,
-      gain: 0.15 + sv(),
-      detune: windSpeedN * 5,
+      gain: 0.15,
+      detune: windN * 5,
+      pan,
     },
-    // 2: Perfect fifth — wind speed (detune)
+    // 2: Perfect fifth — wind speed drives detune
     {
       type: "triangle",
       frequency: root * 1.5,
-      gain: 0.13 + windSpeedN * 0.04 + sv(),
-      detune: windSpeedN * 12 - 3,
+      gain: 0.12 + windN * 0.05,
+      detune: windN * 15 - 3,
+      pan,
     },
-    // 3: Octave — humidity (detune spread)
+    // 3: Octave — humidity drives detune spread
     {
       type: "sine",
       frequency: root * 2,
-      gain: 0.11 + sv(),
+      gain: 0.1,
       detune: humidityN * 15 - 5,
+      pan: 0,
     },
-    // 4: Third harmonic — cloud cover (gain scales with coverage)
+    // 4: Indoor/outdoor dissonance — detuned from root by temp difference
     {
-      type: "triangle",
-      frequency: root * 3,
-      gain: 0.06 + cloudN * 0.08 + sv(),
-      detune: cloudN * 5,
+      type: "sine",
+      frequency: root * (1 + tempDiffN * 0.02), // slight frequency offset
+      gain: tempDiffN * 0.08, // only audible when there's a difference
+      detune: tempDiffN * 20,
+      pan: 0,
     },
-    // 5: High shimmer — UV + solar radiation (gain + detune LFO)
+    // 5: High shimmer — solar radiation + UV
     {
       type: "sine",
       frequency: root * 6,
-      gain: 0.04 + (uvN + solarN) * 0.04 + sv(),
-      detune: solarN * 8 - 3,
+      gain: isNight ? 0.01 : 0.04 + (uvN + solarN) * 0.04,
+      detune: solarN * 8,
+      pan: 0,
     },
-    // 6: Texture — wind gusts (gain + filter)
+    // 6: Texture — wind gusts (gain surges)
     {
       type: "sawtooth",
       frequency: root * 0.75,
-      gain: 0.05 + windGustsN * 0.08 + sv(),
-      detune: windGustsN * 10,
+      gain: 0.04 + gustN * 0.1,
+      detune: gustN * 12,
+      pan,
     },
-    // 7: Atmosphere — visibility (gain inversely proportional)
+    // 7: Dew point resonance — higher octave, presence scales with dew point
     {
       type: "sine",
       frequency: root * 4,
-      gain: 0.03 + (1 - visibilityN) * 0.06 + sv(),
-      detune: (1 - visibilityN) * 8,
-    },
-    // 8: Storm tension — CAPE (only audible when CAPE > 500)
-    {
-      type: "sawtooth",
-      frequency: root * 5,
-      gain: weather.cape > 500 ? 0.03 + capeN * 0.06 + sv() : 0,
-      detune: capeN * 15,
+      gain: 0.03 + dewPointN * 0.05,
+      detune: dewPointN * 6,
+      pan: 0,
     },
   ];
 
-  // --- 4 LFOs with weather-driven rates ---
+  // --- 5 LFOs with weather-driven rates ---
 
   const lfos: LFOConfig[] = [
-    // 0: Shimmer — detune on high shimmer osc
+    // 0: Shimmer — detune on solar osc
     {
-      rate: (isNight ? 0.05 : 0.1) + (uvN + solarN) * 0.3,
-      depth: 0.3 + (1 - cloudN) * 0.3,
+      rate: (isNight ? 0.03 : 0.1) + solarN * 0.3,
+      depth: isNight ? 0.1 : 0.3 + solarN * 0.3,
       target: "detune",
       waveform: "sine",
       targetIndex: 5,
     },
-    // 1: Pulse — gain on root fundamental
+    // 1: Wind pulsing — gain on wind osc
     {
-      rate: 0.08 + dewPointN * 0.2 + avgPrecipProb * 0.15,
-      depth: 0.15 + humidityN * 0.25,
+      rate: 0.05 + windN * 0.3,
+      depth: 0.1 + windN * 0.3,
       target: "gain",
       waveform: "triangle",
+      targetIndex: 2,
+    },
+    // 2: Gust surges — gain on texture osc
+    {
+      rate: 0.08 + gustN * 0.4,
+      depth: 0.2 + gustN * 0.5,
+      target: "gain",
+      waveform: "sine",
+      targetIndex: 6,
+    },
+    // 3: Vibrato — feels-like deviation drives detune wobble on root
+    {
+      rate: 0.1 + feelsLikeN * 0.4,
+      depth: feelsLikeN * 0.4,
+      target: "detune",
+      waveform: "sine",
       targetIndex: 1,
     },
-    // 2: Turbulence — frequency on atmosphere osc
+    // 4: Filter sweep — humidity + dew point
     {
-      rate: 0.06 + capeN * 0.4 + windGustsN * 0.2,
-      depth: 0.2 + capeN * 0.4,
-      target: "frequency",
-      waveform: windGustsN > 0.5 ? "sawtooth" : "sine",
-      targetIndex: 7,
-    },
-    // 3: Filter sweep — filter cutoff
-    {
-      rate: 0.04 + windGustsN * 0.15 + (1 - visibilityN) * 0.1,
-      depth: 0.3 + cloudN * 0.2 + (1 - visibilityN) * 0.2,
+      rate: 0.04 + humidityN * 0.1,
+      depth: 0.3 + humidityN * 0.2 + dewPointN * 0.1,
       target: "filter",
       waveform: "sine",
       targetIndex: 0,
     },
   ];
 
-  // --- Filter ---
+  // --- Filter — dew point drives resonance ---
 
   const filters: AudioParameters["filters"] = [
     {
       type: "lowpass",
-      frequency: 1200 + (1 - cloudN) * 1500 + solarN * 500,
-      q: 0.8 + windSpeedN * 0.4,
+      frequency: 1200 + solarN * 1500 + (isNight ? 0 : 500),
+      q: 0.8 + dewPointN * 1.5, // higher dew point = more resonant
     },
   ];
 
   // --- Effects ---
 
-  // Reverb: decay and mix influenced by humidity
-  // Delay: time influenced by wind speed
+  // Reverb: humidity → lush/wet
+  // Delay: wind speed → spacious
   const effects: AudioParameters["effects"] = {
     reverb: {
-      decay: 2 + humidityN * 0.03 * 100, // 2 + humidity * 0.03s → 2–5s
-      mix: 0.25 + humidityN * 0.002 * 100, // 0.25 + humidity * 0.002 → 0.25–0.45
+      decay: 2 + humidityN * 3, // 2-5s
+      mix: 0.2 + humidityN * 0.3, // 0.2-0.5
     },
     delay: {
-      time: 0.2 + windSpeedN * 0.015 * 30, // 0.2 + windSpeed * 0.015 → 0.2–0.65s
+      time: 0.2 + windN * 0.4, // 0.2-0.6s
       feedback: 0.25,
-      mix: 0.15,
+      mix: 0.12 + windN * 0.08,
     },
   };
 
-  return { oscillators, filters, effects, lfos };
+  // --- Rain synthesis ---
+
+  const noise: AudioParameters["noise"] =
+    reading.hourlyrainin > 0
+      ? {
+          type: "bandpass",
+          frequency: 4000 + rainN * 2000, // 4-6kHz center
+          q: 1.5 - rainN * 0.5, // wider band for heavier rain
+          gain: 0.05 + rainN * 0.2, // louder with more rain
+          rate: 4 + rainN * 16, // 4-20 bursts per second
+        }
+      : undefined;
+
+  return { oscillators, filters, effects, noise, lfos };
 }
-
-// --- Deterministic evolution coefficients ---
-// Fixed ratios: same delta = same change. Intentionally small — a 1mph wind
-// change is below conscious perception, but 10mph over an hour transforms the soundscape.
-
-interface EvolutionCoefficients {
-  tempFreqShift: number; // ±0.5 Hz per °F
-  windTextureLfoRate: number; // ±0.02 Hz per mph
-  windGustLfoDepth: number; // ±0.015 per mph
-  humidityReverbDecay: number; // ±0.02s per %
-  cloudFilterCutoff: number; // ∓8 Hz per %
-  visibilityDetune: number; // ∓0.01 cents per 100m
-  uvShimmerGain: number; // ±0.005 per UV index
-  capeTurbulenceRate: number; // ±0.02 Hz per 100 J/kg
-  pressureSubBassFreq: number; // ±0.05 Hz per hPa
-}
-
-const COEFFICIENTS: EvolutionCoefficients = {
-  tempFreqShift: 0.5,
-  windTextureLfoRate: 0.02,
-  windGustLfoDepth: 0.015,
-  humidityReverbDecay: 0.02,
-  cloudFilterCutoff: -8,
-  visibilityDetune: -0.01,
-  uvShimmerGain: 0.005,
-  capeTurbulenceRate: 0.02,
-  pressureSubBassFreq: 0.05,
-};
 
 /**
- * Evolve existing audio parameters based on weather deltas.
- * Uses fixed coefficients for deterministic, continuous evolution.
+ * Evolve existing audio parameters based on the difference between two readings.
  * Returns a new AudioParameters object — does not mutate the input.
  */
 export function evolveParameters(
   current: AudioParameters,
-  prevWeather: WeatherData,
-  newWeather: WeatherData,
+  prev: WeatherReading,
+  next: WeatherReading,
 ): AudioParameters {
-  const c = COEFFICIENTS;
-
-  // Compute weather deltas
-  const dTemp = newWeather.temperature - prevWeather.temperature;
-  const dWind = newWeather.windSpeed - prevWeather.windSpeed;
-  const dGusts = newWeather.windGusts - prevWeather.windGusts;
-  const dHumidity = newWeather.humidity - prevWeather.humidity;
-  const dCloud = newWeather.cloudCover - prevWeather.cloudCover;
-  const dVisibility = (newWeather.visibility - prevWeather.visibility) / 100;
-  const dUV = newWeather.uvIndex - prevWeather.uvIndex;
-  const dCAPE = (newWeather.cape - prevWeather.cape) / 100;
-  const dPressure = newWeather.pressure - prevWeather.pressure;
+  // Compute deltas
+  const dTemp = next.tempf - prev.tempf;
+  const dWind = next.windspeedmph - prev.windspeedmph;
+  const dGust = next.windgustmph - prev.windgustmph;
+  const dHumidity = next.humidity - prev.humidity;
+  const dBarom = (next.baromrelin - prev.baromrelin) * 10;
+  const dSolar = (next.solarradiation - prev.solarradiation) / 1000;
+  const dUV = next.uv - prev.uv;
+  const dRain = next.hourlyrainin - prev.hourlyrainin;
+  const dDewPoint = next.dewPoint - prev.dewPoint;
+  const newPan = windDirToPan(next.winddir);
 
   // Evolve oscillators
   const oscillators = current.oscillators.map((osc, i) => {
     let freq = osc.frequency;
     let gain = osc.gain;
     let detune = osc.detune ?? 0;
+    let pan = osc.pan ?? 0;
 
     switch (i) {
-      case 0: // Sub-bass drone
-        freq += dPressure * c.pressureSubBassFreq;
+      case 0: // Sub-bass
+        freq += dBarom * 0.5;
         break;
-      case 1: // Root fundamental
-        freq += dTemp * c.tempFreqShift;
+      case 1: // Root
+        freq += dTemp * 0.5;
+        pan = newPan;
         break;
-      case 2: // Perfect fifth
-        detune += dWind * 0.4;
+      case 2: // Fifth
+        detune += dWind * 0.5;
+        gain += dWind * 0.002;
+        pan = newPan;
         break;
       case 3: // Octave
         detune += dHumidity * 0.15;
         break;
-      case 4: // Third harmonic
-        gain += dCloud * 0.0008;
+      case 4: // Dissonance
+        gain += Math.abs(next.tempinf - next.tempf) > 5 ? 0.001 : -0.001;
         break;
-      case 5: // High shimmer
-        gain += dUV * c.uvShimmerGain;
+      case 5: // Shimmer
+        gain += (dSolar + dUV * 0.01) * 0.02;
         break;
       case 6: // Texture
-        gain += dGusts * 0.002;
+        gain += dGust * 0.003;
+        pan = newPan;
         break;
-      case 7: // Atmosphere
-        detune += dVisibility * c.visibilityDetune;
-        break;
-      case 8: // Storm tension
-        gain =
-          newWeather.cape > 500
-            ? clamp(gain + dCAPE * 0.0006, 0, 0.12)
-            : 0;
+      case 7: // Dew point
+        gain += dDewPoint * 0.001;
+        detune += dDewPoint * 0.3;
         break;
     }
 
@@ -316,6 +303,7 @@ export function evolveParameters(
       frequency: clamp(freq, 20, 20000),
       gain: clamp(gain, 0, 0.3),
       detune,
+      pan,
     };
   });
 
@@ -326,19 +314,20 @@ export function evolveParameters(
 
     switch (i) {
       case 0: // Shimmer
-        rate += dUV * 0.03;
-        depth += dCloud * -0.003;
+        rate += dSolar * 0.1;
         break;
-      case 1: // Pulse
-        rate += dHumidity * 0.002;
+      case 1: // Wind pulsing
+        rate += dWind * 0.01;
+        depth += dWind * 0.01;
         break;
-      case 2: // Turbulence
-        rate += dCAPE * c.capeTurbulenceRate;
-        depth += dCAPE * 0.004;
+      case 2: // Gust surges
+        rate += dGust * 0.01;
+        depth += dGust * 0.01;
         break;
-      case 3: // Filter sweep
-        rate += dGusts * 0.005;
-        depth += dCloud * 0.002;
+      case 3: // Vibrato
+        break;
+      case 4: // Filter sweep
+        depth += dHumidity * 0.002;
         break;
     }
 
@@ -352,32 +341,38 @@ export function evolveParameters(
   // Evolve filter
   const filters = current.filters.map((f) => ({
     ...f,
-    frequency: clamp(f.frequency + dCloud * c.cloudFilterCutoff, 200, 8000),
+    frequency: clamp(f.frequency + dSolar * 500, 200, 8000),
+    q: clamp(f.q + dDewPoint * 0.05, 0.5, 4),
   }));
 
   // Evolve effects
   const effects: AudioParameters["effects"] = {
     reverb: current.effects.reverb
       ? {
-          decay: clamp(
-            current.effects.reverb.decay + dHumidity * c.humidityReverbDecay,
-            1,
-            8,
-          ),
-          mix: clamp(current.effects.reverb.mix + dHumidity * 0.001, 0.1, 0.6),
+          decay: clamp(current.effects.reverb.decay + dHumidity * 0.02, 1, 8),
+          mix: clamp(current.effects.reverb.mix + dHumidity * 0.002, 0.1, 0.6),
         }
       : undefined,
     delay: current.effects.delay
       ? {
           ...current.effects.delay,
-          time: clamp(
-            current.effects.delay.time + dWind * 0.005,
-            0.1,
-            1.5,
-          ),
+          time: clamp(current.effects.delay.time + dWind * 0.005, 0.1, 1.5),
         }
       : undefined,
   };
 
-  return { oscillators, filters, effects, lfos };
+  // Evolve rain noise — Mendocino rain is light (max ~0.09 in/hr)
+  const rainN = norm(next.hourlyrainin, 0, 0.1);
+  const noise: AudioParameters["noise"] =
+    next.hourlyrainin > 0
+      ? {
+          type: "bandpass",
+          frequency: 4000 + rainN * 2000,
+          q: 1.5 - rainN * 0.5,
+          gain: 0.05 + rainN * 0.2,
+          rate: 4 + rainN * 16,
+        }
+      : undefined;
+
+  return { oscillators, filters, effects, noise, lfos };
 }

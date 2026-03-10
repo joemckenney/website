@@ -1,0 +1,22 @@
+name: weather-db
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: weather-db
+    environment:
+      POSTGRES_USER: weather
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: weather
+    ports:
+      - "5435:5432"
+    volumes:
+      - weather-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U weather"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  weather-db-data:

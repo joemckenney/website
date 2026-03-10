@@ -1,6 +1,7 @@
 export { FrequencyVisualizer } from "./components/frequency-visualizer";
-export { Terminal, type TerminalLine } from "./components/terminal";
+export { WeatherDashboard } from "./components/weather-dashboard";
 export { AudioEvolutionEngine } from "./lib/audio-evolution-engine";
 export { AudioSynthesizer } from "./lib/audio-synthesizer";
-export type { AudioParameters, LFOConfig, WeatherData } from "./types/weather";
+export { setServiceUrl } from "./lib/weather";
+export type { AudioParameters, LFOConfig, PlaybackState, WeatherReading } from "./types/weather";
 export { WeatherStation } from "./weather-station";

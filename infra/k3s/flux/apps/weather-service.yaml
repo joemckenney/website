@@ -1,0 +1,43 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: weather-service
+  namespace: default
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: ./services/@weather/service/helm
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      reconcileStrategy: Revision
+      valuesFiles:
+        - ./services/@weather/service/helm/values.yaml
+        - ./services/@weather/service/helm/values-selfhosted.yaml
+  values:
+    image:
+      tag: latest
+    migration:
+      image:
+        repository: crowprose/weather-service-migrate
+        pullPolicy: IfNotPresent
+  valuesFrom:
+    - kind: Secret
+      name: weather-service-secrets-values
+      valuesKey: databaseUrl
+      targetPath: secrets.databaseUrl
+    - kind: Secret
+      name: weather-service-secrets-values
+      valuesKey: awnApiKey
+      targetPath: secrets.awnApiKey
+    - kind: Secret
+      name: weather-service-secrets-values
+      valuesKey: awnAppKey
+      targetPath: secrets.awnAppKey
+    - kind: Secret
+      name: weather-service-secrets-values
+      valuesKey: awnMacAddress
+      targetPath: secrets.awnMacAddress

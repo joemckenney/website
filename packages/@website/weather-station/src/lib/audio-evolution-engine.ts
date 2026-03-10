@@ -1,234 +1,278 @@
-import type { AudioParameters, WeatherData } from "../types/weather";
+import type { AudioParameters, PlaybackState, WeatherReading } from "../types/weather";
 import type { AudioSynthesizer } from "./audio-synthesizer";
-import type { Coordinates } from "./geolocation";
-import {
-  generateAudioParameters,
-  evolveParameters,
-} from "./sound-engine";
-import { fetchWeatherData } from "./weather";
-import { compareWeather, type WeatherChange } from "./weather-diff";
-import {
-  computeFingerprint,
-  fingerprintToSeed,
-  fingerprintsEqual,
-  type WeatherFingerprint,
-} from "./weather-fingerprint";
+import { evolveParameters, generateAudioParameters } from "./sound-engine";
+import { connectStream, fetchCurrent, fetchHistory } from "./weather";
 
-export interface EvolutionConfig {
-  weatherUpdateInterval: number; // seconds between weather fetches
-  crossfadeDuration: number; // crossfade duration in seconds
-}
+export type EvolutionCallback = (
+  reading: WeatherReading,
+  params: AudioParameters,
+) => void;
 
 export class AudioEvolutionEngine {
-  private coordinates: Coordinates | null = null;
-  private weather: WeatherData | null = null;
-  private currentParams: AudioParameters | null = null;
-  private fingerprint: WeatherFingerprint | null = null;
   private synthesizer: AudioSynthesizer | null = null;
-  private evolutionTimer: number | null = null;
+  private currentReading: WeatherReading | null = null;
+  private currentParams: AudioParameters | null = null;
+  private disconnectStream: (() => void) | null = null;
+  private playbackTimer: number | null = null;
   private isRunning = false;
-  private config: EvolutionConfig;
-  private generationCount = 0;
   private evolutionCount = 0;
+  private onEvolution: EvolutionCallback | null = null;
 
-  constructor(config: EvolutionConfig) {
-    this.config = config;
-  }
+  private playbackState: PlaybackState = {
+    mode: "live",
+    speed: 1,
+    cursor: new Date(),
+    isPlaying: true,
+  };
 
-  /**
-   * Start the continuous weather-driven evolution loop
-   */
+  // History cache for scrubbing
+  private historyCache: WeatherReading[] = [];
+  private historyCursor = 0;
+
   async start(
-    coordinates: Coordinates,
-    initialWeather: WeatherData,
-    initialParams: AudioParameters,
     synthesizer: AudioSynthesizer,
-    onEvolution: (
-      params: AudioParameters,
-      weather: WeatherData,
-      changes: WeatherChange[],
-    ) => Promise<void>,
-    log?: (
-      text: string,
-      type?: "info" | "success" | "warning" | "error" | "output",
-    ) => void,
-    updateLog?: (
-      text: string,
-      type?: "info" | "success" | "warning" | "error" | "output",
-    ) => void,
-    removeLog?: () => void,
-  ): Promise<void> {
-    if (this.isRunning) {
-      log?.("Evolution already running", "warning");
-      return;
-    }
+    onEvolution?: EvolutionCallback,
+  ): Promise<WeatherReading | null> {
+    if (this.isRunning) return this.currentReading;
 
-    this.coordinates = coordinates;
-    this.weather = initialWeather;
-    this.currentParams = initialParams;
-    this.fingerprint = computeFingerprint(initialWeather);
     this.synthesizer = synthesizer;
+    this.onEvolution = onEvolution ?? null;
     this.isRunning = true;
-    this.generationCount = 0;
     this.evolutionCount = 0;
 
-    log?.(
-      `Weather-driven evolution started (update interval: ${this.config.weatherUpdateInterval}s)`,
-      "info",
-    );
+    // Fetch initial reading
+    try {
+      const reading = await fetchCurrent();
+      this.currentReading = reading;
+      this.currentParams = generateAudioParameters(reading);
 
-    this.scheduleNextEvolution(onEvolution, log, updateLog, removeLog);
+      await synthesizer.start(this.currentParams);
+      this.onEvolution?.(reading, this.currentParams);
+
+      // Connect to live SSE stream
+      this.connectLiveStream();
+
+      return reading;
+    } catch (err) {
+      console.error("Failed to start evolution engine:", err);
+      this.isRunning = false;
+      return null;
+    }
   }
 
   stop(): void {
-    if (this.evolutionTimer !== null) {
-      clearTimeout(this.evolutionTimer);
-      this.evolutionTimer = null;
+    this.disconnectStream?.();
+    this.disconnectStream = null;
+
+    if (this.playbackTimer !== null) {
+      clearInterval(this.playbackTimer);
+      this.playbackTimer = null;
     }
+
     this.isRunning = false;
-    this.coordinates = null;
     this.synthesizer = null;
+    this.onEvolution = null;
   }
 
-  private scheduleNextEvolution(
-    onEvolution: (
-      params: AudioParameters,
-      weather: WeatherData,
-      changes: WeatherChange[],
-    ) => Promise<void>,
-    log?: (
-      text: string,
-      type?: "info" | "success" | "warning" | "error" | "output",
-    ) => void,
-    updateLog?: (
-      text: string,
-      type?: "info" | "success" | "warning" | "error" | "output",
-    ) => void,
-    removeLog?: () => void,
-  ): void {
-    if (!this.isRunning) return;
+  private connectLiveStream(): void {
+    this.disconnectStream?.();
+    this.playbackState.mode = "live";
 
-    this.evolutionTimer = window.setTimeout(async () => {
-      await this.generateEvolution(onEvolution, log, updateLog, removeLog);
-      this.scheduleNextEvolution(onEvolution, log, updateLog, removeLog);
-    }, this.config.weatherUpdateInterval * 1000);
+    this.disconnectStream = connectStream(
+      (reading) => {
+        if (!this.isRunning || !this.synthesizer || this.playbackState.mode !== "live") return;
+
+        const prevReading = this.currentReading;
+        this.currentReading = reading;
+        this.playbackState.cursor = new Date(reading.timestamp);
+
+        if (prevReading && this.currentParams) {
+          // Smooth evolution from previous reading
+          this.currentParams = evolveParameters(this.currentParams, prevReading, reading);
+          this.synthesizer.updateParameters(this.currentParams, 10);
+        } else {
+          // First reading or no previous params — generate fresh
+          this.currentParams = generateAudioParameters(reading);
+          this.synthesizer.crossfade(this.currentParams, 5);
+        }
+
+        this.evolutionCount++;
+        this.onEvolution?.(reading, this.currentParams);
+      },
+      (error) => {
+        console.error("SSE stream error:", error);
+      },
+    );
   }
 
-  private async generateEvolution(
-    onEvolution: (
-      params: AudioParameters,
-      weather: WeatherData,
-      changes: WeatherChange[],
-    ) => Promise<void>,
-    log?: (
-      text: string,
-      type?: "info" | "success" | "warning" | "error" | "output",
-    ) => void,
-    updateLog?: (
-      text: string,
-      type?: "info" | "success" | "warning" | "error" | "output",
-    ) => void,
-    removeLog?: () => void,
+  /**
+   * Switch to historical playback mode
+   */
+  async startHistoricalPlayback(
+    start: Date,
+    end: Date,
+    speed = 1,
+    limit = 1000,
   ): Promise<void> {
-    if (!this.coordinates || !this.weather || !this.currentParams) return;
+    if (!this.isRunning || !this.synthesizer) return;
 
-    this.generationCount++;
+    // Pause live stream
+    this.disconnectStream?.();
+    this.disconnectStream = null;
 
-    try {
-      const dots = ".".repeat((this.generationCount % 3) + 1);
-      updateLog?.(`Detecting changes in weather${dots}`, "info");
+    // Fetch history
+    this.historyCache = await fetchHistory(start, end, limit);
+    this.historyCache.sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+    );
 
-      // Fetch fresh weather data
-      const newWeather = await fetchWeatherData(this.coordinates);
+    if (this.historyCache.length === 0) return;
 
-      // Compare with previous weather to detect changes
-      const changes = compareWeather(this.weather, newWeather);
+    this.historyCursor = 0;
+    this.playbackState = {
+      mode: "historical",
+      speed,
+      cursor: new Date(this.historyCache[0].timestamp),
+      isPlaying: true,
+    };
 
-      if (changes.length === 0) {
-        // No significant weather changes
+    // Start playback timer
+    this.startPlaybackLoop();
+  }
+
+  private startPlaybackLoop(): void {
+    if (this.playbackTimer !== null) {
+      clearInterval(this.playbackTimer);
+    }
+
+    // AWN reports every ~5 minutes = 300s
+    // At 1x speed, advance every 300s
+    // At 60x, advance every 5s
+    // At 360x, advance every ~0.83s
+    const intervalMs = Math.max(100, (300 / this.playbackState.speed) * 1000);
+
+    this.playbackTimer = window.setInterval(() => {
+      if (!this.playbackState.isPlaying || !this.synthesizer) return;
+
+      this.historyCursor++;
+      if (this.historyCursor >= this.historyCache.length) {
+        // End of history — return to live
+        this.resumeLive();
         return;
       }
 
-      // Weather has changed
-      removeLog?.();
-      log?.(
-        `Weather changed (${changes.length} parameter${changes.length > 1 ? "s" : ""})`,
-        "info",
-      );
-      for (const change of changes) {
-        log?.(change.description, "output");
-      }
+      const reading = this.historyCache[this.historyCursor];
+      const prevReading = this.currentReading;
+      this.currentReading = reading;
+      this.playbackState.cursor = new Date(reading.timestamp);
 
-      // Check if fingerprint changed (major shift) or just values (minor drift)
-      const newFingerprint = computeFingerprint(newWeather);
-      const fingerprintChanged =
-        !this.fingerprint ||
-        !fingerprintsEqual(this.fingerprint, newFingerprint);
+      if (prevReading && this.currentParams) {
+        this.currentParams = evolveParameters(this.currentParams, prevReading, reading);
 
-      let newParams: AudioParameters;
-
-      if (fingerprintChanged) {
-        // Major weather shift — generate fresh params and crossfade
-        const newSeed = fingerprintToSeed(newFingerprint);
-        newParams = generateAudioParameters(newWeather, newSeed);
-        log?.("Major weather shift — crossfading to new soundscape...", "info");
-
-        this.fingerprint = newFingerprint;
-        this.currentParams = newParams;
-        this.weather = newWeather;
-        this.evolutionCount++;
-
-        // Trigger full crossfade via callback
-        await onEvolution(newParams, newWeather, changes);
+        // Faster ramp for faster playback
+        const rampDuration = Math.max(0.5, 5 / this.playbackState.speed);
+        this.synthesizer.updateParameters(this.currentParams, rampDuration);
       } else {
-        // Minor drift — evolve in place with smooth ramping
-        newParams = evolveParameters(
-          this.currentParams,
-          this.weather,
-          newWeather,
-        );
-        log?.("Evolving soundscape...", "info");
-
-        this.currentParams = newParams;
-        this.weather = newWeather;
-        this.evolutionCount++;
-
-        // Smooth in-place ramp (no oscillator teardown)
-        if (this.synthesizer) {
-          this.synthesizer.updateParameters(newParams, 10);
-        }
+        this.currentParams = generateAudioParameters(reading);
+        this.synthesizer.crossfade(this.currentParams, 2);
       }
 
-      log?.("Soundscape updated", "success");
+      this.evolutionCount++;
+      this.onEvolution?.(reading, this.currentParams);
+    }, intervalMs);
+  }
 
-      this.generationCount = 0;
-      log?.("Detecting changes in weather.", "info");
-    } catch (error) {
-      const errorMsg =
-        error instanceof Error ? error.message : "Unknown error";
-      removeLog?.();
-      log?.(`Weather update failed: ${errorMsg}`, "error");
-      log?.("Detecting changes in weather.", "info");
+  /**
+   * Resume live streaming mode
+   */
+  async resumeLive(): Promise<void> {
+    if (this.playbackTimer !== null) {
+      clearInterval(this.playbackTimer);
+      this.playbackTimer = null;
     }
+
+    this.playbackState.mode = "live";
+    this.playbackState.isPlaying = true;
+
+    // Fetch current reading immediately so UI updates without waiting for next SSE event
+    try {
+      const reading = await fetchCurrent();
+      this.currentReading = reading;
+      this.playbackState.cursor = new Date(reading.timestamp);
+      this.currentParams = generateAudioParameters(reading);
+      this.synthesizer?.crossfade(this.currentParams, 2);
+      this.onEvolution?.(reading, this.currentParams);
+    } catch {
+      // Fall through to SSE — next event will update
+    }
+
+    this.connectLiveStream();
+  }
+
+  /**
+   * Seek to a specific position in the history cache
+   */
+  seekTo(timestamp: Date): void {
+    if (this.playbackState.mode !== "historical" || this.historyCache.length === 0) return;
+
+    const targetTime = timestamp.getTime();
+    let closest = 0;
+    let closestDiff = Infinity;
+
+    for (let i = 0; i < this.historyCache.length; i++) {
+      const diff = Math.abs(new Date(this.historyCache[i].timestamp).getTime() - targetTime);
+      if (diff < closestDiff) {
+        closestDiff = diff;
+        closest = i;
+      }
+    }
+
+    this.historyCursor = closest;
+    const reading = this.historyCache[closest];
+    this.currentReading = reading;
+    this.playbackState.cursor = new Date(reading.timestamp);
+
+    // Generate fresh params for the seeked position
+    this.currentParams = generateAudioParameters(reading);
+    this.synthesizer?.crossfade(this.currentParams, 1);
+    this.onEvolution?.(reading, this.currentParams);
+  }
+
+  setPlaybackSpeed(speed: number): void {
+    this.playbackState.speed = speed;
+    if (this.playbackState.mode === "historical" && this.playbackTimer !== null) {
+      this.startPlaybackLoop(); // restart with new interval
+    }
+  }
+
+  async togglePlayPause(): Promise<void> {
+    this.playbackState.isPlaying = !this.playbackState.isPlaying;
+    if (this.synthesizer) {
+      if (this.playbackState.isPlaying) {
+        await this.synthesizer.resume();
+      } else {
+        await this.synthesizer.suspend();
+      }
+    }
+  }
+
+  getPlaybackState(): PlaybackState {
+    return { ...this.playbackState };
   }
 
   getIsRunning(): boolean {
     return this.isRunning;
   }
 
-  getGenerationCount(): number {
-    return this.generationCount;
-  }
-
   getEvolutionCount(): number {
     return this.evolutionCount;
   }
 
-  getFingerprint(): WeatherFingerprint | null {
-    return this.fingerprint;
+  getCurrentReading(): WeatherReading | null {
+    return this.currentReading;
   }
 
-  updateConfig(config: Partial<EvolutionConfig>): void {
-    this.config = { ...this.config, ...config };
+  getHistoryCache(): WeatherReading[] {
+    return this.historyCache;
   }
 }

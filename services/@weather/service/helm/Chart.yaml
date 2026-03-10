@@ -1,0 +1,6 @@
+apiVersion: v2
+name: weather-service
+description: Real-time weather data ingestion and API service
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

@@ -1,0 +1,31 @@
+replicaCount: 1
+
+image:
+  repository: crowprose/weather-service
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 3004
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
+
+env:
+  - name: NODE_ENV
+    value: "production"
+  - name: PORT
+    value: "3004"
+  - name: LOG_LEVEL
+    value: "info"
+
+metrics:
+  enabled: true
+
+migration:
+  enabled: true

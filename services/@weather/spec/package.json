@@ -1,0 +1,17 @@
+{
+  "name": "@weather/spec",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "main": "./openapi.json",
+  "exports": {
+    ".": "./openapi.json"
+  },
+  "scripts": {
+    "build": "cp ../service/spec/openapi.json ./openapi.json",
+    "clean": "rm -f openapi.json"
+  },
+  "dependencies": {
+    "@weather/service": "workspace:*"
+  }
+}

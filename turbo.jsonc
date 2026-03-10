@@ -48,6 +48,16 @@
       "dependsOn": ["^build"],
       "outputs": ["openapi.json"]
     },
+    // Weather service generates OpenAPI spec
+    "@weather/service#build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": ["dist/**", "spec/**"]
+    },
+    "@weather/spec#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["openapi.json"]
+    },
     "check": {
       "dependsOn": ["^check"]
     },

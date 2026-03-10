@@ -1,42 +1,23 @@
-export interface WeatherData {
-  temperature: number;
-  conditions: string;
-  windSpeed: number;
+export interface WeatherReading {
+  id: string;
+  timestamp: string;
+  tempf: number;
   humidity: number;
-  pressure: number;
-  location: {
-    latitude: number;
-    longitude: number;
-    city?: string;
-  };
-  // New atmospheric parameters
-  apparentTemperature: number;
+  windspeedmph: number;
+  windgustmph: number;
+  maxdailygust: number;
+  winddir: number;
+  winddir_avg10m: number;
+  uv: number;
+  solarradiation: number;
+  hourlyrainin: number;
+  dailyrainin: number;
+  baromrelin: number;
+  baromabsin: number;
+  tempinf: number;
+  humidityin: number;
+  feelsLike: number;
   dewPoint: number;
-  cloudCover: number;
-  cloudCoverLow: number;
-  cloudCoverMid: number;
-  cloudCoverHigh: number;
-  visibility: number;
-  windDirection: number;
-  windGusts: number;
-  uvIndex: number;
-  isDay: number; // 0 or 1
-  cape: number; // Convective available potential energy
-  hourly: {
-    temperature: number[];
-    precipitationProbability: number[];
-    windSpeed: number[];
-    cloudCover: number[];
-    uvIndex: number[];
-    windDirection: number[];
-    dewPoint: number[];
-    cape: number[];
-  };
-  solar: {
-    shortwaveRadiation: number;
-    uvIndex: number;
-    uvIndexClearSky: number;
-  };
 }
 
 export interface LFOConfig {
@@ -53,6 +34,7 @@ export interface AudioParameters {
     frequency: number;
     gain: number;
     detune?: number;
+    pan?: number; // -1 (left) to 1 (right)
   }>;
   filters: Array<{
     type: BiquadFilterType;
@@ -71,5 +53,19 @@ export interface AudioParameters {
       mix: number;
     };
   };
+  noise?: {
+    type: "white" | "bandpass";
+    frequency?: number; // center frequency for bandpass
+    q?: number;
+    gain: number;
+    rate?: number; // bursts per second for rain
+  };
   lfos?: LFOConfig[];
+}
+
+export interface PlaybackState {
+  mode: "live" | "historical";
+  speed: number; // 1x, 10x, 60x, 360x
+  cursor: Date;
+  isPlaying: boolean;
 }
