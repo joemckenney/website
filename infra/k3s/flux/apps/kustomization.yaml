@@ -5,6 +5,7 @@ resources:
   - postgres/users-postgres.yaml
   - postgres/agent-postgres.yaml
   - postgres/tables-postgres.yaml
+  - postgres/weather-postgres.yaml
   # Application services
   - www-web.yaml
   - app-web.yaml
@@ -12,3 +13,4 @@ resources:
   - user-service.yaml
   - agent-service.yaml
   - tables-service.yaml
+  - weather-service.yaml
