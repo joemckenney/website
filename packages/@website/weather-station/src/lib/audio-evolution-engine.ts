@@ -1,12 +1,20 @@
 import type { AudioParameters, PlaybackState, WeatherReading } from "../types/weather";
 import type { AudioSynthesizer } from "./audio-synthesizer";
 import { evolveParameters, generateAudioParameters } from "./sound-engine";
-import { connectStream, fetchCurrent, fetchHistory } from "./weather";
+import { connectStream, fetchCurrent, streamHistory } from "./weather";
+
+export interface LoadingProgress {
+  loaded: number;
+  total: number;
+  done: boolean;
+}
 
 export type EvolutionCallback = (
   reading: WeatherReading,
   params: AudioParameters,
 ) => void;
+
+export type LoadingProgressCallback = (progress: LoadingProgress) => void;
 
 export class AudioEvolutionEngine {
   private synthesizer: AudioSynthesizer | null = null;
@@ -17,6 +25,7 @@ export class AudioEvolutionEngine {
   private isRunning = false;
   private evolutionCount = 0;
   private onEvolution: EvolutionCallback | null = null;
+  private onLoadingProgress: LoadingProgressCallback | null = null;
 
   private playbackState: PlaybackState = {
     mode: "live",
@@ -28,15 +37,20 @@ export class AudioEvolutionEngine {
   // History cache for scrubbing
   private historyCache: WeatherReading[] = [];
   private historyCursor = 0;
+  private loadingProgress: LoadingProgress = { loaded: 0, total: 0, done: true };
+  // Resolves when the next batch arrives (used when playback outruns loading)
+  private batchWaiter: (() => void) | null = null;
 
   async start(
     synthesizer: AudioSynthesizer,
     onEvolution?: EvolutionCallback,
+    onLoadingProgress?: LoadingProgressCallback,
   ): Promise<WeatherReading | null> {
     if (this.isRunning) return this.currentReading;
 
     this.synthesizer = synthesizer;
     this.onEvolution = onEvolution ?? null;
+    this.onLoadingProgress = onLoadingProgress ?? null;
     this.isRunning = true;
     this.evolutionCount = 0;
 
@@ -69,9 +83,14 @@ export class AudioEvolutionEngine {
       this.playbackTimer = null;
     }
 
+    // Wake any waiting playback loop so it can exit cleanly
+    this.batchWaiter?.();
+    this.batchWaiter = null;
+
     this.isRunning = false;
     this.synthesizer = null;
     this.onEvolution = null;
+    this.onLoadingProgress = null;
   }
 
   private connectLiveStream(): void {
@@ -106,38 +125,99 @@ export class AudioEvolutionEngine {
   }
 
   /**
-   * Switch to historical playback mode
+   * Switch to historical playback mode via SSE streaming
    */
-  async startHistoricalPlayback(
+  startHistoricalPlayback(
     start: Date,
     end: Date,
     speed = 1,
-    limit = 1000,
-  ): Promise<void> {
+  ): void {
     if (!this.isRunning || !this.synthesizer) return;
 
-    // Pause live stream
+    // Pause live stream / previous history stream
     this.disconnectStream?.();
     this.disconnectStream = null;
 
-    // Fetch history
-    this.historyCache = await fetchHistory(start, end, limit);
-    this.historyCache.sort(
-      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-    );
+    if (this.playbackTimer !== null) {
+      clearInterval(this.playbackTimer);
+      this.playbackTimer = null;
+    }
 
-    if (this.historyCache.length === 0) return;
-
+    // Reset history state
+    this.historyCache = [];
     this.historyCursor = 0;
+    this.loadingProgress = { loaded: 0, total: 0, done: false };
+    this.onLoadingProgress?.(this.loadingProgress);
+
     this.playbackState = {
       mode: "historical",
       speed,
-      cursor: new Date(this.historyCache[0].timestamp),
+      cursor: start,
       isPlaying: true,
     };
 
-    // Start playback timer
-    this.startPlaybackLoop();
+    let firstBatchReceived = false;
+
+    this.disconnectStream = streamHistory(start, end, {
+      onMeta: (meta) => {
+        this.loadingProgress = { loaded: 0, total: meta.total, done: false };
+        this.onLoadingProgress?.(this.loadingProgress);
+      },
+
+      onBatch: (readings) => {
+        // Append to cache — batches arrive in chronological order
+        this.historyCache.push(...readings);
+        this.loadingProgress = {
+          ...this.loadingProgress,
+          loaded: this.historyCache.length,
+        };
+        this.onLoadingProgress?.(this.loadingProgress);
+
+        // Wake playback loop if it was waiting for data
+        this.batchWaiter?.();
+        this.batchWaiter = null;
+
+        // Start playback on first batch
+        if (!firstBatchReceived) {
+          firstBatchReceived = true;
+          this.playbackState.cursor = new Date(this.historyCache[0].timestamp);
+          this.startPlaybackLoop();
+        }
+      },
+
+      onDone: () => {
+        this.loadingProgress = { ...this.loadingProgress, done: true };
+        this.onLoadingProgress?.(this.loadingProgress);
+        // Wake playback if waiting — it will see done=true and handle end-of-data
+        this.batchWaiter?.();
+        this.batchWaiter = null;
+      },
+
+      onLiveReading: (reading) => {
+        // After history is done and playback has reached the end, auto-transition handled
+        // by playback loop. But we can also forward live readings here if already transitioned.
+        if (this.playbackState.mode === "live" && this.isRunning && this.synthesizer) {
+          const prevReading = this.currentReading;
+          this.currentReading = reading;
+          this.playbackState.cursor = new Date(reading.timestamp);
+
+          if (prevReading && this.currentParams) {
+            this.currentParams = evolveParameters(this.currentParams, prevReading, reading);
+            this.synthesizer.updateParameters(this.currentParams, 10);
+          } else {
+            this.currentParams = generateAudioParameters(reading);
+            this.synthesizer.crossfade(this.currentParams, 5);
+          }
+
+          this.evolutionCount++;
+          this.onEvolution?.(reading, this.currentParams);
+        }
+      },
+
+      onError: (error) => {
+        console.error("History SSE stream error:", error);
+      },
+    });
   }
 
   private startPlaybackLoop(): void {
@@ -155,9 +235,26 @@ export class AudioEvolutionEngine {
       if (!this.playbackState.isPlaying || !this.synthesizer) return;
 
       this.historyCursor++;
+
       if (this.historyCursor >= this.historyCache.length) {
-        // End of history — return to live
-        this.resumeLive();
+        if (this.loadingProgress.done) {
+          // All data loaded and we've reached the end — transition to live
+          this.playbackState.mode = "live";
+          this.playbackState.isPlaying = true;
+          if (this.playbackTimer !== null) {
+            clearInterval(this.playbackTimer);
+            this.playbackTimer = null;
+          }
+          // The SSE connection is still open and will send live readings
+          // via the onLiveReading callback
+          this.onEvolution?.(
+            this.currentReading!,
+            this.currentParams!,
+          );
+          return;
+        }
+        // Still loading — back up cursor and wait for next batch
+        this.historyCursor = this.historyCache.length - 1;
         return;
       }
 
@@ -186,6 +283,10 @@ export class AudioEvolutionEngine {
    * Resume live streaming mode
    */
   async resumeLive(): Promise<void> {
+    // Close any existing stream (including history SSE)
+    this.disconnectStream?.();
+    this.disconnectStream = null;
+
     if (this.playbackTimer !== null) {
       clearInterval(this.playbackTimer);
       this.playbackTimer = null;
@@ -274,5 +375,9 @@ export class AudioEvolutionEngine {
 
   getHistoryCache(): WeatherReading[] {
     return this.historyCache;
+  }
+
+  getLoadingProgress(): LoadingProgress {
+    return { ...this.loadingProgress };
   }
 }

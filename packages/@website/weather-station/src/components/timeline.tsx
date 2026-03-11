@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import type { LoadingProgress } from "../lib/audio-evolution-engine";
 import type { PlaybackState, WeatherReading } from "../types/weather";
 import * as styles from "./weather-dashboard.css";
 
@@ -6,6 +7,7 @@ interface TimelineProps {
   playbackState: PlaybackState;
   historyCache: WeatherReading[];
   activeRange?: number;
+  loadingProgress?: LoadingProgress | null;
   onPlayPause: () => void;
   onSpeedChange: (speed: number) => void;
   onSeek: (timestamp: Date) => void;
@@ -43,6 +45,7 @@ export function Timeline({
   playbackState,
   historyCache,
   activeRange,
+  loadingProgress,
   onPlayPause,
   onSpeedChange,
   onSeek,
@@ -156,17 +159,36 @@ export function Timeline({
           <span className={styles.timeLabel}>
             {formatTimestamp(rangeStart, spansDays)}
           </span>
-          <input
-            type="range"
-            className={styles.scrubber}
-            min={0}
-            max={1}
-            step={0.001}
-            value={progress}
-            onChange={handleScrub}
-          />
+          <div style={{ flex: 1, position: "relative", minWidth: "100px" }}>
+            <input
+              type="range"
+              className={styles.scrubber}
+              style={{ width: "100%" }}
+              min={0}
+              max={1}
+              step={0.001}
+              value={progress}
+              onChange={handleScrub}
+            />
+            {loadingProgress && !loadingProgress.done && loadingProgress.total > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "-2px",
+                  left: 0,
+                  height: "2px",
+                  width: `${(loadingProgress.loaded / loadingProgress.total) * 100}%`,
+                  backgroundColor: "#999",
+                  transition: "width 0.3s ease",
+                  pointerEvents: "none",
+                }}
+              />
+            )}
+          </div>
           <span className={styles.timeLabel}>
-            {formatTimestamp(rangeEnd, spansDays)}
+            {loadingProgress && !loadingProgress.done
+              ? `${loadingProgress.loaded}/${loadingProgress.total}`
+              : formatTimestamp(rangeEnd, spansDays)}
           </span>
         </>
       )}

@@ -51,26 +51,61 @@ export async function fetchCurrent(): Promise<WeatherReading> {
   return res.json();
 }
 
-/**
- * Fetch historical weather readings within a time range
- */
-export async function fetchHistory(
-  start?: Date,
-  end?: Date,
-  limit = 100,
-): Promise<WeatherReading[]> {
-  const params = new URLSearchParams();
-  if (start) params.set("start", start.toISOString());
-  if (end) params.set("end", end.toISOString());
-  params.set("limit", String(limit));
+export interface StreamHistoryCallbacks {
+  onMeta: (meta: { total: number; start: string | null; end: string | null }) => void;
+  onBatch: (readings: WeatherReading[]) => void;
+  onDone: () => void;
+  onLiveReading?: (reading: WeatherReading) => void;
+  onError?: (error: Event) => void;
+}
 
-  const res = await fetch(
-    `${getServiceUrl()}/weather/history?${params}`,
-  );
-  if (!res.ok) {
-    throw new Error(`Failed to fetch weather history: ${res.status}`);
-  }
-  return res.json();
+/**
+ * Stream historical weather readings via SSE, then transition to live.
+ * Returns a close function to abort the stream.
+ */
+export function streamHistory(
+  start: Date,
+  end: Date,
+  callbacks: StreamHistoryCallbacks,
+): () => void {
+  const params = new URLSearchParams();
+  params.set("start", start.toISOString());
+  params.set("end", end.toISOString());
+
+  const url = `${getServiceUrl()}/weather/stream/history?${params}`;
+  const eventSource = new EventSource(url);
+
+  eventSource.addEventListener("meta", (event) => {
+    try {
+      callbacks.onMeta(JSON.parse(event.data));
+    } catch { /* ignore */ }
+  });
+
+  eventSource.addEventListener("batch", (event) => {
+    try {
+      const { readings } = JSON.parse(event.data);
+      callbacks.onBatch(readings);
+    } catch { /* ignore */ }
+  });
+
+  eventSource.addEventListener("done", () => {
+    callbacks.onDone();
+  });
+
+  eventSource.addEventListener("reading", (event) => {
+    try {
+      const reading: WeatherReading = JSON.parse(event.data);
+      callbacks.onLiveReading?.(reading);
+    } catch { /* ignore */ }
+  });
+
+  eventSource.onerror = (event) => {
+    callbacks.onError?.(event);
+  };
+
+  return () => {
+    eventSource.close();
+  };
 }
 
 /**

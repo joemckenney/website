@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AudioEvolutionEngine } from "../lib/audio-evolution-engine";
+import { AudioEvolutionEngine, type LoadingProgress } from "../lib/audio-evolution-engine";
 import { AudioSynthesizer } from "../lib/audio-synthesizer";
 import type { PlaybackState, WeatherReading } from "../types/weather";
 import { FrequencyVisualizer } from "./frequency-visualizer";
@@ -43,6 +43,7 @@ export function WeatherDashboard() {
   });
   const [evolutionCount, setEvolutionCount] = useState(0);
   const [activeRange, setActiveRange] = useState<number | undefined>(undefined);
+  const [loadingProgress, setLoadingProgress] = useState<LoadingProgress | null>(null);
 
   const synthRef = useRef<AudioSynthesizer | null>(null);
   const engineRef = useRef<AudioEvolutionEngine | null>(null);
@@ -59,11 +60,15 @@ export function WeatherDashboard() {
     const engine = new AudioEvolutionEngine();
     engineRef.current = engine;
 
-    const initialReading = await engine.start(synth, (newReading, _params) => {
-      setReading(newReading);
-      setEvolutionCount((c) => c + 1);
-      setPlaybackState(engine.getPlaybackState());
-    });
+    const initialReading = await engine.start(
+      synth,
+      (newReading, _params) => {
+        setReading(newReading);
+        setEvolutionCount((c) => c + 1);
+        setPlaybackState(engine.getPlaybackState());
+      },
+      (progress) => setLoadingProgress(progress),
+    );
 
     if (initialReading) {
       setReading(initialReading);
@@ -78,6 +83,7 @@ export function WeatherDashboard() {
     setIsPlaying(false);
     setIsConnected(false);
     setActiveRange(undefined);
+    setLoadingProgress(null);
     updateUrl("live");
   }, []);
 
@@ -103,19 +109,18 @@ export function WeatherDashboard() {
     await engineRef.current?.resumeLive();
     setPlaybackState((prev) => ({ ...prev, mode: "live" }));
     setActiveRange(undefined);
+    setLoadingProgress(null);
     updateUrl("live");
   }, []);
 
-  const handleStartHistorical = useCallback(async (hours: number) => {
+  const handleStartHistorical = useCallback((hours: number) => {
     const end = new Date();
     // hours=0 means "all available" — use a very large window
     const start = hours > 0
       ? new Date(end.getTime() - hours * 60 * 60 * 1000)
       : new Date(0);
-    // Scale limit with range size (5-min intervals: ~12/hr, ~288/day)
-    const limit = hours > 0 ? Math.max(1000, hours * 12) : 10000;
     const speed = hours <= 24 ? 60 : 360;
-    await engineRef.current?.startHistoricalPlayback(start, end, speed, limit);
+    engineRef.current?.startHistoricalPlayback(start, end, speed);
     setPlaybackState((prev) => ({ ...prev, mode: "historical", speed }));
     setActiveRange(hours);
     updateUrl("historical", hours, speed);
@@ -156,18 +161,22 @@ export function WeatherDashboard() {
       const engine = new AudioEvolutionEngine();
       engineRef.current = engine;
 
-      const initialReading = await engine.start(synth, (newReading, _params) => {
-        setReading(newReading);
-        setEvolutionCount((c) => c + 1);
-        setPlaybackState(engine.getPlaybackState());
-      });
+      const initialReading = await engine.start(
+        synth,
+        (newReading, _params) => {
+          setReading(newReading);
+          setEvolutionCount((c) => c + 1);
+          setPlaybackState(engine.getPlaybackState());
+        },
+        (progress) => setLoadingProgress(progress),
+      );
 
       if (initialReading) {
         setReading(initialReading);
         setIsPlaying(true);
         setIsConnected(true);
         // Immediately enter historical playback
-        await handleStartHistorical(pendingRef.hours);
+        handleStartHistorical(pendingRef.hours);
         if (pendingRef.speed) handleSpeedChange(pendingRef.speed);
       }
     };
@@ -237,6 +246,7 @@ export function WeatherDashboard() {
             playbackState={playbackState}
             historyCache={engineRef.current?.getHistoryCache() ?? []}
             activeRange={activeRange}
+            loadingProgress={loadingProgress}
             onPlayPause={handlePlayPause}
             onSpeedChange={handleSpeedChange}
             onSeek={handleSeek}
