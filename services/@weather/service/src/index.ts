@@ -8,7 +8,7 @@ import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
 
 import { config } from "./config.js";
-import { backfill } from "./lib/awn-backfill.js";
+import { backfill, gapFill } from "./lib/awn-backfill.js";
 import { startConnector } from "./lib/awn-connector.js";
 import { registerStreamRoutes } from "./routes/stream.js";
 import { registerWeatherRoutes } from "./routes/weather.js";
@@ -98,11 +98,18 @@ try {
     fastify.log.info("OpenAPI spec written to ./spec/openapi.json");
   }
 
-  // Start AWN connector and backfill
-  startConnector(fastify.log);
-  backfill(fastify.log).catch((err) => {
-    fastify.log.error({ err }, "Backfill failed");
+  // Fill any gaps from connector downtime, then start real-time connector
+  gapFill(fastify.log).catch((err) => {
+    fastify.log.error({ err }, "Gap-fill failed");
   });
+  startConnector(fastify.log);
+
+  // Run gap-fill periodically (every 30 minutes) as a safety net
+  setInterval(() => {
+    gapFill(fastify.log).catch((err) => {
+      fastify.log.error({ err }, "Periodic gap-fill failed");
+    });
+  }, 30 * 60 * 1000);
 } catch (err) {
   fastify.log.error(err);
   process.exit(1);

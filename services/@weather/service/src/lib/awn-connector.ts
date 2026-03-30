@@ -68,6 +68,39 @@ function extractReading(data: Record<string, unknown>) {
 }
 
 let socket: Socket | null = null;
+let watchdog: ReturnType<typeof setTimeout> | null = null;
+let statusInterval: ReturnType<typeof setInterval> | null = null;
+let lastDataAt: number = 0;
+let readingsSinceRestart = 0;
+
+// If no data arrives within this window, force a reconnect.
+// The station reports every ~5 minutes; 10 minutes gives a comfortable margin.
+const STALE_THRESHOLD_MS = 10 * 60 * 1000;
+
+function resetWatchdog(logger: { info: (...args: unknown[]) => void; error: (...args: unknown[]) => void; warn: (...args: unknown[]) => void }) {
+  if (watchdog) clearTimeout(watchdog);
+  watchdog = setTimeout(() => {
+    logger.warn(
+      { lastDataAt: new Date(lastDataAt).toISOString(), silentMinutes: Math.round((Date.now() - lastDataAt) / 60000) },
+      "No AWN data received within threshold — forcing reconnect",
+    );
+    reconnect(logger);
+  }, STALE_THRESHOLD_MS);
+}
+
+function reconnect(logger: { info: (...args: unknown[]) => void; error: (...args: unknown[]) => void; warn: (...args: unknown[]) => void }) {
+  if (socket) {
+    socket.removeAllListeners();
+    socket.disconnect();
+    socket = null;
+  }
+  if (watchdog) { clearTimeout(watchdog); watchdog = null; }
+  if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
+  readingsSinceRestart = 0;
+
+  // Brief delay before reconnecting to avoid tight loops
+  setTimeout(() => startConnector(logger), 5000);
+}
 
 export function startConnector(logger: { info: (...args: unknown[]) => void; error: (...args: unknown[]) => void; warn: (...args: unknown[]) => void }) {
   if (!config.awnApiKey || !config.awnAppKey) {
@@ -85,6 +118,7 @@ export function startConnector(logger: { info: (...args: unknown[]) => void; err
   socket.on("connect", () => {
     logger.info("Connected to AWN real-time endpoint");
     socket?.emit("subscribe", { apiKeys: [config.awnApiKey] });
+    resetWatchdog(logger);
   });
 
   socket.on("subscribed", (data: unknown) => {
@@ -95,6 +129,9 @@ export function startConnector(logger: { info: (...args: unknown[]) => void; err
     const macAddress = data.macAddress as string | undefined;
     if (macAddress !== config.awnMacAddress) return;
 
+    lastDataAt = Date.now();
+    resetWatchdog(logger);
+
     try {
       const fields = extractReading(data);
       const reading = await prisma.weatherReading.upsert({
@@ -103,6 +140,7 @@ export function startConnector(logger: { info: (...args: unknown[]) => void; err
         update: fields,
       });
 
+      readingsSinceRestart++;
       logger.info({ timestamp: reading.timestamp }, "Stored weather reading");
       broadcast({
         ...reading,
@@ -120,9 +158,20 @@ export function startConnector(logger: { info: (...args: unknown[]) => void; err
   socket.on("connect_error", (err: Error) => {
     logger.error({ err: err.message }, "AWN connection error");
   });
+
+  // Log connector status every 5 minutes for observability
+  statusInterval = setInterval(() => {
+    const silentMinutes = lastDataAt ? Math.round((Date.now() - lastDataAt) / 60000) : -1;
+    logger.info(
+      { connected: socket?.connected ?? false, readingsSinceRestart, lastDataAt: lastDataAt ? new Date(lastDataAt).toISOString() : "never", silentMinutes },
+      "AWN connector status",
+    );
+  }, 5 * 60 * 1000);
 }
 
 export function stopConnector() {
+  if (watchdog) { clearTimeout(watchdog); watchdog = null; }
+  if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
   socket?.disconnect();
   socket = null;
   listeners.clear();
