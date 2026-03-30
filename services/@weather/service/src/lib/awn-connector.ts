@@ -108,7 +108,7 @@ export function startConnector(logger: { info: (...args: unknown[]) => void; err
     return;
   }
 
-  socket = io(AWN_REALTIME_URL, {
+  socket = io(`${AWN_REALTIME_URL}/?api=1&applicationKey=${config.awnAppKey}`, {
     transports: ["websocket"],
     reconnection: true,
     reconnectionDelay: 5000,

@@ -104,12 +104,12 @@ try {
   });
   startConnector(fastify.log);
 
-  // Run gap-fill periodically (every 30 minutes) as a safety net
+  // Run gap-fill periodically (every 5 minutes) as a safety net
   setInterval(() => {
     gapFill(fastify.log).catch((err) => {
       fastify.log.error({ err }, "Periodic gap-fill failed");
     });
-  }, 30 * 60 * 1000);
+  }, 5 * 60 * 1000);
 } catch (err) {
   fastify.log.error(err);
   process.exit(1);
