@@ -38,6 +38,7 @@ secrets:
   backendUrl: "https://api.crowprose.com"
   userServiceUrl: "http://user-service:3002"
   aiServiceUrl: "http://ai-service:3006"
+  weatherServiceUrl: "http://weather-service:3004"
 
 # Prometheus metrics
 metrics:

@@ -4,6 +4,7 @@ import swagger from "@fastify/swagger";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Fastify from "fastify";
 import { registerAuthRoutes } from "./routes/auth.js";
+import { registerWeatherRoutes } from "./routes/weather.js";
 import { registerRoutes } from "./routes.js";
 
 const fastify = Fastify({
@@ -38,6 +39,7 @@ await fastify.register(swagger, {
 
 // Register routes (but don't start server)
 await registerAuthRoutes(fastify);
+await registerWeatherRoutes(fastify);
 await registerRoutes(fastify, {});
 
 // Ready the server (generates the OpenAPI spec)

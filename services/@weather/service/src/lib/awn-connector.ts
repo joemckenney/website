@@ -1,6 +1,6 @@
 import { io, type Socket } from "socket.io-client";
-import { prisma } from "../db/client.js";
 import { config } from "../config.js";
+import { prisma } from "../db/client.js";
 
 const AWN_REALTIME_URL = "https://rt2.ambientweather.net";
 
@@ -77,34 +77,57 @@ let readingsSinceRestart = 0;
 // The station reports every ~5 minutes; 10 minutes gives a comfortable margin.
 const STALE_THRESHOLD_MS = 10 * 60 * 1000;
 
-function resetWatchdog(logger: { info: (...args: unknown[]) => void; error: (...args: unknown[]) => void; warn: (...args: unknown[]) => void }) {
+function resetWatchdog(logger: {
+  info: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+}) {
   if (watchdog) clearTimeout(watchdog);
   watchdog = setTimeout(() => {
     logger.warn(
-      { lastDataAt: new Date(lastDataAt).toISOString(), silentMinutes: Math.round((Date.now() - lastDataAt) / 60000) },
+      {
+        lastDataAt: new Date(lastDataAt).toISOString(),
+        silentMinutes: Math.round((Date.now() - lastDataAt) / 60000),
+      },
       "No AWN data received within threshold — forcing reconnect",
     );
     reconnect(logger);
   }, STALE_THRESHOLD_MS);
 }
 
-function reconnect(logger: { info: (...args: unknown[]) => void; error: (...args: unknown[]) => void; warn: (...args: unknown[]) => void }) {
+function reconnect(logger: {
+  info: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+}) {
   if (socket) {
     socket.removeAllListeners();
     socket.disconnect();
     socket = null;
   }
-  if (watchdog) { clearTimeout(watchdog); watchdog = null; }
-  if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
+  if (watchdog) {
+    clearTimeout(watchdog);
+    watchdog = null;
+  }
+  if (statusInterval) {
+    clearInterval(statusInterval);
+    statusInterval = null;
+  }
   readingsSinceRestart = 0;
 
   // Brief delay before reconnecting to avoid tight loops
   setTimeout(() => startConnector(logger), 5000);
 }
 
-export function startConnector(logger: { info: (...args: unknown[]) => void; error: (...args: unknown[]) => void; warn: (...args: unknown[]) => void }) {
+export function startConnector(logger: {
+  info: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+}) {
   if (!config.awnApiKey || !config.awnAppKey) {
-    logger.warn("AWN_API_KEY or AWN_APP_KEY not set — skipping real-time connector");
+    logger.warn(
+      "AWN_API_KEY or AWN_APP_KEY not set — skipping real-time connector",
+    );
     return;
   }
 
@@ -160,18 +183,34 @@ export function startConnector(logger: { info: (...args: unknown[]) => void; err
   });
 
   // Log connector status every 5 minutes for observability
-  statusInterval = setInterval(() => {
-    const silentMinutes = lastDataAt ? Math.round((Date.now() - lastDataAt) / 60000) : -1;
-    logger.info(
-      { connected: socket?.connected ?? false, readingsSinceRestart, lastDataAt: lastDataAt ? new Date(lastDataAt).toISOString() : "never", silentMinutes },
-      "AWN connector status",
-    );
-  }, 5 * 60 * 1000);
+  statusInterval = setInterval(
+    () => {
+      const silentMinutes = lastDataAt
+        ? Math.round((Date.now() - lastDataAt) / 60000)
+        : -1;
+      logger.info(
+        {
+          connected: socket?.connected ?? false,
+          readingsSinceRestart,
+          lastDataAt: lastDataAt ? new Date(lastDataAt).toISOString() : "never",
+          silentMinutes,
+        },
+        "AWN connector status",
+      );
+    },
+    5 * 60 * 1000,
+  );
 }
 
 export function stopConnector() {
-  if (watchdog) { clearTimeout(watchdog); watchdog = null; }
-  if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
+  if (watchdog) {
+    clearTimeout(watchdog);
+    watchdog = null;
+  }
+  if (statusInterval) {
+    clearInterval(statusInterval);
+    statusInterval = null;
+  }
   socket?.disconnect();
   socket = null;
   listeners.clear();

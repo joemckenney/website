@@ -1,6 +1,8 @@
 import type { WeatherReading } from "../types/weather";
 
-const DEFAULT_SERVICE_URL = "http://localhost:3004";
+// Defaults to the local gateway, which proxies /weather/* to weather-service.
+// Override with setServiceUrl() to point elsewhere (e.g. weather-service direct).
+const DEFAULT_SERVICE_URL = "http://localhost:3000";
 
 function getServiceUrl(): string {
   // In browser context, check for env variable or use default

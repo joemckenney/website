@@ -84,6 +84,7 @@ secrets:
   backendUrl: ""
   userServiceUrl: ""
   aiServiceUrl: ""
+  weatherServiceUrl: ""
 
 # Prometheus metrics
 metrics:

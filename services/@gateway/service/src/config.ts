@@ -25,4 +25,5 @@ export const config = {
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:3001",
   userServiceUrl: process.env.USER_SERVICE_URL || "http://localhost:3002",
   aiServiceUrl: process.env.AI_SERVICE_URL || "http://localhost:3006",
+  weatherServiceUrl: process.env.WEATHER_SERVICE_URL || "http://localhost:3004",
 };

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import { onReading } from "../lib/awn-connector.js";
 import { prisma, serializeReading } from "../db/client.js";
+import { onReading } from "../lib/awn-connector.js";
 
 const SSE_HEADERS = {
   "Content-Type": "text/event-stream",

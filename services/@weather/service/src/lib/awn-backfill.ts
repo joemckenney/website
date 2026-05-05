@@ -1,5 +1,5 @@
-import { prisma } from "../db/client.js";
 import { config } from "../config.js";
+import { prisma } from "../db/client.js";
 
 const AWN_API_BASE = "https://rt.ambientweather.net/v1";
 
@@ -30,7 +30,11 @@ async function fetchPage(endDate?: number): Promise<AwnApiReading[]> {
  * Full historical backfill — pages backward from now until no more data.
  * Used at startup to populate the database.
  */
-export async function backfill(logger: { info: (...args: unknown[]) => void; error: (...args: unknown[]) => void; warn: (...args: unknown[]) => void }) {
+export async function backfill(logger: {
+  info: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+}) {
   if (!config.awnApiKey || !config.awnAppKey) {
     logger.warn("AWN_API_KEY or AWN_APP_KEY not set — skipping backfill");
     return;
@@ -79,7 +83,11 @@ export async function backfill(logger: { info: (...args: unknown[]) => void; err
  * left by real-time connector downtime. Fetches from the most recent
  * DB reading forward to now.
  */
-export async function gapFill(logger: { info: (...args: unknown[]) => void; error: (...args: unknown[]) => void; warn: (...args: unknown[]) => void }) {
+export async function gapFill(logger: {
+  info: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+}) {
   if (!config.awnApiKey || !config.awnAppKey) {
     return;
   }
@@ -102,7 +110,10 @@ export async function gapFill(logger: { info: (...args: unknown[]) => void; erro
     return;
   }
 
-  logger.info({ gapMinutes, since: latest.timestamp.toISOString() }, "Starting AWN gap-fill");
+  logger.info(
+    { gapMinutes, since: latest.timestamp.toISOString() },
+    "Starting AWN gap-fill",
+  );
 
   let totalStored = 0;
   let endDate: number | undefined;

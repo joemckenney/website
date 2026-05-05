@@ -3,7 +3,7 @@ import "dotenv/config";
 import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
-import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
+import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
 
@@ -33,8 +33,17 @@ const fastify = Fastify({
         },
 }).withTypeProvider<TypeBoxTypeProvider>();
 
-// Plugins
-await fastify.register(cors, { origin: true, credentials: true });
+// Plugins. Weather service sits behind the gateway in production; CORS only
+// needs to allow gateway-internal traffic (same-origin), and a permissive
+// localhost allowlist for direct dev access.
+const allowedOrigins = (
+  process.env.CORS_ALLOWED_ORIGINS ||
+  "http://localhost:3000,http://localhost:3001,http://localhost:5173"
+)
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+await fastify.register(cors, { origin: allowedOrigins, credentials: true });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 await fastify.register(metricsPlugin as any, {
   endpoint: "/metrics",
@@ -45,7 +54,8 @@ await fastify.register(swagger, {
   openapi: {
     info: {
       title: "Weather Station API",
-      description: "Real-time weather data from Ambient Weather station in Mendocino, CA",
+      description:
+        "Real-time weather data from Ambient Weather station in Mendocino, CA",
       version: "1.0.0",
     },
     servers: [
@@ -80,7 +90,9 @@ fastify.get(
 );
 
 // Routes
-await registerWeatherRoutes(fastify as unknown as Parameters<typeof registerWeatherRoutes>[0]);
+await registerWeatherRoutes(
+  fastify as unknown as Parameters<typeof registerWeatherRoutes>[0],
+);
 await registerStreamRoutes(fastify);
 
 // Start server
@@ -105,11 +117,14 @@ try {
   startConnector(fastify.log);
 
   // Run gap-fill periodically (every 5 minutes) as a safety net
-  setInterval(() => {
-    gapFill(fastify.log).catch((err) => {
-      fastify.log.error({ err }, "Periodic gap-fill failed");
-    });
-  }, 5 * 60 * 1000);
+  setInterval(
+    () => {
+      gapFill(fastify.log).catch((err) => {
+        fastify.log.error({ err }, "Periodic gap-fill failed");
+      });
+    },
+    5 * 60 * 1000,
+  );
 } catch (err) {
   fastify.log.error(err);
   process.exit(1);

@@ -1,12 +1,14 @@
+import { mkdir, writeFile } from "node:fs/promises";
 import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
-import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
+import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import Fastify from "fastify";
-import { mkdir, writeFile } from "node:fs/promises";
 import { registerStreamRoutes } from "./routes/stream.js";
 import { registerWeatherRoutes } from "./routes/weather.js";
 
-const fastify = Fastify({ logger: false }).withTypeProvider<TypeBoxTypeProvider>();
+const fastify = Fastify({
+  logger: false,
+}).withTypeProvider<TypeBoxTypeProvider>();
 
 await fastify.register(cors);
 await fastify.register(swagger, {
@@ -17,13 +19,13 @@ await fastify.register(swagger, {
         "Real-time weather data from Ambient Weather station in Mendocino, CA",
       version: "1.0.0",
     },
-    servers: [
-      { url: "http://localhost:3004", description: "Development" },
-    ],
+    servers: [{ url: "http://localhost:3004", description: "Development" }],
   },
 });
 
-await registerWeatherRoutes(fastify as unknown as Parameters<typeof registerWeatherRoutes>[0]);
+await registerWeatherRoutes(
+  fastify as unknown as Parameters<typeof registerWeatherRoutes>[0],
+);
 await registerStreamRoutes(fastify);
 
 await fastify.ready();
