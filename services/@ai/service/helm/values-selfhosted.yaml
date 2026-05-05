@@ -1,0 +1,32 @@
+replicaCount: 1
+
+image:
+  repository: crowprose/ai-service
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 3006
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+env:
+  - name: NODE_ENV
+    value: "production"
+  - name: PORT
+    value: "3006"
+  - name: LOG_LEVEL
+    value: "info"
+  - name: OLLAMA_BASE_URL
+    value: "http://192.168.122.1:11434/v1"
+  - name: ALLOWED_MODELS
+    value: "anthropic/claude-sonnet-4-5,vercel/openai/gpt-4o-mini,vercel/anthropic/claude-sonnet-4-5,ollama/qwen2.5:7b,ollama/qwen2.5:32b"
+
+metrics:
+  enabled: true

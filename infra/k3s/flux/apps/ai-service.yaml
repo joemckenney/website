@@ -1,0 +1,31 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ai-service
+  namespace: default
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: ./services/@ai/service/helm
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      reconcileStrategy: Revision
+      valuesFiles:
+        - ./services/@ai/service/helm/values.yaml
+        - ./services/@ai/service/helm/values-selfhosted.yaml
+  values:
+    image:
+      tag: latest
+  valuesFrom:
+    - kind: Secret
+      name: ai-service-secrets-values
+      valuesKey: vercelApiKey
+      targetPath: secrets.vercelApiKey
+    - kind: Secret
+      name: ai-service-secrets-values
+      valuesKey: anthropicApiKey
+      targetPath: secrets.anthropicApiKey
