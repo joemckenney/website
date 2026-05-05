@@ -1,218 +1,135 @@
 import { vars } from "@crow/theme";
-import { keyframes, style } from "@vanilla-extract/css";
+import { style } from "@vanilla-extract/css";
 
-export const chatHeader = style({
-  padding: `${vars.space[4]} ${vars.space[6]}`,
+export const container = style({
+  display: "flex",
+  flexDirection: "column",
+  flex: 1,
+  height: "100%",
+  background: vars.colors.stone50,
+});
+
+export const header = style({
+  display: "flex",
+  alignItems: "center",
+  padding: "8px 12px",
   borderBottom: `1px solid ${vars.colors.stone300}`,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
+  background: vars.colors.stone100,
+  flexShrink: 0,
 });
 
-export const chatTitle = style({
-  fontFamily: vars.fonts.display,
-  fontSize: vars.fontSizes.base.fontSize,
-  fontWeight: "400",
-  letterSpacing: vars.letterSpacing.wider,
-  textTransform: "uppercase",
+export const modelSelect = style({
+  fontFamily: vars.fonts.mono,
+  fontSize: "12px",
+  padding: "4px 8px",
+  background: "white",
+  color: vars.colors.stone900,
+  border: `1px solid ${vars.colors.stone300}`,
+  borderRadius: "3px",
+  cursor: "pointer",
+  minWidth: "240px",
 });
 
-export const chatStatus = style({
-  display: "flex",
-  alignItems: "center",
-  gap: vars.space[1],
-  fontSize: vars.fontSizes.xs.fontSize,
-  color: vars.colors.stone600,
-  letterSpacing: vars.letterSpacing.wider,
-  textTransform: "uppercase",
-});
-
-export const statusDot = style({
-  width: "6px",
-  height: "6px",
-  background: vars.colors.sage500,
-  borderRadius: "50%",
-});
-
-export const errorBanner = style({
-  padding: `${vars.space[3]} ${vars.space[6]}`,
-  background: "#fee2e2",
-  color: "#991b1b",
-  fontSize: vars.fontSizes.sm.fontSize,
-  borderBottom: "1px solid #fecaca",
-});
-
-export const messagesContainer = style({
+export const messages = style({
   flex: 1,
   overflowY: "auto",
-  padding: `${vars.space[8]} ${vars.space[6]}`,
-  "::-webkit-scrollbar": {
-    width: "4px",
-  },
-  "::-webkit-scrollbar-track": {
-    background: "transparent",
-  },
-  "::-webkit-scrollbar-thumb": {
-    background: vars.colors.stone300,
-  },
-});
-
-const fadeIn = keyframes({
-  from: {
-    opacity: 0,
-    transform: "translateY(8px)",
-  },
-  to: {
-    opacity: 1,
-    transform: "translateY(0)",
-  },
-});
-
-export const message = style({
-  maxWidth: "680px",
-  margin: `0 auto ${vars.space[6]}`,
-  animation: `${fadeIn} 0.3s ease`,
-});
-
-export const messageHeader = style({
+  padding: "16px",
   display: "flex",
-  alignItems: "center",
-  gap: vars.space[2],
-  marginBottom: vars.space[2],
+  flexDirection: "column",
+  gap: "12px",
 });
+
+const messageBase = style({
+  maxWidth: "720px",
+  padding: "8px 12px",
+  borderRadius: "4px",
+  fontSize: "13px",
+  lineHeight: "1.5",
+  fontFamily: vars.fonts.mono,
+  whiteSpace: "pre-wrap",
+  wordBreak: "break-word",
+});
+
+export const messageUser = style([
+  messageBase,
+  {
+    alignSelf: "flex-end",
+    background: vars.colors.stone800,
+    color: vars.colors.stone50,
+  },
+]);
+
+export const messageAssistant = style([
+  messageBase,
+  {
+    alignSelf: "flex-start",
+    background: "white",
+    color: vars.colors.stone900,
+    border: `1px solid ${vars.colors.stone300}`,
+  },
+]);
 
 export const messageRole = style({
-  fontSize: "9px",
-  letterSpacing: vars.letterSpacing.widest,
+  fontSize: "10px",
   textTransform: "uppercase",
-  color: vars.colors.stone600,
-});
-
-export const messageTime = style({
-  fontSize: "9px",
-  color: vars.colors.stone600,
+  letterSpacing: "0.5px",
   opacity: 0.6,
+  marginBottom: "4px",
 });
 
-export const messageContent = style({
-  fontSize: vars.fontSizes.base.fontSize,
-  lineHeight: "1.7",
-  letterSpacing: "0.01em",
+export const messageBody = style({
+  display: "block",
 });
 
-export const messageContentUser = style({
-  background: vars.colors.stone900,
-  color: vars.colors.stone50,
-  padding: `${vars.space[4]} ${vars.space[5]}`,
+export const error = style({
+  alignSelf: "center",
+  padding: "8px 12px",
+  fontSize: "12px",
+  fontFamily: vars.fonts.mono,
+  color: "#b91c1c",
+  background: "#fef2f2",
+  border: "1px solid #fca5a5",
+  borderRadius: "4px",
 });
 
-export const messageContentAssistant = style({
-  padding: `${vars.space[4]} 0`,
-  borderBottom: `1px solid ${vars.colors.stone300}`,
-});
-
-const pulse = keyframes({
-  "0%, 100%": {
-    opacity: 0.3,
-    transform: "scale(1)",
-  },
-  "50%": {
-    opacity: 1,
-    transform: "scale(1.2)",
-  },
-});
-
-export const thinking = style({
+export const inputRow = style({
   display: "flex",
-  alignItems: "center",
-  gap: "4px",
-  padding: `${vars.space[4]} 0`,
-  maxWidth: "680px",
-  margin: "0 auto",
-});
-
-export const thinkingDot = style({
-  width: "4px",
-  height: "4px",
-  background: vars.colors.stone600,
-  borderRadius: "50%",
-  animation: `${pulse} 1.2s ease-in-out infinite`,
-  selectors: {
-    "&:nth-child(2)": {
-      animationDelay: "0.2s",
-    },
-    "&:nth-child(3)": {
-      animationDelay: "0.4s",
-    },
-  },
-});
-
-export const inputArea = style({
-  padding: vars.space[6],
+  gap: "8px",
+  padding: "12px",
   borderTop: `1px solid ${vars.colors.stone300}`,
-  background: vars.colors.stone50,
+  background: vars.colors.stone100,
+  flexShrink: 0,
 });
 
-export const inputWrapper = style({
-  maxWidth: "680px",
-  margin: "0 auto",
-});
-
-export const inputForm = style({
-  display: "flex",
-  gap: vars.space[3],
-  alignItems: "flex-end",
-});
-
-export const inputField = style({
+export const textarea = style({
   flex: 1,
   fontFamily: vars.fonts.mono,
-  fontSize: vars.fontSizes.base.fontSize,
-  padding: `${vars.space[3]} ${vars.space[4]}`,
-  border: `1px solid ${vars.colors.stone300}`,
-  background: vars.colors.stone50,
-  color: vars.colors.stone900,
+  fontSize: "13px",
+  padding: "8px 10px",
   resize: "none",
-  outline: "none",
-  transition: "border-color 0.15s ease",
-  minHeight: "48px",
-  maxHeight: "200px",
+  border: `1px solid ${vars.colors.stone300}`,
+  borderRadius: "3px",
+  background: "white",
+  color: vars.colors.stone900,
   ":focus": {
-    borderColor: vars.colors.stone900,
-  },
-  "::placeholder": {
-    color: vars.colors.stone600,
+    outline: "none",
+    borderColor: vars.colors.stone500,
   },
 });
 
-export const submitBtn = style({
-  width: "48px",
-  height: "48px",
-  background: vars.colors.stone900,
-  border: "none",
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  transition: "opacity 0.15s ease",
-  ":hover": {
-    opacity: 0.85,
-  },
-  ":disabled": {
-    opacity: 0.4,
-    cursor: "not-allowed",
-  },
-});
-
-export const submitBtnIcon = style({
-  width: "18px",
-  height: "18px",
+export const sendButton = style({
+  fontFamily: vars.fonts.mono,
+  fontSize: "12px",
+  padding: "0 16px",
+  background: vars.colors.stone800,
   color: vars.colors.stone50,
-});
-
-export const inputHint = style({
-  fontSize: vars.fontSizes.xs.fontSize,
-  color: vars.colors.stone600,
-  marginTop: vars.space[2],
-  letterSpacing: vars.letterSpacing.wide,
+  border: "none",
+  borderRadius: "3px",
+  cursor: "pointer",
+  selectors: {
+    "&:disabled": {
+      background: vars.colors.stone400,
+      cursor: "not-allowed",
+    },
+  },
 });

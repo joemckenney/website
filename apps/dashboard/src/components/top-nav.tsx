@@ -1,19 +1,14 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router";
+import { Link } from "react-router";
 import * as styles from "../styles/layout.css";
 
 interface TopNavProps {
   userEmail?: string | null;
   onLogout?: () => void;
-  baseName?: string | null;
 }
 
-export function TopNav({ userEmail, onLogout, baseName }: TopNavProps) {
-  const location = useLocation();
+export function TopNav({ userEmail, onLogout }: TopNavProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
-
-  const isDataActive = location.pathname.startsWith("/bases");
-  const isAgentsActive = location.pathname.startsWith("/agents");
 
   const initials = userEmail
     ? userEmail
@@ -26,32 +21,7 @@ export function TopNav({ userEmail, onLogout, baseName }: TopNavProps) {
 
   return (
     <nav className={styles.topNav}>
-      <div className={styles.navLeft}>
-        {baseName ? (
-          <div className={styles.navBreadcrumb}>
-            <Link to="/bases" className={styles.navLink}>
-              Data
-            </Link>
-            <span className={styles.navBreadcrumbSeparator}>/</span>
-            <span className={styles.navBreadcrumbCurrent}>{baseName}</span>
-          </div>
-        ) : (
-          <>
-            <Link
-              to="/bases"
-              className={`${styles.navLink} ${isDataActive ? styles.navLinkActive : ""}`}
-            >
-              Data
-            </Link>
-            <Link
-              to="/agents"
-              className={`${styles.navLink} ${isAgentsActive ? styles.navLinkActive : ""}`}
-            >
-              Agents
-            </Link>
-          </>
-        )}
-      </div>
+      <div className={styles.navLeft} />
 
       <div className={styles.navRight}>
         <div style={{ position: "relative" }}>

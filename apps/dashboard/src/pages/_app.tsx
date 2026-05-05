@@ -2,7 +2,6 @@ import { gateway } from "@gateway/sdk";
 import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { TopNav } from "../components/top-nav";
-import { BaseProvider, useBaseContext } from "../contexts/base-context";
 import {
   logout as authLogout,
   clearTokens,
@@ -14,10 +13,9 @@ interface UserInfo {
   email: string;
 }
 
-function RootLayoutInner() {
+export default function RootLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { baseName } = useBaseContext();
   const [user, setUser] = useState<UserInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -38,17 +36,13 @@ function RootLayoutInner() {
       }
 
       try {
-        // The request interceptor handles token validation and Authorization header
         const response = await gateway.whoami();
 
         if (response.error) {
-          // Distinguish network errors from auth errors
           if (response.response) {
-            // Real HTTP error (401, 403, etc.) — clear tokens, redirect to login
             clearTokens();
             navigate("/login", { replace: true });
           } else {
-            // Network error (server down) — preserve tokens, show error
             setAuthError(
               "Unable to reach the server. Please check your connection.",
             );
@@ -60,7 +54,6 @@ function RootLayoutInner() {
           setUser({ email: response.data.email });
         }
       } catch {
-        // Unexpected error — preserve tokens, show error
         setAuthError(
           "Unable to reach the server. Please check your connection.",
         );
@@ -98,29 +91,16 @@ function RootLayoutInner() {
     );
   }
 
-  // Guard: don't render the layout without user data
   if (!user) {
     return null;
   }
 
   return (
     <div className={styles.container}>
-      <TopNav
-        userEmail={user.email}
-        onLogout={handleLogout}
-        baseName={baseName}
-      />
+      <TopNav userEmail={user.email} onLogout={handleLogout} />
       <main className={styles.main}>
         <Outlet />
       </main>
     </div>
-  );
-}
-
-export default function RootLayout() {
-  return (
-    <BaseProvider>
-      <RootLayoutInner />
-    </BaseProvider>
   );
 }
