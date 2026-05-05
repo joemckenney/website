@@ -19,7 +19,7 @@ spec:
         - ./services/@weather/service/helm/values-selfhosted.yaml
   values:
     image:
-      tag: selfhosted-sha-54d45f5e9ef698c5c723a8d872708b88b195c28e
+      tag: selfhosted-sha-d63ed9a754293c23addbcc18e543d6395e06be2b
     migration:
       image:
         repository: crowprose/weather-service-migrate

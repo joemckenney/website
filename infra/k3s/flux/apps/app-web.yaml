@@ -19,4 +19,4 @@ spec:
         - ./apps/dashboard/helm/values-selfhosted.yaml
   values:
     image:
-      tag: selfhosted-sha-4163d7f2034634532d01863508a3bb343fa7fa5a
+      tag: selfhosted-sha-d63ed9a754293c23addbcc18e543d6395e06be2b
