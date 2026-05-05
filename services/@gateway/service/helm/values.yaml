@@ -89,6 +89,7 @@ secrets:
   userServiceUrl: ""
   agentServiceUrl: ""
   tablesServiceUrl: ""
+  aiServiceUrl: ""
 
 # Prometheus metrics
 metrics:

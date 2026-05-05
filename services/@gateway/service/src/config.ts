@@ -25,6 +25,7 @@ export const config = {
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:3001",
   userServiceUrl: process.env.USER_SERVICE_URL || "http://localhost:3002",
   agentServiceUrl: process.env.AGENT_SERVICE_URL || "http://localhost:3003",
+  aiServiceUrl: process.env.AI_SERVICE_URL || "http://localhost:3006",
   relay: {
     baseUrl: process.env.RELAY_BASE_URL || "http://localhost:4000/v1",
     model: `relay/${process.env.AGENT_MODEL || "small"}`,

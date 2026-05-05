@@ -50,6 +50,9 @@ on:
       weather_service_built:
         description: 'Whether weather-service was built'
         value: ${{ jobs.build.outputs.weather_service_built }}
+      ai_service_built:
+        description: 'Whether ai-service was built'
+        value: ${{ jobs.build.outputs.ai_service_built }}
 
 env:
   DOCKERHUB_USERNAME: crowprose
@@ -69,6 +72,7 @@ jobs:
       agent_service: ${{ steps.changes.outputs.agent_service }}
       tables_service: ${{ steps.changes.outputs.tables_service }}
       weather_service: ${{ steps.changes.outputs.weather_service }}
+      ai_service: ${{ steps.changes.outputs.ai_service }}
 
     steps:
       - name: Checkout code
@@ -114,6 +118,7 @@ jobs:
             echo "agent_service=true" >> $GITHUB_OUTPUT
             echo "tables_service=true" >> $GITHUB_OUTPUT
             echo "weather_service=true" >> $GITHUB_OUTPUT
+            echo "ai_service=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -127,6 +132,7 @@ jobs:
             echo "agent_service=true" >> $GITHUB_OUTPUT
             echo "tables_service=true" >> $GITHUB_OUTPUT
             echo "weather_service=true" >> $GITHUB_OUTPUT
+            echo "ai_service=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -140,6 +146,7 @@ jobs:
             echo "agent_service=true" >> $GITHUB_OUTPUT
             echo "tables_service=true" >> $GITHUB_OUTPUT
             echo "weather_service=true" >> $GITHUB_OUTPUT
+            echo "ai_service=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -190,6 +197,7 @@ jobs:
           check_package "@agent/service" "agent_service"
           check_package "@tables/service" "tables_service"
           check_package "@weather/service" "weather_service"
+          check_package "@ai/service" "ai_service"
 
   build:
     name: Build & Push Images
@@ -207,6 +215,7 @@ jobs:
       agent_service_built: ${{ steps.build-agent-service.outcome == 'success' || steps.check-images.outputs.agent_service_exists == 'true' }}
       tables_service_built: ${{ steps.build-tables-service.outcome == 'success' || steps.check-images.outputs.tables_service_exists == 'true' }}
       weather_service_built: ${{ steps.build-weather-service.outcome == 'success' || steps.check-images.outputs.weather_service_exists == 'true' }}
+      ai_service_built: ${{ steps.build-ai-service.outcome == 'success' || steps.check-images.outputs.ai_service_exists == 'true' }}
 
     steps:
       - name: Checkout code
@@ -250,6 +259,7 @@ jobs:
           echo "tables_service_migrate_exists=$(check_image ${USERNAME}/tables-service-migrate ${TAG})" >> $GITHUB_OUTPUT
           echo "weather_service_exists=$(check_image ${USERNAME}/weather-service ${TAG})" >> $GITHUB_OUTPUT
           echo "weather_service_migrate_exists=$(check_image ${USERNAME}/weather-service-migrate ${TAG})" >> $GITHUB_OUTPUT
+          echo "ai_service_exists=$(check_image ${USERNAME}/ai-service ${TAG})" >> $GITHUB_OUTPUT
 
           echo "Image existence check complete"
 
@@ -531,6 +541,34 @@ jobs:
         if: needs.detect-changes.outputs.weather_service == 'true' && steps.check-images.outputs.weather_service_exists == 'true'
         run: echo "Skipping weather-service build - image already exists"
 
+      - name: Build and push ai-service
+        id: build-ai-service
+        if: needs.detect-changes.outputs.ai_service == 'true' && steps.check-images.outputs.ai_service_exists != 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/@ai/service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/ai-service:${{ steps.meta.outputs.tag }}
+          build-args: |
+            TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
+            TURBO_TEAM=${{ secrets.TURBO_TEAM }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Skip ai-service (no changes)
+        if: needs.detect-changes.outputs.ai_service != 'true'
+        run: echo "Skipping ai-service build - no changes detected"
+
+      - name: Skip ai-service (image exists)
+        if: needs.detect-changes.outputs.ai_service == 'true' && steps.check-images.outputs.ai_service_exists == 'true'
+        run: echo "Skipping ai-service build - image already exists"
+
       - name: Summary
         run: |
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
@@ -544,3 +582,4 @@ jobs:
           echo "| agent-service | ${{ needs.detect-changes.outputs.agent_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| tables-service | ${{ needs.detect-changes.outputs.tables_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| weather-service | ${{ needs.detect-changes.outputs.weather_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ai-service | ${{ needs.detect-changes.outputs.ai_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY

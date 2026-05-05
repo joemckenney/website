@@ -59,6 +59,7 @@ jobs:
           AGENT_SERVICE_BUILT: ${{ needs.build-selfhosted-images.outputs.agent_service_built }}
           TABLES_SERVICE_BUILT: ${{ needs.build-selfhosted-images.outputs.tables_service_built }}
           WEATHER_SERVICE_BUILT: ${{ needs.build-selfhosted-images.outputs.weather_service_built }}
+          AI_SERVICE_BUILT: ${{ needs.build-selfhosted-images.outputs.ai_service_built }}
         run: |
           CHANGED=false
 
@@ -82,6 +83,7 @@ jobs:
           update_tag infra/k3s/flux/apps/agent-service.yaml "$AGENT_SERVICE_BUILT" "agent-service"
           update_tag infra/k3s/flux/apps/tables-service.yaml "$TABLES_SERVICE_BUILT" "tables-service"
           update_tag infra/k3s/flux/apps/weather-service.yaml "$WEATHER_SERVICE_BUILT" "weather-service"
+          update_tag infra/k3s/flux/apps/ai-service.yaml "$AI_SERVICE_BUILT" "ai-service"
 
           echo "changed=$CHANGED" >> $GITHUB_OUTPUT
         id: update
@@ -112,3 +114,4 @@ jobs:
           echo "| agent-service | ${{ needs.build-selfhosted-images.outputs.agent_service_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| tables-service | ${{ needs.build-selfhosted-images.outputs.tables_service_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| weather-service | ${{ needs.build-selfhosted-images.outputs.weather_service_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ai-service | ${{ needs.build-selfhosted-images.outputs.ai_service_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
