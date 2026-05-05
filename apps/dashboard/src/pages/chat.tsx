@@ -1,6 +1,6 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { ensureValidToken } from "../lib/auth";
 import * as styles from "../styles/chat.css";
 
@@ -16,6 +16,14 @@ export default function ChatPage() {
   const [model, setModel] = useState<string>("");
   const [input, setInput] = useState("");
 
+  // useChat holds onto the transport from first render. The body fn reads
+  // through a ref so model selection changes propagate without rebuilding
+  // the transport.
+  const modelRef = useRef(model);
+  useEffect(() => {
+    modelRef.current = model;
+  }, [model]);
+
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
@@ -24,9 +32,9 @@ export default function ChatPage() {
           const token = await ensureValidToken();
           return token ? { Authorization: `Bearer ${token}` } : {};
         },
-        body: () => ({ model }),
+        body: () => ({ model: modelRef.current }),
       }),
-    [model],
+    [],
   );
 
   const { messages, sendMessage, status, error } = useChat({ transport });
