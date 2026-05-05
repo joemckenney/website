@@ -26,7 +26,6 @@
     "@fastify/swagger-ui": "^5.2.3",
     "@fastify/type-provider-typebox": "^6.1.0",
     "@fastify/websocket": "^11.0.2",
-    "@signal/agent": "workspace:*",
     "@users/sdk": "workspace:*",
     "@website/tracing": "workspace:*",
     "@website/utils": "workspace:*",

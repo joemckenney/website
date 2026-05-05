@@ -1,4 +1,4 @@
-import { WeatherStation, setServiceUrl } from "@website/weather-station";
+import { setServiceUrl, WeatherStation } from "@website/weather-station";
 import { BackLink } from "../../components/back-link";
 import { backLinkWrapper } from "./weather-station.css";
 

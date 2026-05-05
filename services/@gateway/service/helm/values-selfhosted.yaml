@@ -30,10 +30,6 @@ env:
     value: "production"
   - name: PORT
     value: "3000"
-  - name: RELAY_BASE_URL
-    value: "http://192.168.122.1:4000/v1"
-  - name: AGENT_MODEL
-    value: "small"
 
 secrets:
   googleRedirectUri: "https://api.crowprose.com/auth/google/callback"
@@ -41,15 +37,7 @@ secrets:
   frontendUrl: "https://app.crowprose.com"
   backendUrl: "https://api.crowprose.com"
   userServiceUrl: "http://user-service:3002"
-  agentServiceUrl: "http://agent-service:3003"
-  tablesServiceUrl: "http://tables-service:3005"
   aiServiceUrl: "http://ai-service:3006"
-
-# Tables service sharding config (single replica = 1 shard on self-hosted)
-tablesSharding:
-  headlessService: "tables-service-headless"
-  port: 3005
-  shardCount: 1
 
 # Prometheus metrics
 metrics:

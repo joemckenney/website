@@ -4,18 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A production-ready TypeScript monorepo with type-safe API generation, Kubernetes deployment, and comprehensive observability. Self-hosted on k3s with FluxCD GitOps and Cloudflare Tunnel ingress.
+A TypeScript monorepo with type-safe API generation, Kubernetes deployment, and observability. Self-hosted on k3s (rookery VM) with FluxCD GitOps and Cloudflare Tunnel ingress.
 
 ## Repository Structure
 
 ```
 apps/
-  www/                - Crowprose homepage (SSG) with blog, projects, contributions
-  dashboard/          - React + Vite demo client with sidebar UI
+  www/                - Crowprose homepage (SSG): blog, projects, contributions
+  dashboard/          - React + Vite chat client (multi-provider)
 
 services/
   @gateway/
-    service/          - Fastify API Gateway with OpenAPI/TypeBox, OAuth, JWT auth
+    service/          - Fastify API gateway: OAuth, JWT auth, proxy to @ai and @users
     sdk/              - Auto-generated TypeScript client from OpenAPI spec
     spec/             - OpenAPI specification package
   @users/
@@ -23,15 +23,21 @@ services/
     db/               - Prisma ORM package (PostgreSQL)
     sdk/              - Auto-generated TypeScript client
     spec/             - OpenAPI specification package
+  @ai/
+    service/          - Multi-provider LLM chat backend (Vercel AI Gateway, Anthropic, Ollama)
+    spec/             - OpenAPI specification package (no SDK — streaming endpoints aren't generated)
+  @weather/
+    service/          - Real-time weather API + SSE stream (Ambient Weather)
+    db/               - Prisma ORM package (PostgreSQL)
 
 packages/
   @website/
     config/           - Shared TypeScript + Biome configuration
+    tracing/          - OpenTelemetry tracing helper
     utils/            - Shared TypeScript utilities
-
-packages/
-  @website/
-    weather-station/  - Weather sonification app (Chrome AI + Web Audio)
+    weather-station/  - React weather sonification component (Web Audio)
+  @crow/              - Internal design system (theme + primitive components)
+  @cli/               - Internal dev CLIs (cluster, db, dev, docker)
 
 infra/
   helm/charts/        - Shared Helm chart templates
@@ -51,85 +57,55 @@ infra/
 ### Common Commands
 
 ```bash
-# Install dependencies
 pnpm install
-
-# Build all packages (respects dependency order via Turbo)
-pnpm run build
-
-# Format all code
+pnpm run build           # all packages, dependency-ordered
 pnpm run format
-
-# Run all dev servers with hot reload
-pnpm run dev
-
-# Build specific workspace
+pnpm run dev             # all dev servers with hot reload
 pnpm --filter @gateway/service build
-pnpm --filter @app/dashboard build
-
-# Type check
-pnpm run check
+pnpm run check           # type check
 ```
-
-### Development Workflow
-
-`pnpm run dev` starts all development servers with automatic rebuilding:
-
-- **@gateway/service**: Fastify server with `tsx watch`, regenerates OpenAPI spec on changes
-- **@gateway/sdk**: Rebuilds when OpenAPI spec changes (Turbo `interruptible`)
-- **@users/service**: User management API with `tsx watch`
-- **@app/dashboard**: Vite dev server with HMR
-- **@app/www**: Vite dev server with HMR
-
-Turbo orchestrates dependency order automatically.
 
 ## Applications
 
 ### @app/www - Crowprose Homepage
 
-**Location**: `apps/www/`
-**URL**: https://www.crowprose.com
+`apps/www/` — https://www.crowprose.com
 
-SSG-rendered homepage with blog, projects, and contributions pages. Built with React Router file-based routing, MDX for blog posts, and Vanilla Extract for styling.
+SSG-rendered homepage with blog, projects, and contributions pages. React Router file-based routing, MDX for blog posts, Vanilla Extract for styling.
 
-**Key Pages**:
-- `/` - Homepage with projects, writing, contributions
-- `/blog` - Blog listing and posts (MDX)
-- `/projects` - Projects listing
-- `/projects/weather-station` - Weather sonification app (imports from `@website/weather-station`)
-- `/contributions` - OSS contributions
+Key pages: `/`, `/blog`, `/projects`, `/projects/weather-station`, `/contributions`.
+
+### @app/dashboard - Multi-provider Chat
+
+`apps/dashboard/` — https://app.crowprose.com
+
+React + Vite SPA. Stateless single-shot chat against `@ai/service` via the gateway. Uses `@ai-sdk/react`'s `useChat` with `DefaultChatTransport`. No conversation history, model dropdown sourced from `/ai/models`.
+
+Routes: `/login`, `/chat`, `/settings`, `/`.
 
 ### @gateway/service - API Gateway
 
-**Location**: `services/@gateway/service/`
-**URLs**: http://localhost:3000 (dev), https://api.crowprose.com (prod)
+`services/@gateway/service/` — http://localhost:3000 (dev), https://api.crowprose.com (prod)
 
-Fastify REST API with:
-- TypeBox schema validation
-- OpenAPI spec auto-generation (`/docs` for Swagger UI)
-- Google OAuth authentication (via Arctic)
-- JWT access/refresh tokens (httpOnly cookies for refresh)
-- Prometheus metrics endpoint (`/metrics`)
+Fastify REST API with TypeBox + OpenAPI auto-generation, Google OAuth (Arctic), JWT access/refresh (httpOnly refresh cookie), Prometheus metrics. Proxies authenticated traffic to `/ai/*` (with `x-user` injection); calls `@users/service` directly for OAuth user upsert.
 
-### @app/dashboard - Demo Client
+### @ai/service - Multi-provider Chat Backend
 
-**Location**: `apps/dashboard/`
-**URL**: https://app.crowprose.com
+`services/@ai/service/`
 
-React + Vite frontend demonstrating type-safe API integration:
-- Collapsible sidebar navigation (Claude.ai-style)
-- User avatar with logout menu
-- Debug page for token inspection
-- Chat prompt interface (placeholder for future agent)
+Fastify + Vercel AI SDK (v6). Single streaming endpoint (`POST /chat`) returning the AI SDK UI message stream. Provider dispatch by `vercel/`, `anthropic/`, `ollama/` model-id prefix. Stateless — no conversation history. `GET /models` returns the configured `ALLOWED_MODELS` allowlist. Trusts `x-user` header from the gateway; not exposed publicly.
 
 ### @users/service - User Management
 
-**Location**: `services/@users/service/`
+`services/@users/service/`
 
-Fastify API for user CRUD with:
-- Prisma ORM (PostgreSQL)
-- TypeBox schemas
-- Prometheus metrics
+Fastify CRUD over Prisma/Postgres. Internal-only.
+
+### @weather/service - Weather Station
+
+`services/@weather/service/`
+
+Real-time weather data from an Ambient Weather station via Socket.IO; Postgres for history; SSE stream + REST endpoints. Currently exposed at https://weather.crowprose.com (Phase 4 of the revamp will fold it behind the gateway).
 
 ## Type-Safe API Pattern
 
@@ -137,104 +113,77 @@ Fastify API for user CRUD with:
 Server (TypeBox) → OpenAPI Spec → @hey-api/openapi-ts → SDK → Type-safe Client
 ```
 
-1. Define routes with TypeBox schemas in `@gateway/service` or `@users/service`
-2. OpenAPI spec generated to `dist/openapi.json` on build
-3. SDK packages generate typed client from spec
-4. Clients import SDK for full type safety
+`@ai/service` is the exception: streaming endpoints don't generate cleanly so the dashboard uses `@ai-sdk/react` directly, not a generated SDK.
 
 ## Infrastructure
 
 ### Kubernetes Deployment
 
-**Local**: Minikube with local Docker registry
-**Production**: k3s on rookery VM, FluxCD GitOps, Cloudflare Tunnel ingress
+**Production**: k3s on rookery VM, FluxCD GitOps, Cloudflare Tunnel ingress.
+**Local dev**: Minikube with local Docker registry.
 
-Each app has a Helm chart in its `helm/` directory:
-- `values.yaml` - Base values
+Each app/service has a Helm chart in `helm/`:
+- `values.yaml` - base values
 - `values-local.yaml` - Minikube overrides
-- `values-selfhosted.yaml` - k3s/self-hosted overrides
+- `values-selfhosted.yaml` - k3s overrides
 
 ### Monitoring Stack
 
-**URL**: https://o11y.crowprose.com (Google OAuth protected)
-
-- **Prometheus**: Metrics collection from ServiceMonitors
-- **Grafana**: Dashboards and alerting
-- **Loki**: Log aggregation via Promtail
-- **Alertmanager**: Email notifications for critical alerts
-
-Configuration in `infra/k3s/flux/infrastructure/monitoring/`.
+https://o11y.crowprose.com (Google OAuth protected). Prometheus + Grafana + Loki/Promtail + Alertmanager. ServiceMonitors must carry the `release: monitoring` label to be scraped.
 
 ### CI/CD (GitHub Actions)
 
-**Workflows**:
-- `ci.yml` - PR checks (build, lint, type-check)
-- `build-images.yml` - Docker image builds
-- `cd-selfhosted.yml` - Builds images, updates FluxCD manifests with new tags
+- `ci.yml` — PR checks (build, lint, type-check)
+- `build-images.yml` — Docker image builds (called by CD)
+- `cd-selfhosted.yml` — builds images on push to main, updates Flux image tags
 
-**Required Secrets**:
-- `DOCKERHUB_TOKEN` - Docker Hub credentials
-- `GOOGLE_CLIENT_ID/SECRET` - OAuth credentials
-- `JWT_SECRET` - Token signing key
+**Required secrets**: `DOCKERHUB_TOKEN`, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, `JWT_SECRET`, `ANTHROPIC_API_KEY`, `VERCEL_AI_GATEWAY_API_KEY`.
 
 ## Styling
 
-**Framework**: Vanilla Extract (type-safe CSS-in-JS)
-
-Styles in `.css.ts` files with type-safe tokens. Each app defines its own design system.
+**Framework**: Vanilla Extract (type-safe CSS-in-JS). Styles in `.css.ts` files. `@crow/theme` provides shared design tokens.
 
 ## Configuration
 
-Shared configs in `packages/@website/config/`:
-- `base.json`, `react.json`, `node.json` - TypeScript configs
-- `biome.json` - Linting and formatting
-
-All packages extend these via `"extends": "@website/config/..."`.
+Shared configs in `packages/@website/config/`: `base.json`, `react.json`, `node.json`, `biome.json`. All packages extend these via `"extends": "@website/config/..."`.
 
 ## Development Notes
 
 ### Adding a New Service
 
-1. Create directory in `services/@<domain>/<name>/`
-2. Add `package.json` with workspace dependencies
-3. Create Helm chart in `helm/` subdirectory
-4. Add ServiceMonitor for Prometheus (with `release: monitoring` label)
-5. Update `pnpm-workspace.yaml` if needed
-6. Add to CI/CD workflows
-
-### ServiceMonitor Labels
-
-Prometheus only scrapes ServiceMonitors with `release: monitoring` label:
-
-```yaml
-metadata:
-  labels:
-    release: monitoring
-```
+1. `services/@<domain>/<name>/` with `package.json`, `Dockerfile`, `helm/` chart
+2. ServiceMonitor with `release: monitoring` label
+3. Flux HelmRelease in `infra/k3s/flux/apps/`, listed in `apps/kustomization.yaml`
+4. Add to `build-images.yml` matrix and `cd-selfhosted.yml` image-tag updater
 
 ### Database (PostgreSQL)
 
-Prisma commands in `@users/db`:
+Prisma commands example in `@users/db`:
 ```bash
-pnpm run migrate:dev   # Run migrations
-pnpm run db:push       # Push schema changes
-pnpm run studio        # Open Prisma Studio
+pnpm run migrate:dev   # apply migrations
+pnpm run db:push       # push schema (dev)
+pnpm run studio        # Prisma Studio
 ```
 
 ### Environment Variables
 
-API services use:
-- `GOOGLE_CLIENT_ID/SECRET` - OAuth
-- `JWT_SECRET` - Token signing
-- `FRONTEND_URL` - CORS origin
-- `DATABASE_URL` - PostgreSQL connection (users-service)
+Gateway:
+- `GOOGLE_CLIENT_ID`/`SECRET`, `JWT_SECRET`, `ALLOWED_EMAILS`
+- `FRONTEND_URL`, `BACKEND_URL`
+- `USER_SERVICE_URL`, `AI_SERVICE_URL`
 
-Clients use:
-- `VITE_API_URL` - API endpoint
+@ai/service:
+- `VERCEL_AI_GATEWAY_API_KEY`, `ANTHROPIC_API_KEY`
+- `OLLAMA_BASE_URL` (defaults to libvirt-bridge IP in production)
+- `ALLOWED_MODELS` (comma-separated `provider/model` ids)
+
+Clients:
+- `VITE_API_URL` — gateway endpoint
 
 ### Production URLs
 
-- https://www.crowprose.com - Main website
-- https://app.crowprose.com - Dashboard
-- https://api.crowprose.com - API gateway
-- https://o11y.crowprose.com - Grafana (monitoring)
+- https://www.crowprose.com — main website
+- https://app.crowprose.com — chat dashboard
+- https://api.crowprose.com — API gateway (auth, /ai/*)
+- https://weather.crowprose.com — weather data (will move behind gateway in Phase 4)
+- https://o11y.crowprose.com — Grafana (monitoring)

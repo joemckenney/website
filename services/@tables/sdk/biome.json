@@ -1,6 +1,0 @@
-{
-  "extends": ["@website/config/biome"],
-  "files": {
-    "includes": ["**", "!dist", "!src/generated"]
-  }
-}

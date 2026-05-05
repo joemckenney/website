@@ -41,11 +41,6 @@ function App() {
             ]}
           />
           <Tile
-            title="Synesthetic canvas"
-            description="Draw on a canvas and hear what your gestures sound like. AI interprets your strokes and maps them to a live audio synthesis engine with visual feedback."
-            href="/projects/synesthetic-canvas"
-          />
-          <Tile
             title="Weather station"
             description="Live weather from Mendocino, CA turned into ambient sound. Streams real-time data from a personal weather station and maps temperature, wind, humidity, and rain to Web Audio synthesis."
             href="/projects/weather-station"

@@ -1,8 +1,0 @@
-{
-  "extends": "@website/config/react.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src"]
-}

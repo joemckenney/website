@@ -56,8 +56,6 @@ jobs:
           APP_WEB_BUILT: ${{ needs.build-selfhosted-images.outputs.app_web_built }}
           API_SERVICE_BUILT: ${{ needs.build-selfhosted-images.outputs.api_service_built }}
           USER_SERVICE_BUILT: ${{ needs.build-selfhosted-images.outputs.user_service_built }}
-          AGENT_SERVICE_BUILT: ${{ needs.build-selfhosted-images.outputs.agent_service_built }}
-          TABLES_SERVICE_BUILT: ${{ needs.build-selfhosted-images.outputs.tables_service_built }}
           WEATHER_SERVICE_BUILT: ${{ needs.build-selfhosted-images.outputs.weather_service_built }}
           AI_SERVICE_BUILT: ${{ needs.build-selfhosted-images.outputs.ai_service_built }}
         run: |
@@ -80,8 +78,6 @@ jobs:
           update_tag infra/k3s/flux/apps/app-web.yaml "$APP_WEB_BUILT" "app-web"
           update_tag infra/k3s/flux/apps/api-service.yaml "$API_SERVICE_BUILT" "api-service"
           update_tag infra/k3s/flux/apps/user-service.yaml "$USER_SERVICE_BUILT" "user-service"
-          update_tag infra/k3s/flux/apps/agent-service.yaml "$AGENT_SERVICE_BUILT" "agent-service"
-          update_tag infra/k3s/flux/apps/tables-service.yaml "$TABLES_SERVICE_BUILT" "tables-service"
           update_tag infra/k3s/flux/apps/weather-service.yaml "$WEATHER_SERVICE_BUILT" "weather-service"
           update_tag infra/k3s/flux/apps/ai-service.yaml "$AI_SERVICE_BUILT" "ai-service"
 
@@ -111,7 +107,5 @@ jobs:
           echo "| app-web | ${{ needs.build-selfhosted-images.outputs.app_web_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| api-service | ${{ needs.build-selfhosted-images.outputs.api_service_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| user-service | ${{ needs.build-selfhosted-images.outputs.user_service_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| agent-service | ${{ needs.build-selfhosted-images.outputs.agent_service_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| tables-service | ${{ needs.build-selfhosted-images.outputs.tables_service_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| weather-service | ${{ needs.build-selfhosted-images.outputs.weather_service_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| ai-service | ${{ needs.build-selfhosted-images.outputs.ai_service_built == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY

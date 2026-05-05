@@ -96,29 +96,11 @@ spec:
             secretKeyRef:
               name: {{ include "app-server.fullname" . }}-secrets
               key: userServiceUrl
-        - name: AGENT_SERVICE_URL
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "app-server.fullname" . }}-secrets
-              key: agentServiceUrl
-        - name: TABLES_SERVICE_URL
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "app-server.fullname" . }}-secrets
-              key: tablesServiceUrl
         - name: AI_SERVICE_URL
           valueFrom:
             secretKeyRef:
               name: {{ include "app-server.fullname" . }}-secrets
               key: aiServiceUrl
-        {{- if .Values.tablesSharding }}
-        - name: TABLES_SERVICE_HEADLESS
-          value: {{ .Values.tablesSharding.headlessService | quote }}
-        - name: TABLES_SERVICE_PORT
-          value: {{ .Values.tablesSharding.port | default 3005 | quote }}
-        - name: TABLES_SHARD_COUNT
-          value: {{ .Values.tablesSharding.shardCount | default 1 | quote }}
-        {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

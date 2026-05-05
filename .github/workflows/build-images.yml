@@ -41,12 +41,6 @@ on:
       user_service_built:
         description: 'Whether user-service was built'
         value: ${{ jobs.build.outputs.user_service_built }}
-      agent_service_built:
-        description: 'Whether agent-service was built'
-        value: ${{ jobs.build.outputs.agent_service_built }}
-      tables_service_built:
-        description: 'Whether tables-service was built'
-        value: ${{ jobs.build.outputs.tables_service_built }}
       weather_service_built:
         description: 'Whether weather-service was built'
         value: ${{ jobs.build.outputs.weather_service_built }}
@@ -69,8 +63,6 @@ jobs:
       app_web: ${{ steps.changes.outputs.app_web }}
       api_service: ${{ steps.changes.outputs.api_service }}
       user_service: ${{ steps.changes.outputs.user_service }}
-      agent_service: ${{ steps.changes.outputs.agent_service }}
-      tables_service: ${{ steps.changes.outputs.tables_service }}
       weather_service: ${{ steps.changes.outputs.weather_service }}
       ai_service: ${{ steps.changes.outputs.ai_service }}
 
@@ -115,8 +107,6 @@ jobs:
             echo "app_web=true" >> $GITHUB_OUTPUT
             echo "api_service=true" >> $GITHUB_OUTPUT
             echo "user_service=true" >> $GITHUB_OUTPUT
-            echo "agent_service=true" >> $GITHUB_OUTPUT
-            echo "tables_service=true" >> $GITHUB_OUTPUT
             echo "weather_service=true" >> $GITHUB_OUTPUT
             echo "ai_service=true" >> $GITHUB_OUTPUT
             exit 0
@@ -129,8 +119,6 @@ jobs:
             echo "app_web=true" >> $GITHUB_OUTPUT
             echo "api_service=true" >> $GITHUB_OUTPUT
             echo "user_service=true" >> $GITHUB_OUTPUT
-            echo "agent_service=true" >> $GITHUB_OUTPUT
-            echo "tables_service=true" >> $GITHUB_OUTPUT
             echo "weather_service=true" >> $GITHUB_OUTPUT
             echo "ai_service=true" >> $GITHUB_OUTPUT
             exit 0
@@ -143,8 +131,6 @@ jobs:
             echo "app_web=true" >> $GITHUB_OUTPUT
             echo "api_service=true" >> $GITHUB_OUTPUT
             echo "user_service=true" >> $GITHUB_OUTPUT
-            echo "agent_service=true" >> $GITHUB_OUTPUT
-            echo "tables_service=true" >> $GITHUB_OUTPUT
             echo "weather_service=true" >> $GITHUB_OUTPUT
             echo "ai_service=true" >> $GITHUB_OUTPUT
             exit 0
@@ -194,8 +180,6 @@ jobs:
           check_package "@app/dashboard" "app_web"
           check_package "@gateway/service" "api_service"
           check_package "@users/service" "user_service"
-          check_package "@agent/service" "agent_service"
-          check_package "@tables/service" "tables_service"
           check_package "@weather/service" "weather_service"
           check_package "@ai/service" "ai_service"
 
@@ -212,8 +196,6 @@ jobs:
       app_web_built: ${{ steps.build-app-web.outcome == 'success' || steps.check-images.outputs.app_web_exists == 'true' }}
       api_service_built: ${{ steps.build-api-service.outcome == 'success' || steps.check-images.outputs.api_service_exists == 'true' }}
       user_service_built: ${{ steps.build-user-service.outcome == 'success' || steps.check-images.outputs.user_service_exists == 'true' }}
-      agent_service_built: ${{ steps.build-agent-service.outcome == 'success' || steps.check-images.outputs.agent_service_exists == 'true' }}
-      tables_service_built: ${{ steps.build-tables-service.outcome == 'success' || steps.check-images.outputs.tables_service_exists == 'true' }}
       weather_service_built: ${{ steps.build-weather-service.outcome == 'success' || steps.check-images.outputs.weather_service_exists == 'true' }}
       ai_service_built: ${{ steps.build-ai-service.outcome == 'success' || steps.check-images.outputs.ai_service_exists == 'true' }}
 
@@ -253,10 +235,6 @@ jobs:
           echo "api_service_exists=$(check_image ${USERNAME}/api-service ${TAG})" >> $GITHUB_OUTPUT
           echo "user_service_exists=$(check_image ${USERNAME}/user-service ${TAG})" >> $GITHUB_OUTPUT
           echo "user_service_migrate_exists=$(check_image ${USERNAME}/user-service-migrate ${TAG})" >> $GITHUB_OUTPUT
-          echo "agent_service_exists=$(check_image ${USERNAME}/agent-service ${TAG})" >> $GITHUB_OUTPUT
-          echo "agent_service_migrate_exists=$(check_image ${USERNAME}/agent-service-migrate ${TAG})" >> $GITHUB_OUTPUT
-          echo "tables_service_exists=$(check_image ${USERNAME}/tables-service ${TAG})" >> $GITHUB_OUTPUT
-          echo "tables_service_migrate_exists=$(check_image ${USERNAME}/tables-service-migrate ${TAG})" >> $GITHUB_OUTPUT
           echo "weather_service_exists=$(check_image ${USERNAME}/weather-service ${TAG})" >> $GITHUB_OUTPUT
           echo "weather_service_migrate_exists=$(check_image ${USERNAME}/weather-service-migrate ${TAG})" >> $GITHUB_OUTPUT
           echo "ai_service_exists=$(check_image ${USERNAME}/ai-service ${TAG})" >> $GITHUB_OUTPUT
@@ -403,98 +381,6 @@ jobs:
         if: needs.detect-changes.outputs.user_service == 'true' && steps.check-images.outputs.user_service_exists == 'true'
         run: echo "Skipping user-service build - image already exists"
 
-      - name: Build and push agent-service
-        id: build-agent-service
-        if: needs.detect-changes.outputs.agent_service == 'true' && steps.check-images.outputs.agent_service_exists != 'true'
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: services/@agent/service/Dockerfile
-          push: true
-          tags: |
-            ${{ env.DOCKERHUB_USERNAME }}/agent-service:${{ steps.meta.outputs.tag }}
-          build-args: |
-            TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
-            TURBO_TEAM=${{ secrets.TURBO_TEAM }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          labels: |
-            org.opencontainers.image.source=${{ github.repositoryUrl }}
-            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
-            org.opencontainers.image.revision=${{ github.sha }}
-
-      - name: Build and push agent-service-migrate
-        id: build-agent-service-migrate
-        if: needs.detect-changes.outputs.agent_service == 'true' && steps.check-images.outputs.agent_service_migrate_exists != 'true'
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: services/@agent/service/Dockerfile
-          target: migrator
-          push: true
-          tags: |
-            ${{ env.DOCKERHUB_USERNAME }}/agent-service-migrate:${{ steps.meta.outputs.tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          labels: |
-            org.opencontainers.image.source=${{ github.repositoryUrl }}
-            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
-            org.opencontainers.image.revision=${{ github.sha }}
-
-      - name: Skip agent-service (no changes)
-        if: needs.detect-changes.outputs.agent_service != 'true'
-        run: echo "Skipping agent-service build - no changes detected"
-
-      - name: Skip agent-service (image exists)
-        if: needs.detect-changes.outputs.agent_service == 'true' && steps.check-images.outputs.agent_service_exists == 'true'
-        run: echo "Skipping agent-service build - image already exists"
-
-      - name: Build and push tables-service
-        id: build-tables-service
-        if: needs.detect-changes.outputs.tables_service == 'true' && steps.check-images.outputs.tables_service_exists != 'true'
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: services/@tables/service/Dockerfile
-          push: true
-          tags: |
-            ${{ env.DOCKERHUB_USERNAME }}/tables-service:${{ steps.meta.outputs.tag }}
-          build-args: |
-            TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
-            TURBO_TEAM=${{ secrets.TURBO_TEAM }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          labels: |
-            org.opencontainers.image.source=${{ github.repositoryUrl }}
-            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
-            org.opencontainers.image.revision=${{ github.sha }}
-
-      - name: Build and push tables-service-migrate
-        id: build-tables-service-migrate
-        if: needs.detect-changes.outputs.tables_service == 'true' && steps.check-images.outputs.tables_service_migrate_exists != 'true'
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: services/@tables/service/Dockerfile
-          target: migrator
-          push: true
-          tags: |
-            ${{ env.DOCKERHUB_USERNAME }}/tables-service-migrate:${{ steps.meta.outputs.tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          labels: |
-            org.opencontainers.image.source=${{ github.repositoryUrl }}
-            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
-            org.opencontainers.image.revision=${{ github.sha }}
-
-      - name: Skip tables-service (no changes)
-        if: needs.detect-changes.outputs.tables_service != 'true'
-        run: echo "Skipping tables-service build - no changes detected"
-
-      - name: Skip tables-service (image exists)
-        if: needs.detect-changes.outputs.tables_service == 'true' && steps.check-images.outputs.tables_service_exists == 'true'
-        run: echo "Skipping tables-service build - image already exists"
-
       - name: Build and push weather-service
         id: build-weather-service
         if: needs.detect-changes.outputs.weather_service == 'true' && steps.check-images.outputs.weather_service_exists != 'true'
@@ -579,7 +465,5 @@ jobs:
           echo "| app-web | ${{ needs.detect-changes.outputs.app_web == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| api-service | ${{ needs.detect-changes.outputs.api_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| user-service | ${{ needs.detect-changes.outputs.user_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| agent-service | ${{ needs.detect-changes.outputs.agent_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| tables-service | ${{ needs.detect-changes.outputs.tables_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| weather-service | ${{ needs.detect-changes.outputs.weather_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| ai-service | ${{ needs.detect-changes.outputs.ai_service == 'true' && 'Built ✅' || 'Skipped ⏭️' }} |" >> $GITHUB_STEP_SUMMARY

@@ -9,11 +9,8 @@ import websocket from "@fastify/websocket";
 import { tracingMixin } from "@website/tracing";
 import Fastify from "fastify";
 import metricsPlugin from "fastify-metrics";
-import { registerAgentRoutes } from "./routes/agent.js";
 import { registerAiRoutes } from "./routes/ai.js";
 import { registerAuthRoutes } from "./routes/auth.js";
-import { registerSignalRoutes } from "./routes/signal.js";
-import { registerTablesRoutes } from "./routes/tables.js";
 import { registerRoutes } from "./routes.js";
 
 const fastify = Fastify({
@@ -40,14 +37,7 @@ await fastify.register(cors, {
   origin: true, // Allow all origins in development
   credentials: true, // Allow cookies to be sent
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "x-base-id",
-    "x-table-id",
-    "x-table-name",
-    "x-table-columns",
-  ],
+  allowedHeaders: ["Content-Type", "Authorization"],
   preflightContinue: false, // Don't pass preflight to next handler
 });
 
@@ -93,10 +83,7 @@ await fastify.register(swaggerUi, {
 await fastify.register(websocket);
 
 await registerAuthRoutes(fastify);
-await registerAgentRoutes(fastify);
 await registerAiRoutes(fastify);
-await registerSignalRoutes(fastify);
-await registerTablesRoutes(fastify);
 await registerRoutes(fastify, {});
 
 // Start server
