@@ -36,7 +36,7 @@ await fastify.register(cookie);
 
 const allowedOrigins = (
   process.env.CORS_ALLOWED_ORIGINS ||
-  "http://localhost:3001,http://localhost:5173,https://www.crowprose.com,https://app.crowprose.com"
+  "http://localhost:3001,http://localhost:5173,https://crowprose.com,https://www.crowprose.com,https://app.crowprose.com"
 )
   .split(",")
   .map((o) => o.trim())
