@@ -41,9 +41,40 @@ function App() {
             ]}
           />
           <Tile
+            title="Cgroup-mcp"
+            description="A read-only MCP server exposing Linux cgroup v2 state—memory, CPU, IO pressure, OOM events—so Claude can answer 'what's eating my box?' with real numbers instead of guesses."
+            links={[
+              {
+                type: "github",
+                url: "https://github.com/joemckenney/cgroup-mcp",
+              },
+            ]}
+          />
+          <Tile
+            title="Gistdiff"
+            description="Pipe any diff to gistdiff and get back a conventional-commit-style subject line — or the full subject + body, ready to pass straight to git commit -F -. One API, swap models freely."
+            links={[
+              {
+                type: "github",
+                url: "https://github.com/joemckenney/gistdiff",
+              },
+              { type: "npm", url: "https://www.npmjs.com/package/gistdiff" },
+            ]}
+          />
+          <Tile
             title="Weather station"
             description="Live weather from Mendocino, CA turned into ambient sound. Streams real-time data from a personal weather station and maps temperature, wind, humidity, and rain to Web Audio synthesis."
             href="/projects/weather-station"
+          />
+          <Tile
+            title="Please"
+            description="A CLI for developing in monorepos, not building them. Focused on developer experience and productivity."
+            links={[
+              {
+                type: "npm",
+                url: "https://www.npmjs.com/package/@dopt/please",
+              },
+            ]}
           />
           <Tile
             title="Pkg-tools"

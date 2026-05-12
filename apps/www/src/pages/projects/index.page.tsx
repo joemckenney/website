@@ -29,6 +29,16 @@ export default function Projects() {
           ]}
         />
         <Tile
+          title="Cgroup-mcp"
+          description="A read-only MCP server exposing Linux cgroup v2 state—memory, CPU, IO pressure, OOM events—so Claude can answer 'what's eating my box?' with real numbers instead of guesses."
+          links={[
+            {
+              type: "github",
+              url: "https://github.com/joemckenney/cgroup-mcp",
+            },
+          ]}
+        />
+        <Tile
           title="Gistdiff"
           description="Pipe any diff to gistdiff and get back a conventional-commit-style subject line — or the full subject + body, ready to pass straight to git commit -F -. One API, swap models freely."
           links={[
