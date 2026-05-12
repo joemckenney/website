@@ -51,6 +51,16 @@ function App() {
             ]}
           />
           <Tile
+            title="Process-mcp"
+            description="Sister project to cgroup-mcp: a read-only MCP server that drills from a cgroup down into the processes inside it. Per-PID memory, cmdline, parent/child, fds—everything /proc knows, exposed as tools."
+            links={[
+              {
+                type: "github",
+                url: "https://github.com/joemckenney/process-mcp",
+              },
+            ]}
+          />
+          <Tile
             title="Gistdiff"
             description="Pipe any diff to gistdiff and get back a conventional-commit-style subject line — or the full subject + body, ready to pass straight to git commit -F -. One API, swap models freely."
             links={[
@@ -73,18 +83,6 @@ function App() {
               {
                 type: "npm",
                 url: "https://www.npmjs.com/package/@dopt/please",
-              },
-            ]}
-          />
-          <Tile
-            title="Pkg-tools"
-            description="An opinionated TypeScript package build toolchain with typed configuration for modern development workflows."
-            links={[
-              { type: "github", url: "https://github.com/pkg-tools/pkg-tools" },
-              { type: "website", url: "https://www.pkgtools.com/" },
-              {
-                type: "npm",
-                url: "https://www.npmjs.com/settings/pkg-tools/packages",
               },
             ]}
           />
